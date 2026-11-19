@@ -132,6 +132,9 @@ offchain/src/depth.js               live order books from Gemini's WebSocket dep
 offchain/src/verify.js              evidence check: bytes -> onchain evidenceHash -> winning outcome
 offchain/scripts/verify-settlement.js  public verifier, no keys: node scripts/verify-settlement.js <eventTicker>
 offchain/scripts/testnet-hedge.js   Arc testnet run with a real Gemini sandbox hedge
+offchain/src/keeper.js              pricer + settler (+ hedger) in one service; /keeper health, /evidence
+offchain/src/store.js               durable registry + evidence on the keeper-data branch (GitHub contents API)
+offchain/scripts/buy-promise.js     buy one promise through the live pricer from a demo bar wallet
 offchain/scripts/seed-championship.js  demo data: 4 bars x $5 on the NBA title market via the live pricer ($20 insured, $5 locked)
 offchain/evidence/                  Gemini bytes the settlers attested, one file per evidenceHash
 offchain/Dockerfile, render.yaml    hosted pricer API
@@ -215,6 +218,18 @@ The hedger decodes each log, checks unhedged exposure on that outcome, places a 
 | sweep hedge proceeds | [`0x542a707b…ac0c`](https://explorer.testnet.arc.io/tx/0x542a707b47affc604d2e02b921f54588d3dabf9d3835dddddbd22b959376ac0c) |
 
 Three things only showed up once real orders went through: the request nonce must be a number of seconds, `orderId` is a JSON number above 2^53 that `JSON.parse` silently rounds, and the fill is reported in `filledQuantity`. The captured responses are in [`offchain/test/fixtures/gemini-sandbox-orders.json`](offchain/test/fixtures/gemini-sandbox-orders.json).
+
+## Keeper: settles on its own
+
+The Render service runs [`offchain/src/keeper.js`](offchain/src/keeper.js): the pricer API plus the settler loop in one process. Every minute it checks each event the vault sold cover on. When Gemini settles a market, the keeper votes the result with the hash of Gemini's exact response bytes and pays the winners, with nobody at a terminal. (Gemini can take a while to settle a finished game.) Running in one process also means the outcome order pinned at an event's first sale is shared by the pricer and the settler.
+
+- Health: [`/keeper`](https://arra-pricer.onrender.com/keeper) shows when each loop last ran, the events it tracks, its recent actions and the last error. It never shows keys.
+- Durability: Render wipes the disk on every restart, so the registry and the evidence bytes are written to the `keeper-data` branch through a GitHub token limited to this repo's contents. On startup the keeper restores the registry and recovers any missing events from onchain `CoverPurchased` logs.
+- Public evidence: `/evidence/<ticker>/<evidenceHash>.json` serves the attested bytes, and only if they hash to the requested name. `verify-settlement.js` falls back to it when there's no local copy.
+- A GitHub Actions job pings it every 10 minutes so the free instance doesn't sleep.
+- The hedger joins the same loop when Gemini API keys are configured. It isn't on Render now: the demo's $5 promises sit under the $2,000 retention threshold, and the real sandbox hedge path is shown above.
+
+A real promise is waiting for the keeper: $5 on Indianapolis in `NFL-2611200115-IND-HOU-M` (Nov 19, 8:15 PM ET), policy #8, bought through the live pricer ([`0x9f8f7639…9b6932`](https://explorer.testnet.arc.io/tx/0x9f8f7639563a24399283d913c133b549a6bfcc1248a517c8b87dd9cb509b6932)). When Gemini settles the game, the keeper settles it from the real result, and `node scripts/verify-settlement.js NFL-2611200115-IND-HOU-M` passes the live check too.
 
 ## Verify a settlement
 

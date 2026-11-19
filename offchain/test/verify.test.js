@@ -60,3 +60,19 @@ test("evidence is stored at vote time under its hash and loads back byte-identic
   assert.deepEqual(loadEvidence({ dir, eventTicker: ml.ticker, evidenceHash: keccak256(bytes) }), bytes);
   assert.equal(loadEvidence({ dir, eventTicker: ml.ticker, evidenceHash: "0x" + "00".repeat(32) }), null);
 });
+
+test("public verifier fetches attested bytes from the keeper and rejects any that don't hash to the onchain value", async () => {
+  const { fetchEvidence } = await import("../src/verify.js");
+  const good = bytesOf(settledGame("-ARI"));
+  const h = keccak256(good);
+  const seen = [];
+  const fetchImpl = async (url) => {
+    seen.push(url);
+    return url.endsWith(`${h}.json`) ? new Response(good, { status: 200 }) : new Response("{}", { status: 200 });
+  };
+  const bytes = await fetchEvidence({ base: "https://keeper.example/", eventTicker: ml.ticker, evidenceHash: h, fetchImpl });
+  assert.equal(keccak256(bytes), h);
+  assert.equal(seen[0], `https://keeper.example/evidence/${ml.ticker}/${h}.json`);
+  const other = "0x" + "11".repeat(32);
+  assert.equal(await fetchEvidence({ base: "https://keeper.example", eventTicker: ml.ticker, evidenceHash: other, fetchImpl }), null);
+});

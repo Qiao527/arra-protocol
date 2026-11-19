@@ -20,7 +20,8 @@ const { publicClient, vaultAbi, eventIdFor } = await import("../src/chain.js");
 const { config } = await import("../src/config.js");
 const { getEventRaw } = await import("../src/gemini.js");
 const { settledOutcome } = await import("../src/settler.js");
-const { verifyEvidence, loadEvidence, loadOutcomes } = await import("../src/verify.js");
+const { verifyEvidence, loadEvidence, loadOutcomes, fetchEvidence, fetchOutcomes } = await import("../src/verify.js");
+const keeper = process.env.KEEPER_URL ?? dep.pricerUrl; // public /evidence route
 
 const args = process.argv.slice(2);
 const ticker = args[0];
@@ -50,6 +51,10 @@ if (evidenceFile) {
 } else {
   bytes = loadEvidence({ dir: process.env.EVIDENCE_DIR, eventTicker: ticker, evidenceHash: onchain.evidenceHash });
   if (bytes) source = "stored at vote time";
+  if (!bytes) {
+    bytes = await fetchEvidence({ base: keeper, eventTicker: ticker, evidenceHash: onchain.evidenceHash });
+    if (bytes) source = `stored at vote time, fetched from ${keeper}/evidence (hash-checked)`;
+  }
 }
 
 let live = null;
@@ -63,7 +68,7 @@ if (!offline) {
   }
 }
 // Outcome order pinned at first sale (stored next to the evidence), else canonical order.
-const outcomes = loadOutcomes({ dir: process.env.EVIDENCE_DIR, eventTicker: ticker });
+const outcomes = loadOutcomes({ dir: process.env.EVIDENCE_DIR, eventTicker: ticker }) ?? (await fetchOutcomes({ base: keeper, eventTicker: ticker }));
 if (!bytes && live) {
   bytes = live.bytes;
   source = "live re-fetch (attested bytes not found; hash will usually differ)";

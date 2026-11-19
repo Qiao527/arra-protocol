@@ -63,6 +63,32 @@ export function loadOutcomes({ dir = DEFAULT_EVIDENCE_DIR, eventTicker }) {
   return fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, "utf8")) : undefined;
 }
 
+/**
+ * Fetch attested bytes from a keeper's public /evidence route. Returns them only if they hash to
+ * the expected evidenceHash, so the keeper (or anyone in between) cannot substitute other bytes.
+ */
+export async function fetchEvidence({ base, eventTicker, evidenceHash, fetchImpl = globalThis.fetch }) {
+  if (!base) return null;
+  try {
+    const r = await fetchImpl(`${base.replace(/\/$/, "")}/evidence/${encodeURIComponent(eventTicker)}/${String(evidenceHash).toLowerCase()}.json`);
+    if (!r.ok) return null;
+    const bytes = new Uint8Array(await r.arrayBuffer());
+    return keccak256(bytes) === String(evidenceHash).toLowerCase() ? bytes : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchOutcomes({ base, eventTicker, fetchImpl = globalThis.fetch }) {
+  if (!base) return undefined;
+  try {
+    const r = await fetchImpl(`${base.replace(/\/$/, "")}/evidence/${encodeURIComponent(eventTicker)}/outcomes.json`);
+    return r.ok ? await r.json() : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export function loadEvidence({ dir = DEFAULT_EVIDENCE_DIR, eventTicker, evidenceHash }) {
   const file = path.join(dir, safe(eventTicker), `${String(evidenceHash).toLowerCase()}.json`);
   return fs.existsSync(file) ? new Uint8Array(fs.readFileSync(file)) : null;

@@ -145,6 +145,7 @@ offchain/test/                      adapter, depth, sandbox, verifier and API te
 docs/ECONOMICS.md                   pricing math, reconciliation, regulation, references
 docs/SECURITY.md                    roles, trust assumptions, threat model
 docs/REVIEW.md                      independent review: findings, evidence, fixes
+docs/DEMO.md                        live demo script, what's real vs testnet, pre-demo checklist
 ```
 
 ## Run it

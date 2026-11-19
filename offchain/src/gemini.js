@@ -145,11 +145,12 @@ export function getBook(event, contract) {
   // No depth in the response (Gemini's list/get endpoints usually omit it): build a
   // conservative ladder from top of book. Level i is priced i ticks worse and holds
   // TOP_OF_BOOK_DEPTH contracts, so large covers pay modeled slippage instead of being
-  // priced at the best ask. Gemini's prices object carries bestBid / bestAsk and
-  // buy.{yes,no} (cost to buy each side); both are empty objects when nobody is quoting.
+  // priced at the best ask. Only bestAsk / bestBid are executable. buy/sell.{yes,no} are
+  // display prices that fall back to the other side when one side is empty (live data: with
+  // no ask, buy.yes equals the bid), so they never stand in for a missing side.
   const p = contract.prices ?? {};
-  const ask = firstFinite(p.bestAsk, p.buy?.yes);
-  const bid = firstFinite(p.bestBid, Number.isFinite(num(p.buy?.no)) ? 1 - num(p.buy.no) : NaN);
+  const ask = num(p.bestAsk);
+  const bid = num(p.bestBid);
   const tick = firstFinite(contract.priceIncrement, 0.01);
   const depth = config.topOfBookDepth;
   const ladder = (start, dir) =>

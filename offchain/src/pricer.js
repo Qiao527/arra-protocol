@@ -21,17 +21,35 @@ export function eventStartOf(event) {
   return sec;
 }
 
+// How long after the scheduled start in-game cover may still be sold, by sport. Well inside a
+// regulation game: a finished game must never be quotable, and Gemini does not say when it ends.
+const IN_GAME_MAX_SEC = {
+  basketball: 2 * 3600,
+  american_football: 3 * 3600,
+  ice_hockey: 2.5 * 3600,
+  baseball: 3 * 3600,
+  soccer: 2 * 3600,
+};
+export const inGameMaxSec = (event) =>
+  config.inGameMaxSec ?? IN_GAME_MAX_SEC[event.sportsMarket?.sport] ?? 2 * 3600;
+
 /**
  * Sales window for a quote.
  *   Pre-game: sales close at kickoff; the quote lives QUOTE_TTL_SEC.
- *   In-game:  only while Gemini still lists the contract as open (it halts trading when the
- *             outcome is decided). Sales close and quote expiry are both IN_GAME_TTL_SEC out,
- *             because live prices move with every play.
+ *   In-game:  only within inGameMaxSec of the scheduled start. Gemini keeps finished games open
+ *             (marketState "open", isLive true) until it settles, sometimes for days, so the
+ *             market state alone would let anyone who knows the final score buy the winner.
+ *             Sales close and quote expiry are both IN_GAME_TTL_SEC out, because live prices
+ *             move with every play.
  */
 export function salesWindow(event, now = Math.floor(Date.now() / 1000)) {
   const start = eventStartOf(event);
   if (now < start) return { mode: "pre-game", salesClose: start, expiry: Math.min(start, now + config.quoteTtlSec) };
   if (!config.allowInGame) throw new Error("Sales closed: the event has started");
+  const max = inGameMaxSec(event);
+  if (now - start > max) {
+    throw new Error(`Sales closed: the game is likely over (${((now - start) / 3600).toFixed(1)} h after start, in-game limit ${max / 3600} h)`);
+  }
   const close = now + config.inGameTtlSec;
   return { mode: "in-game", salesClose: close, expiry: close };
 }

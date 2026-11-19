@@ -31,6 +31,10 @@ export const config = {
   // Hedger
   allowInGame: env("ALLOW_IN_GAME", "true") === "true", // live cover while Gemini keeps the market open
   inGameTtlSec: Number(env("IN_GAME_TTL_SEC", "20")),
+  // Latest point (seconds after the scheduled start) at which in-game cover is sold. Gemini keeps
+  // finished games open (and isLive: true) for days until it settles, so this cannot come from
+  // the market state. IN_GAME_MAX_SEC overrides every sport.
+  inGameMaxSec: env("IN_GAME_MAX_SEC") ? Number(env("IN_GAME_MAX_SEC")) : null,
   topOfBookDepth: Number(env("TOP_OF_BOOK_DEPTH", "1000")), // contracts per modeled level when Gemini publishes no depth
   slippageLevels: Number(env("SLIPPAGE_LEVELS", "10")), // modeled levels, one tick apart
   hedgeThresholdUsdc: Number(env("HEDGE_THRESHOLD_USDC", "2000")),

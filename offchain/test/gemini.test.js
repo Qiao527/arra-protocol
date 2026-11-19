@@ -46,13 +46,16 @@ test("real settled contract: status settled + resolutionSide", () => {
   assert.equal(contractSide(active), null);
 });
 
-test("prices.buy.{yes,no} fallback when bestBid/bestAsk are absent, depth capped", () => {
-  const contract = c("GEMI-X-A", { prices: { buy: { yes: "0.12", no: "0.89" }, sell: {} } });
+test("book is built from bestAsk / bestBid only (buy/sell are display prices), depth capped", () => {
+  const contract = c("GEMI-X-A", { prices: { buy: { yes: "0.12", no: "0.89" }, sell: {}, bestAsk: "0.12", bestBid: "0.11" } });
   const book = getBook({ contracts: [contract] }, contract);
   assert.equal(book.asks[0].price, 0.12);
   assert.ok(Math.abs(book.bids[0].price - 0.11) < 1e-9);
   assert.ok(Number.isFinite(book.asks[0].qty), "top of book must never be infinitely deep");
   assert.ok(book.asks[1].price > book.asks[0].price, "deeper levels cost more (modeled slippage)");
+  const displayOnly = c("GEMI-X-B", { prices: { buy: { yes: "0.12", no: "0.89" }, sell: {} } });
+  const empty = getBook({ contracts: [displayOnly] }, displayOnly);
+  assert.equal(empty.asks.length + empty.bids.length, 0, "no bestAsk / bestBid: nothing executable");
 });
 
 test("outcome order is canonical: independent of API response order", () => {

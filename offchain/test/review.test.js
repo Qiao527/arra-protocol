@@ -119,3 +119,36 @@ test("M-2: record only what Gemini filled; an unknown response shape records not
   assert.equal(filledContracts({ orderId: "1", quantity: "3000", filledQuantity: "1200" }), 1200);
   assert.equal(filledContracts({ orderId: "1", quantity: "3000", filledQuantity: "9000" }, 3000), 3000); // never above requested
 });
+
+// ---------------------------------------------------------------- live stale in-game markets (H-3)
+// Captured from the live API on 2026-11-19: both games were over, yet Gemini still listed every
+// contract open with isLive: true (ULL-UNCW 103 h after tip-off).
+import fs from "node:fs";
+const stale = JSON.parse(fs.readFileSync(new URL("./fixtures/gemini-events-stale-ingame.json", import.meta.url), "utf8"));
+const at = Math.floor(Date.parse(stale.capturedAt) / 1000);
+const [ullUncw, hawWsu] = stale.events;
+const { salesWindow } = await import("../src/pricer.js");
+const { getBook, executablePrice } = await import("../src/gemini.js");
+
+test("H-3: no in-game cover once the game is surely over, even though Gemini still says open/isLive", () => {
+  assert.equal(ullUncw.isLive, true);
+  assert.ok(ullUncw.contracts.every((k) => k.marketState === "open"));
+  assert.throws(() => salesWindow(ullUncw, at), /over/); // 103 h after tip-off
+  assert.throws(() => salesWindow(hawWsu, at), /over/); // 4.5 h after tip-off, college basketball
+  const start = Math.floor(Date.parse(hawWsu.startTime) / 1000);
+  assert.equal(salesWindow(hawWsu, start + 3600).mode, "in-game"); // second half is still sellable
+});
+
+test("H-3: buy/sell are display prices; without a bestAsk there is no seller, so no YES book", () => {
+  const wsu = hawWsu.contracts.find((k) => k.instrumentSymbol.endsWith("-WSU"));
+  assert.equal(wsu.prices.bestAsk, undefined);
+  assert.equal(wsu.prices.buy.yes, wsu.prices.bestBid); // buy.yes falls back to the BID
+  const book = getBook(hawWsu, wsu);
+  assert.equal(book.asks.length, 0);
+  assert.equal(executablePrice(book, "YES", 5000).filled, 0);
+
+  const haw = hawWsu.contracts.find((k) => k.instrumentSymbol.endsWith("-HAW"));
+  assert.equal(haw.prices.bestBid, undefined);
+  assert.equal(getBook(hawWsu, haw).bids.length, 0); // 1 - buy.no is the ASK here, not a bid
+  assert.equal(getBook(hawWsu, haw).asks[0].price, Number(haw.prices.bestAsk));
+});

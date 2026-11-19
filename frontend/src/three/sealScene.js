@@ -1,8 +1,8 @@
-// The Arra mark as a silver sculpture: two brushed-metal arches meeting at a glass keystone
-// with a liquid core. Scroll progress p in [0, 1] runs three beats:
-//   0.00-0.33  a promise, unsealed: arches apart and turned away, core clear
-//   0.33-0.66  locked in USDC: arches close square to camera, core turns to black ink
-//   0.66-1.00  paid at the whistle: the core turns bright white
+// The game-day coin toss, in silver. Every football game starts with one; it is money, and it is odds.
+// Scroll progress p in [0, 1] runs three beats:
+//   0.00-0.33  a promise, unsealed: the coin is in the air, flipping
+//   0.33-0.66  locked in USDC: it settles face-on to camera
+//   0.66-1.00  paid at the whistle: a band of light sweeps across the face
 import * as THREE from "three";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 
@@ -11,21 +11,69 @@ const smooth = (a, b, x) => {
   return t * t * (3 - 2 * t);
 };
 
-function archCurve(cx) {
-  const pts = [new THREE.Vector3(cx - 1, -2.2, 0)];
-  for (let i = 0; i <= 32; i++) {
-    const a = Math.PI - (i / 32) * Math.PI;
-    pts.push(new THREE.Vector3(cx + Math.cos(a), Math.sin(a), 0));
+/** Struck-coin face as a bump map: raised rim, beaded ring, concentric field lines, ARRA and a value line. */
+function faceTexture() {
+  const S = 1024;
+  const c = document.createElement("canvas");
+  c.width = c.height = S;
+  const g = c.getContext("2d");
+  g.fillStyle = "#808080";
+  g.fillRect(0, 0, S, S);
+  const cx = S / 2;
+  g.lineWidth = 46; g.strokeStyle = "#ffffff";
+  g.beginPath(); g.arc(cx, cx, S / 2 - 26, 0, Math.PI * 2); g.stroke();
+  g.fillStyle = "#e6e6e6";
+  for (let i = 0; i < 96; i++) {
+    const a = (i / 96) * Math.PI * 2;
+    g.beginPath(); g.arc(cx + Math.cos(a) * 430, cx + Math.sin(a) * 430, 6, 0, Math.PI * 2); g.fill();
   }
-  pts.push(new THREE.Vector3(cx + 1, -2.2, 0));
-  return new THREE.CatmullRomCurve3(pts, false, "centripetal");
+  g.lineWidth = 2; g.strokeStyle = "#868686";
+  for (let r = 60; r < 400; r += 18) { g.beginPath(); g.arc(cx, cx, r, 0, Math.PI * 2); g.stroke(); }
+  g.fillStyle = "#f2f2f2";
+  g.textAlign = "center"; g.textBaseline = "middle";
+  g.font = "400 230px 'Inter Tight', Helvetica, Arial, sans-serif";
+  g.fillText("ARRA", cx, cx - 20);
+  g.font = "500 54px 'JetBrains Mono', ui-monospace, monospace";
+  g.fillText("1 USDC   ARC", cx, cx + 150);
+  g.lineWidth = 6; g.strokeStyle = "#f2f2f2";
+  g.beginPath(); g.moveTo(cx - 170, cx + 95); g.lineTo(cx + 170, cx + 95); g.stroke();
+  // soften so the bump reads as struck metal, not noise
+  const soft = document.createElement("canvas");
+  soft.width = soft.height = S;
+  const sg = soft.getContext("2d");
+  sg.filter = "blur(2px)";
+  sg.drawImage(c, 0, 0);
+  const t = new THREE.CanvasTexture(soft);
+  t.anisotropy = 8;
+  t.center.set(0.5, 0.5);
+  t.rotation = Math.PI / 2; // cylinder caps map u/v rotated; turn the legend upright
+  return t;
+}
+
+/** Reeded edge as a bump map: fine vertical ridges wrapped around the rim. */
+function edgeTexture() {
+  const c = document.createElement("canvas");
+  c.width = 64; c.height = 8;
+  const g = c.getContext("2d");
+  const grad = g.createLinearGradient(0, 0, 64, 0);
+  grad.addColorStop(0, "#202020"); grad.addColorStop(0.5, "#f0f0f0"); grad.addColorStop(1, "#202020");
+  g.fillStyle = grad; g.fillRect(0, 0, 64, 8);
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = THREE.RepeatWrapping;
+  t.repeat.set(160, 1);
+  return t;
+}
+
+/** A coin: a smooth cylinder (the reeding is a bump map on the edge). Groups: 0 edge, 1 top, 2 bottom. */
+function coinGeometry(R = 1.6, H = 0.17) {
+  return new THREE.CylinderGeometry(R, R, H, 256, 1, false);
 }
 
 export function createSealScene(canvas, { reducedMotion = false } = {}) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: "high-performance" });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, window.innerWidth < 700 ? 1.5 : 2));
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.15;
+  renderer.toneMappingExposure = 1.1;
   renderer.setClearColor(0x000000, 0);
 
   const scene = new THREE.Scene();
@@ -35,42 +83,35 @@ export function createSealScene(canvas, { reducedMotion = false } = {}) {
   const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
   camera.position.set(0, 0, 10);
 
+  const bump = faceTexture();
+  const reed = edgeTexture();
+  const edge = new THREE.MeshPhysicalMaterial({ color: 0xdfe2e1, metalness: 1, roughness: 0.3, bumpMap: reed, bumpScale: 1.5, envMapIntensity: 1.1 });
+  const face = new THREE.MeshPhysicalMaterial({
+    color: 0xe4e6e5, metalness: 1, roughness: 0.3, clearcoat: 0.4, clearcoatRoughness: 0.25,
+    bumpMap: bump, bumpScale: 1.6, envMapIntensity: 1.15,
+  });
+  const coin = new THREE.Mesh(coinGeometry(), [edge, face, face]);
+  coin.rotation.x = Math.PI / 2; // a face toward the camera when the group is at rest
   const group = new THREE.Group();
+  group.add(coin);
   scene.add(group);
 
-  // brushed silver, soft like a studio sculpture photographed on grey
-  const silver = new THREE.MeshPhysicalMaterial({
-    color: 0xd5d8d7, metalness: 1, roughness: 0.28, clearcoat: 0.6, clearcoatRoughness: 0.2, envMapIntensity: 1.05,
-  });
-  const tube = (cx) => new THREE.Mesh(new THREE.TubeGeometry(archCurve(cx), 220, 0.26, 64, false), silver);
-  const left = tube(-0.5);
-  const right = tube(0.5);
-  group.add(left, right);
-
-  const glass = new THREE.MeshPhysicalMaterial({
-    color: 0xffffff, metalness: 0, roughness: 0.02, transmission: 1, thickness: 0.5, ior: 1.45, dispersion: 0.3,
-    clearcoat: 1, clearcoatRoughness: 0.02,
-  });
-  const coreMat = new THREE.MeshPhysicalMaterial({ color: 0xbfc3c2, metalness: 0.2, roughness: 0.08, clearcoat: 1, emissive: new THREE.Color(0x000000) });
-  const keystone = new THREE.Group();
-  keystone.add(new THREE.Mesh(new THREE.SphereGeometry(0.19, 64, 64), coreMat), new THREE.Mesh(new THREE.SphereGeometry(0.38, 64, 64), glass));
-  group.add(keystone);
-
-  const key = new THREE.DirectionalLight(0xffffff, 1.6);
-  key.position.set(-3, 5, 4);
+  const key = new THREE.DirectionalLight(0xffffff, 1.4);
+  key.position.set(-3, 4, 5);
   scene.add(key);
-  const fill = new THREE.DirectionalLight(0xdde4ff, 0.5);
-  fill.position.set(4, -2, 3);
-  scene.add(fill);
+  const sweep = new THREE.SpotLight(0xffffff, 0, 30, 0.12, 0.6);
+  sweep.position.set(-6, 0, 6);
+  sweep.target = group;
+  scene.add(sweep);
 
-  const clear = new THREE.Color(0xbfc3c2);
-  const ink = new THREE.Color(0x0e0f0f);
-  const white = new THREE.Color(0xffffff);
   let progress = 0;
   let pointer = { x: 0, y: 0 };
   let raf = 0;
   let running = true;
   let narrow = false;
+  let spin = 0;
+  let shown = 0;
+  let last = 0;
 
   function resize() {
     const w = canvas.clientWidth, h = canvas.clientHeight;
@@ -83,23 +124,24 @@ export function createSealScene(canvas, { reducedMotion = false } = {}) {
   }
 
   function frame(t) {
-    const p = progress;
-    const lock = smooth(0.22, 0.52, p);
-    const pay = smooth(0.62, 0.9, p);
-    const gap = (1 - lock) * 0.7;
-    left.position.x = -gap;
-    right.position.x = gap;
-    left.rotation.y = (1 - lock) * 0.5;
-    right.rotation.y = -(1 - lock) * 0.5;
-    keystone.position.set(0, 1.55 + (1 - lock) * 0.45, 0);
-    const c = clear.clone().lerp(ink, lock).lerp(white, pay);
-    coreMat.color.copy(c);
-    coreMat.emissive.copy(white).multiplyScalar(pay * 0.9);
-    const drift = reducedMotion ? 0 : Math.sin(t * 0.00035) * 0.1;
-    group.rotation.y += ((-0.55 + p * 0.55 + pointer.x * 0.18 + drift) - group.rotation.y) * 0.05;
-    group.rotation.x += ((pointer.y * 0.08 + 0.05) - group.rotation.x) * 0.05;
-    group.position.y = (narrow ? 0.8 : -0.15) + (reducedMotion ? 0 : Math.sin(t * 0.0007) * 0.06);
-    group.scale.setScalar(1 + pay * 0.06);
+    const dt = Math.min(64, t - (last || t));
+    last = t;
+    shown += (progress - shown) * (reducedMotion ? 1 : 0.08); // eased scrub: the coin trails the scroll, never jumps
+    const p = shown;
+    const lock = smooth(0.2, 0.5, p);
+    const pay = smooth(0.62, 0.92, p);
+    // in the air: flipping end over end, slowing as it locks, landing face-up
+    spin += dt * (reducedMotion ? 0 : (1 - lock) * 0.009);
+    const settle = Math.round(spin / (Math.PI * 2)) * Math.PI * 2;
+    group.rotation.x = spin * (1 - lock) + settle * lock + (1 - lock) * 0.3;
+    group.rotation.z = (1 - lock) * 0.25;
+    group.position.y = (narrow ? 1.3 : 0.85) + (1 - lock) * 0.45 + (reducedMotion ? 0 : Math.sin(t * 0.0007) * 0.05 * lock);
+    const yaw = -0.35 * lock + pointer.x * 0.2 * lock + (reducedMotion ? 0 : Math.sin(t * 0.0004) * 0.06);
+    group.rotation.y += (yaw - group.rotation.y) * 0.06;
+    // paid: a band of light sweeps across the face, then holds soft
+    sweep.intensity = pay > 0 && pay < 1 ? 160 * Math.sin(pay * Math.PI) : pay >= 1 ? 25 : 0;
+    sweep.position.x = -6 + pay * 12;
+    group.scale.setScalar(1 + pay * 0.05);
     renderer.render(scene, camera);
     if (running && !reducedMotion) raf = requestAnimationFrame(frame);
   }
@@ -119,12 +161,14 @@ export function createSealScene(canvas, { reducedMotion = false } = {}) {
       if (reducedMotion) requestAnimationFrame(frame);
     },
     pause() { running = false; cancelAnimationFrame(raf); },
-    resume() { if (!running && !reducedMotion) { running = true; raf = requestAnimationFrame(frame); } },
+    resume() { if (!running && !reducedMotion) { running = true; last = 0; raf = requestAnimationFrame(frame); } },
     dispose() {
       running = false;
       cancelAnimationFrame(raf);
       ro.disconnect();
       window.removeEventListener("pointermove", onPointer);
+      bump.dispose();
+      reed.dispose();
       renderer.dispose();
       pmrem.dispose();
     },

@@ -24,7 +24,7 @@ export default function App() {
   const [walletErr, setWalletErr] = useState(null);
 
   useEffect(() => {
-    const on = () => { setRoute(parseHash()); window.scrollTo(0, 0); };
+    const on = () => { setRoute(parseHash()); window.__lenis ? window.__lenis.scrollTo(0, { immediate: true }) : window.scrollTo(0, 0); };
     window.addEventListener("hashchange", on);
     return () => window.removeEventListener("hashchange", on);
   }, []);

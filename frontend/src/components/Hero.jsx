@@ -50,7 +50,7 @@ export default function Hero() {
           <h1 className="hero3d-title" key={beat}>{BEATS[beat].h}</h1>
           <p className="hero3d-p" key={`p${beat}`}>{BEATS[beat].p}</p>
           {beat === 2 && (
-            <button className="btn primary big hero3d-cta" onClick={() => document.getElementById("make")?.scrollIntoView({ behavior: "smooth" })}>
+            <button className="btn primary big hero3d-cta" onClick={() => { const el = document.getElementById("make"); window.__lenis ? window.__lenis.scrollTo(el, { duration: 1.4 }) : el?.scrollIntoView({ behavior: "smooth" }); }}>
               Make a promise
             </button>
           )}

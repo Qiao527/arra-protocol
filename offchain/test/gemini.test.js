@@ -108,11 +108,12 @@ test("underdog cover: book walk adds modeled slippage beyond top-of-book depth",
   const ari = game.contracts.find((k) => k.instrumentSymbol.endsWith("-ARI"));
   const ask = Number(ari.prices.bestAsk);
   const book = getBook(game, ari);
-  const small = executablePrice(book, "YES", 500);
-  const large = executablePrice(book, "YES", 5000);
+  const small = executablePrice(book, "YES", 50);
+  const large = executablePrice(book, "YES", 500);
   assert.ok(Math.abs(small.avgPrice - ask) < 1e-9);
-  assert.ok(large.avgPrice > ask, "a $5k cover must cost more per contract than a $500 one");
-  assert.equal(large.filled, 5000);
+  assert.ok(large.avgPrice > ask, "a $500 cover must cost more per contract than a $50 one");
+  assert.equal(large.filled, 500);
+  assert.ok(executablePrice(book, "YES", 5000).filled < 5000, "the modeled ladder no longer invents a $5k book");
 });
 
 test("listing flattens child period markets (2nd-half winner) with parentTicker", async () => {

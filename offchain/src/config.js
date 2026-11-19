@@ -44,7 +44,9 @@ export const config = {
   // finished games open (and isLive: true) for days until it settles, so this cannot come from
   // the market state. IN_GAME_MAX_SEC overrides every sport.
   inGameMaxSec: env("IN_GAME_MAX_SEC") ? Number(env("IN_GAME_MAX_SEC")) : null,
-  topOfBookDepth: Number(env("TOP_OF_BOOK_DEPTH", "1000")), // contracts per modeled level when Gemini publishes no depth
+  // Contracts per modeled level when no live depth is available. Live books (2026-11-19) hold tens
+  // to low hundreds of contracts per level, so the old 1,000 overstated liquidity ~10x.
+  topOfBookDepth: Number(env("TOP_OF_BOOK_DEPTH", "100")),
   slippageLevels: Number(env("SLIPPAGE_LEVELS", "10")), // modeled levels, one tick apart
   hedgeThresholdUsdc: Number(env("HEDGE_THRESHOLD_USDC", "2000")),
   hedgerPort: Number(env("HEDGER_PORT", "8788")),

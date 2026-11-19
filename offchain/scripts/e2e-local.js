@@ -84,7 +84,7 @@ await finalizeAndPay("DEMO-CHAMP");
 const { verifyEvidence, loadEvidence } = await import("../src/verify.js");
 const ce = await read("events", [champ]);
 const stored = loadEvidence({ dir: process.env.EVIDENCE_DIR, eventTicker: "DEMO-CHAMP", evidenceHash: ce[6] });
-const vr = stored && verifyEvidence({ bytes: stored, onchain: { state: "Settled", evidenceHash: ce[6], winningOutcome: Number(ce[1]) } });
+const vr = stored && verifyEvidence({ bytes: stored, eventTicker: "DEMO-CHAMP", onchain: { state: "Settled", evidenceHash: ce[6], winningOutcome: Number(ce[1]) } });
 if (!vr?.pass) fail(`settlement verification: ${JSON.stringify(vr?.checks)}`);
 console.log(`V1. Verifier: stored evidence hashes to the onchain evidenceHash and implies outcome ${vr.impliedOutcome} -> PASS`);
 const bostonGot = (await bal(bars[3].account.address)) - bostonBefore;

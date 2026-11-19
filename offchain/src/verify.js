@@ -18,14 +18,17 @@ export function parseEvent(bytes) {
   return parsed?.data && !Array.isArray(parsed.data) ? parsed.data : parsed;
 }
 
-export function verifyEvidence({ bytes, onchain }) {
+export function verifyEvidence({ bytes, onchain, eventTicker, outcomes }) {
   const checks = [];
   const hash = keccak256(bytes);
   checks.push({ name: "event settled onchain", ok: onchain.state === "Settled", detail: onchain.state });
   checks.push({ name: "evidence hash", ok: hash === onchain.evidenceHash, detail: `bytes ${hash} vs onchain ${onchain.evidenceHash}` });
   let implied = null;
   try {
-    implied = settledOutcome(parseEvent(bytes));
+    const ev = parseEvent(bytes);
+    // Bytes for a different event could imply the same index; the ticker must match too.
+    checks.push({ name: "evidence is for this event", ok: !!eventTicker && ev?.ticker === eventTicker, detail: `bytes say ${ev?.ticker}, expected ${eventTicker}` });
+    implied = settledOutcome(ev, outcomes);
   } catch (err) {
     checks.push({ name: "evidence parses", ok: false, detail: err.message });
   }
@@ -43,6 +46,21 @@ export function saveEvidence({ dir = DEFAULT_EVIDENCE_DIR, eventTicker, bytes })
   const file = path.join(d, `${keccak256(bytes)}.json`);
   fs.writeFileSync(file, bytes);
   return file;
+}
+
+/** Outcome order pinned at first sale, stored next to the evidence so anyone can recompute the winner. */
+export function saveOutcomes({ dir = DEFAULT_EVIDENCE_DIR, eventTicker, outcomes }) {
+  if (!outcomes?.length) return null;
+  const d = path.join(dir, safe(eventTicker));
+  fs.mkdirSync(d, { recursive: true });
+  const file = path.join(d, "outcomes.json");
+  fs.writeFileSync(file, JSON.stringify(outcomes, null, 1) + "\n");
+  return file;
+}
+
+export function loadOutcomes({ dir = DEFAULT_EVIDENCE_DIR, eventTicker }) {
+  const file = path.join(dir, safe(eventTicker), "outcomes.json");
+  return fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, "utf8")) : undefined;
 }
 
 export function loadEvidence({ dir = DEFAULT_EVIDENCE_DIR, eventTicker, evidenceHash }) {

@@ -36,7 +36,7 @@ test("verifier PASS: stored bytes hash to the onchain evidence and imply the onc
   const ev = settledGame("-ARI");
   const bytes = bytesOf(ev);
   const winner = [...ev.contracts].sort((a, b) => (a.instrumentSymbol < b.instrumentSymbol ? -1 : 1)).findIndex((c) => c.instrumentSymbol.endsWith("-ARI"));
-  const r = verifyEvidence({ bytes, onchain: { state: "Settled", evidenceHash: keccak256(bytes), winningOutcome: winner } });
+  const r = verifyEvidence({ bytes, eventTicker: ml.ticker, onchain: { state: "Settled", evidenceHash: keccak256(bytes), winningOutcome: winner } });
   assert.equal(r.pass, true, JSON.stringify(r.checks));
 });
 
@@ -44,10 +44,10 @@ test("verifier FAIL: tampered bytes, or bytes that imply a different winner", ()
   const ev = settledGame("-ARI");
   const bytes = bytesOf(ev);
   const tampered = bytesOf(settledGame("-SF"));
-  const wrongHash = verifyEvidence({ bytes: tampered, onchain: { state: "Settled", evidenceHash: keccak256(bytes), winningOutcome: 0 } });
+  const wrongHash = verifyEvidence({ bytes: tampered, eventTicker: ml.ticker, onchain: { state: "Settled", evidenceHash: keccak256(bytes), winningOutcome: 0 } });
   assert.equal(wrongHash.pass, false);
   assert.equal(wrongHash.checks.find((c) => c.name === "evidence hash").ok, false);
-  const r = verifyEvidence({ bytes: tampered, onchain: { state: "Settled", evidenceHash: keccak256(tampered), winningOutcome: 99 } });
+  const r = verifyEvidence({ bytes: tampered, eventTicker: ml.ticker, onchain: { state: "Settled", evidenceHash: keccak256(tampered), winningOutcome: 99 } });
   assert.equal(r.pass, false);
   assert.equal(r.checks.find((c) => c.name === "winning outcome").ok, false);
 });

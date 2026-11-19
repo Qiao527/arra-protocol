@@ -23,15 +23,16 @@ export function eventStartOf(event) {
 
 // How long after the scheduled start in-game cover may still be sold, by sport. Well inside a
 // regulation game: a finished game must never be quotable, and Gemini does not say when it ends.
+// Shortest regulation games: college basketball ~2 h, MLB ~2 h 40, soccer ~1 h 55.
 const IN_GAME_MAX_SEC = {
-  basketball: 2 * 3600,
-  american_football: 3 * 3600,
-  ice_hockey: 2.5 * 3600,
-  baseball: 3 * 3600,
-  soccer: 2 * 3600,
+  basketball: 1.5 * 3600,
+  american_football: 2.5 * 3600,
+  ice_hockey: 2 * 3600,
+  baseball: 2.5 * 3600,
+  soccer: 1.5 * 3600,
 };
 export const inGameMaxSec = (event) =>
-  config.inGameMaxSec ?? IN_GAME_MAX_SEC[event.sportsMarket?.sport] ?? 2 * 3600;
+  config.inGameMaxSec ?? IN_GAME_MAX_SEC[event.sportsMarket?.sport] ?? 1.5 * 3600;
 
 /**
  * Sales window for a quote.
@@ -94,7 +95,8 @@ export async function buildQuote(req) {
 
   // Vault books -> netting discount and convex utilization surcharge.
   const eventId = eventIdFor(event.ticker);
-  const outcome = outcomeIndex(event, instrumentSymbol, side);
+  const pinned = remember(eventId, { eventTicker: event.ticker, title: event.title }, event); // indexes sold never move
+  const outcome = outcomeIndex(event, instrumentSymbol, side, pinned);
   const books = await readEventBooks(eventId, outcome + 1);
   if (books.state !== "None" && books.state !== "Open") throw new Error(`Event is ${books.state}: sales closed`);
   const risk = riskAfterTrade({ ...books, outcome, payout: L });
@@ -127,8 +129,6 @@ export async function buildQuote(req) {
     buyer: buyerAddr,
     nonce: BigInt("0x" + crypto.randomBytes(16).toString("hex")),
   };
-
-  remember(quote.eventId, { eventTicker: event.ticker, title: event.title });
 
   const signature = await operatorAccount().signTypedData({
     domain: domain(),

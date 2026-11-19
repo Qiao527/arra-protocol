@@ -53,7 +53,7 @@ test("a sequence gap drops the book (never price off a book with lost updates)",
 
 test("already-applied frames are ignored", () => {
   const store = createDepthStore();
-  store.onFrame({ e: "depthUpdate", s: "gemi-x", U: 10, u: 12, b: [], a: [["0.45", "50"]] });
+  store.onFrame({ e: "depthUpdate", s: "gemi-x", U: 12, u: 12, b: [], a: [["0.45", "50"]] });
   assert.equal(store.onFrame({ e: "depthUpdate", s: "gemi-x", U: 11, u: 12, b: [], a: [["0.45", "0"]] }), "stale-frame");
   assert.equal(store.getDepthBook("gemi-x").asks[0].qty, 50);
 });
@@ -95,8 +95,8 @@ test("real depth is far thinner than the modeled ladder: a large cover is refuse
   const contract = { instrumentSymbol: sym, prices: { bestAsk: "0.13", bestBid: "0.07" } };
   const real = executablePrice(getBook({ contracts: [contract] }, contract, store.getDepthBook), "YES", 5000);
   const modeled = executablePrice(getBook({ contracts: [contract] }, contract, () => null), "YES", 5000);
-  assert.equal(modeled.filled, 5000); // the ladder invents 10 x 1,000 contracts
   assert.ok(real.filled < 1000, `real asks hold ${real.filled} contracts`);
+  assert.ok(real.filled < 5000 && modeled.filled < 5000, "neither book can fill a $5k cover, so it is refused");
 });
 
 test("stream: subscribes on watch, resolves on snapshot, resubscribes after a gap", async () => {

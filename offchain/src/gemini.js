@@ -342,26 +342,39 @@ export function orderedContracts(event) {
 }
 
 /**
+ * Outcome order with the indexes already sold pinned. `pinned` is the canonical order stored at
+ * the event's first sale (registry); contracts Gemini lists later get the next free indexes, in
+ * sorted order. Without a pin this is the canonical sorted order.
+ */
+export function outcomeSymbols(event, pinned) {
+  const sorted = orderedContracts(event).map((c) => c.instrumentSymbol);
+  if (!pinned?.length) return sorted;
+  return [...pinned, ...sorted.filter((s) => !pinned.includes(s))];
+}
+
+/**
  * Map (event, contract, side) to the vault's mutually exclusive outcome index.
  *   - Multi-contract event (moneyline / futures): outcome i = "contract i resolves YES". YES only.
  *   - Single-contract event: 0 = YES, 1 = NO.
  */
-export function outcomeIndex(event, instrumentSymbol, side) {
+export function outcomeIndex(event, instrumentSymbol, side, pinned) {
   const contracts = orderedContracts(event);
-  const i = contracts.findIndex((c) => c.instrumentSymbol === instrumentSymbol);
-  if (i < 0) throw new Error(`Contract ${instrumentSymbol} not in event ${event.ticker}`);
+  if (!contracts.some((c) => c.instrumentSymbol === instrumentSymbol)) throw new Error(`Contract ${instrumentSymbol} not in event ${event.ticker}`);
+  const i = outcomeSymbols(event, pinned).indexOf(instrumentSymbol);
   if (contracts.length === 1) return side === "NO" ? 1 : 0;
   if (!isMutuallyExclusive(event)) {
     throw new Error("This market's outcomes are not mutually exclusive (e.g. player props); Arra covers game winners and championships");
   }
   if (side !== "YES") throw new Error("On multi-outcome events, cover the team you are rooting for (YES)");
-  if (contracts.length > MAX_OUTCOMES) throw new Error(`Vault supports up to ${MAX_OUTCOMES} outcomes per event`);
+  if (contracts.length > MAX_OUTCOMES || i >= MAX_OUTCOMES) throw new Error(`Vault supports up to ${MAX_OUTCOMES} outcomes per event`);
   return i;
 }
 
 /** Inverse of outcomeIndex: which Gemini contract and side to buy to hedge outcome i. */
-export function hedgeTarget(event, outcome) {
+export function hedgeTarget(event, outcome, pinned) {
   const contracts = orderedContracts(event);
   if (contracts.length === 1) return { instrumentSymbol: contracts[0].instrumentSymbol, side: outcome === 1 ? "NO" : "YES" };
-  return { instrumentSymbol: contracts[outcome].instrumentSymbol, side: "YES" };
+  const symbol = outcomeSymbols(event, pinned)[outcome];
+  if (!contracts.some((c) => c.instrumentSymbol === symbol)) throw new Error(`outcome ${outcome} (${symbol}) is no longer listed on ${event.ticker}`);
+  return { instrumentSymbol: symbol, side: "YES" };
 }

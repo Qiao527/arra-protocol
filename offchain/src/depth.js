@@ -49,7 +49,9 @@ export function createDepthStore({ now = () => Date.now(), freshMs = FRESH_MS } 
     const k = key(m.s);
     const book = books.get(k);
     if (!book) {
-      // First frame for this symbol since (re)subscribing: the snapshot.
+      // A snapshot frame has U == u (every one of 23 live snapshots did; none of 1,078 deltas
+      // did). Deltas still in flight from before a gap must not become a partial book.
+      if (Number(m.U) !== Number(m.u)) return "awaiting-snapshot";
       const fresh = { bids: new Map(), asks: new Map(), lastU: Number(m.u) };
       applyLevels(fresh.bids, m.b);
       applyLevels(fresh.asks, m.a);

@@ -49,12 +49,14 @@ export function computePremium({
  * Post-trade risk state for a new cover, from the vault's current books (USDC floats).
  * Mirrors ArraVault: locked = max_i L_i, worst unhedged = max_i (L_i - H_i).
  */
-export function riskAfterTrade({ liab, hedged, totalAssets, capBps, outcome, payout }) {
+export function riskAfterTrade({ liab, hedged, premiums = 0, totalAssets, capBps, outcome, payout }) {
   const n = Math.max(liab.length, outcome + 1);
   const L = [...Array(n).keys()].map((i) => (liab[i] ?? 0) + (i === outcome ? payout : 0));
   const H = [...Array(n).keys()].map((i) => hedged[i] ?? 0);
-  const lockedBefore = Math.max(0, ...liab);
-  const lockedAfter = Math.max(0, ...L);
+  // The vault locks max(max_i L_i, premiums): refunding everyone on a void is one more outcome.
+  // (This cover's own premium is not known yet; it can only raise the void case slightly.)
+  const lockedBefore = Math.max(0, premiums, ...liab);
+  const lockedAfter = Math.max(0, premiums, ...L);
   const worst = Math.max(0, ...L.map((l, i) => l - H[i]));
   const cap = (totalAssets * capBps) / 10_000;
   return {

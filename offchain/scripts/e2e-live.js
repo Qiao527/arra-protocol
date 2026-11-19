@@ -63,7 +63,7 @@ async function settleSynthetic(eventTicker, winnerSymbol) {
   await finalizeAndPay(eventTicker);
   const e = await read("events", [eventIdFor(eventTicker)]);
   const stored = loadEvidence({ dir: process.env.EVIDENCE_DIR, eventTicker, evidenceHash: e[6] });
-  const r = stored && verifyEvidence({ bytes: stored, onchain: { state: "Settled", evidenceHash: e[6], winningOutcome: Number(e[1]) } });
+  const r = stored && verifyEvidence({ bytes: stored, eventTicker, onchain: { state: "Settled", evidenceHash: e[6], winningOutcome: Number(e[1]) } });
   if (!r?.pass) fail(`verifier: ${JSON.stringify(r?.checks)}`);
   return r;
 }

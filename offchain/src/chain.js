@@ -41,7 +41,7 @@ const vaultRef = () => ({ address: config.vault, abi: vaultAbi });
 export async function readEventBooks(eventId, minOutcomes = 0) {
   const v = vaultRef();
   const r = (functionName, args = []) => publicClient.readContract({ ...v, functionName, args });
-  const [ev, ta, cap] = await Promise.all([r("events", [eventId]), r("totalAssets"), r("eventCapBps")]);
+  const [ev, ta, cap, prem] = await Promise.all([r("events", [eventId]), r("totalAssets"), r("eventCapBps"), r("premiumsOf", [eventId])]);
   // events() -> [state, winningOutcome, eventStart, proposedAt, round, numOutcomes, evidenceHash, locked]
   const n = Math.max(Number(ev[5]), minOutcomes);
   const idx = [...Array(n).keys()];
@@ -56,6 +56,7 @@ export async function readEventBooks(eventId, minOutcomes = 0) {
     proposedAt: Number(ev[3]),
     liab: liab.map(f),
     hedged: hedged.map(f),
+    premiums: f(prem),
     totalAssets: f(ta),
     capBps: Number(cap),
   };

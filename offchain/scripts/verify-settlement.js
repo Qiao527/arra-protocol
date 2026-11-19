@@ -20,7 +20,7 @@ const { publicClient, vaultAbi, eventIdFor } = await import("../src/chain.js");
 const { config } = await import("../src/config.js");
 const { getEventRaw } = await import("../src/gemini.js");
 const { settledOutcome } = await import("../src/settler.js");
-const { verifyEvidence, loadEvidence } = await import("../src/verify.js");
+const { verifyEvidence, loadEvidence, loadOutcomes } = await import("../src/verify.js");
 
 const args = process.argv.slice(2);
 const ticker = args[0];
@@ -53,13 +53,17 @@ if (evidenceFile) {
 }
 
 let live = null;
+let liveError = null;
 if (!offline) {
   try {
     live = await getEventRaw(ticker);
   } catch (err) {
+    liveError = err.message;
     console.log(`live Gemini fetch failed: ${err.message}`);
   }
 }
+// Outcome order pinned at first sale (stored next to the evidence), else canonical order.
+const outcomes = loadOutcomes({ dir: process.env.EVIDENCE_DIR, eventTicker: ticker });
 if (!bytes && live) {
   bytes = live.bytes;
   source = "live re-fetch (attested bytes not found; hash will usually differ)";
@@ -70,11 +74,15 @@ if (!bytes) {
 }
 
 console.log(`evidence: ${source}, ${bytes.length} bytes`);
-const r = verifyEvidence({ bytes, onchain });
+const r = verifyEvidence({ bytes, onchain, eventTicker: ticker, outcomes });
 for (const c of r.checks) console.log(`  ${c.ok ? "PASS" : "FAIL"}  ${c.name}: ${c.detail}`);
 
+if (liveError) {
+  console.log("  FAIL  live Gemini check could not run (use --offline to skip it deliberately)");
+  r.pass = false;
+}
 if (live) {
-  const liveWinner = settledOutcome(live.event);
+  const liveWinner = settledOutcome(live.event, outcomes);
   const agrees = liveWinner !== null && liveWinner === onchain.winningOutcome;
   console.log(`  ${agrees ? "PASS" : "FAIL"}  live Gemini winner: ${liveWinner ?? "not settled"} (onchain ${onchain.winningOutcome})`);
   console.log(`  info  live bytes hash ${keccak256(live.bytes)} ${keccak256(live.bytes) === onchain.evidenceHash ? "matches" : "differs (expected: responses change over time)"}`);

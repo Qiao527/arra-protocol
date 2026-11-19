@@ -63,7 +63,7 @@ async function hedgeNow(eventId) {
     const excess = Math.floor(unhedged - config.hedgeThresholdUsdc);
     if (excess <= 0) continue;
 
-    const { instrumentSymbol, side } = hedgeTarget(ev, i);
+    const { instrumentSymbol, side } = hedgeTarget(ev, i, info.outcomes);
     await ensureDepth(instrumentSymbol);
     const fill = executablePrice(getBook(ev, findContract(ev, instrumentSymbol)), side, excess);
     const limit = Math.min(0.99, Number(fill.worstPrice.toFixed(2)));

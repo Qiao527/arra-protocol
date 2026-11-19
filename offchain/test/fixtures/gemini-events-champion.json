@@ -1,0 +1,1055 @@
+{
+  "_source": "GET https://api.gemini.com/v1/prediction-markets/events?status=active&category=sports&search=Champion&limit=10, captured 2026-11-19; NBA champion event only",
+  "data": [
+    {
+      "id": "93348",
+      "title": "2027 Pro Basketball Champion",
+      "slug": "2027-pro-basketball-champion",
+      "type": "categorical",
+      "category": "Sports",
+      "ticker": "NBAF-2627CHAMP",
+      "status": "active",
+      "createdAt": "2026-06-16T15:07:57.415Z",
+      "contracts": [
+        {
+          "id": "93348-281289",
+          "label": "San Antonio",
+          "prices": {
+            "buy": {
+              "yes": "0.24",
+              "no": "0.81"
+            },
+            "sell": {
+              "yes": "0.19",
+              "no": "0.76"
+            },
+            "bestBid": "0.19",
+            "bestAsk": "0.24",
+            "lastTradePrice": "0.24"
+          },
+          "status": "active",
+          "createdAt": "2026-06-16T15:07:57.415Z",
+          "termsAndConditionsUrl": "https://cdn.builder.io/o/assets%2F1b77ce3a269a43e985e77f3d65f715ba%2Fc2d5e4e082ad4474aed8dc47ce46c601?alt=media&token=87c8f8b7-0646-4105-bb60-6ee4307ce404&apiKey=1b77ce3a269a43e985e77f3d65f715ba",
+          "ticker": "SAS",
+          "instrumentSymbol": "GEMI-NBAF-2627CHAMP-SAS",
+          "marketState": "open",
+          "abbreviatedName": "SAS",
+          "color": "#8A8D8F",
+          "imageUrl": "https://assets.gemini.com/predictions/images/SAS_2eb39eb7-ca58-4ad8-b58d-36add7053fe6.png",
+          "expiryDate": "2027-06-20T00:00:00.000Z",
+          "effectiveDate": "2026-06-16T14:00:00.000Z",
+          "isCombo": false,
+          "quantityIncrement": "1",
+          "quantityMinimum": "1",
+          "priceIncrement": "0.01",
+          "quoteAssetPrecision": 2,
+          "priceMinimum": "0.01"
+        },
+        {
+          "id": "93348-281307",
+          "label": "Philadelphia",
+          "prices": {
+            "buy": {
+              "yes": "0.14",
+              "no": "0.92"
+            },
+            "sell": {
+              "yes": "0.08",
+              "no": "0.86"
+            },
+            "bestBid": "0.08",
+            "bestAsk": "0.14",
+            "lastTradePrice": "0.14"
+          },
+          "status": "active",
+          "createdAt": "2026-06-16T15:07:57.415Z",
+          "termsAndConditionsUrl": "https://cdn.builder.io/o/assets%2F1b77ce3a269a43e985e77f3d65f715ba%2Fc2d5e4e082ad4474aed8dc47ce46c601?alt=media&token=87c8f8b7-0646-4105-bb60-6ee4307ce404&apiKey=1b77ce3a269a43e985e77f3d65f715ba",
+          "ticker": "PHI",
+          "instrumentSymbol": "GEMI-NBAF-2627CHAMP-PHI",
+          "marketState": "open",
+          "abbreviatedName": "PHI",
+          "color": "#006BB6",
+          "imageUrl": "https://assets.gemini.com/predictions/images/PHI_7927fb8e-12cd-49d4-95ad-16b2b53f1794.png",
+          "expiryDate": "2027-06-20T00:00:00.000Z",
+          "effectiveDate": "2026-06-16T14:00:00.000Z",
+          "isCombo": false,
+          "quantityIncrement": "1",
+          "quantityMinimum": "1",
+          "priceIncrement": "0.01",
+          "quoteAssetPrecision": 2,
+          "priceMinimum": "0.01"
+        },
+        {
+          "id": "93348-281285",
+          "label": "Oklahoma City",
+          "prices": {
+            "buy": {
+              "yes": "0.13",
+              "no": "0.89"
+            },
+            "sell": {
+              "yes": "0.11",
+              "no": "0.87"
+            },
+            "bestBid": "0.11",
+            "bestAsk": "0.13",
+            "lastTradePrice": "0.12"
+          },
+          "status": "active",
+          "createdAt": "2026-06-16T15:07:57.415Z",
+          "termsAndConditionsUrl": "https://cdn.builder.io/o/assets%2F1b77ce3a269a43e985e77f3d65f715ba%2Fc2d5e4e082ad4474aed8dc47ce46c601?alt=media&token=87c8f8b7-0646-4105-bb60-6ee4307ce404&apiKey=1b77ce3a269a43e985e77f3d65f715ba",
+          "ticker": "OKC",
+          "instrumentSymbol": "GEMI-NBAF-2627CHAMP-OKC",
+          "marketState": "open",
+          "abbreviatedName": "OKC",
+          "color": "#007AC1",
+          "imageUrl": "https://assets.gemini.com/predictions/images/OKC_13490fb9-a636-4e44-a1e1-919542958d96.png",
+          "expiryDate": "2027-06-20T00:00:00.000Z",
+          "effectiveDate": "2026-06-16T14:00:00.000Z",
+          "isCombo": false,
+          "quantityIncrement": "1",
+          "quantityMinimum": "1",
+          "priceIncrement": "0.01",
+          "quoteAssetPrecision": 2,
+          "priceMinimum": "0.01"
+        },
+        {
+          "id": "93348-281302",
+          "label": "Boston",
+          "prices": {
+            "buy": {
+              "yes": "0.13",
+              "no": "0.93"
+            },
+            "sell": {
+              "yes": "0.07",
+              "no": "0.87"
+            },
+            "bestBid": "0.07",
+            "bestAsk": "0.13",
+            "lastTradePrice": "0.11"
+          },
+          "status": "active",
+          "createdAt": "2026-06-16T15:07:57.415Z",
+          "termsAndConditionsUrl": "https://cdn.builder.io/o/assets%2F1b77ce3a269a43e985e77f3d65f715ba%2Fc2d5e4e082ad4474aed8dc47ce46c601?alt=media&token=87c8f8b7-0646-4105-bb60-6ee4307ce404&apiKey=1b77ce3a269a43e985e77f3d65f715ba",
+          "ticker": "BOS",
+          "instrumentSymbol": "GEMI-NBAF-2627CHAMP-BOS",
+          "marketState": "open",
+          "abbreviatedName": "BOS",
+          "color": "#007A33",
+          "imageUrl": "https://assets.gemini.com/predictions/images/BOS_0e8fb0cd-025c-406b-99dc-fb96158352bf.png",
+          "expiryDate": "2027-06-20T00:00:00.000Z",
+          "effectiveDate": "2026-06-16T14:00:00.000Z",
+          "isCombo": false,
+          "quantityIncrement": "1",
+          "quantityMinimum": "1",
+          "priceIncrement": "0.01",
+          "quoteAssetPrecision": 2,
+          "priceMinimum": "0.01"
+        },
+        {
+          "id": "93348-281303",
+          "label": "New York",
+          "prices": {
+            "buy": {
+              "yes": "0.1",
+              "no": "0.96"
+            },
+            "sell": {
+              "yes": "0.04",
+              "no": "0.9"
+            },
+            "bestBid": "0.04",
+            "bestAsk": "0.1",
+            "lastTradePrice": "0.1"
+          },
+          "status": "active",
+          "createdAt": "2026-06-16T15:07:57.415Z",
+          "termsAndConditionsUrl": "https://cdn.builder.io/o/assets%2F1b77ce3a269a43e985e77f3d65f715ba%2Fc2d5e4e082ad4474aed8dc47ce46c601?alt=media&token=87c8f8b7-0646-4105-bb60-6ee4307ce404&apiKey=1b77ce3a269a43e985e77f3d65f715ba",
+          "ticker": "NYK",
+          "instrumentSymbol": "GEMI-NBAF-2627CHAMP-NYK",
+          "marketState": "open",
+          "abbreviatedName": "NYK",
+          "color": "#006BB6",
+          "imageUrl": "https://assets.gemini.com/predictions/images/NYK_69e0d4c9-46ed-463c-a955-526f08c73b7a.png",
+          "expiryDate": "2027-06-20T00:00:00.000Z",
+          "effectiveDate": "2026-06-16T14:00:00.000Z",
+          "isCombo": false,
+          "quantityIncrement": "1",
+          "quantityMinimum": "1",
+          "priceIncrement": "0.01",
+          "quoteAssetPrecision": 2,
+          "priceMinimum": "0.01"
+        },
+        {
+          "id": "93348-281287",
+          "label": "Houston",
+          "prices": {
+            "buy": {
+              "yes": "0.09",
+              "no": "0.95"
+            },
+            "sell": {
+              "yes": "0.05",
+              "no": "0.91"
+            },
+            "bestBid": "0.05",
+            "bestAsk": "0.09",
+            "lastTradePrice": "0.08"
+          },
+          "status": "active",
+          "createdAt": "2026-06-16T15:07:57.415Z",
+          "termsAndConditionsUrl": "https://cdn.builder.io/o/assets%2F1b77ce3a269a43e985e77f3d65f715ba%2Fc2d5e4e082ad4474aed8dc47ce46c601?alt=media&token=87c8f8b7-0646-4105-bb60-6ee4307ce404&apiKey=1b77ce3a269a43e985e77f3d65f715ba",
+          "ticker": "HOU",
+          "instrumentSymbol": "GEMI-NBAF-2627CHAMP-HOU",
+          "marketState": "open",
+          "abbreviatedName": "HOU",
+          "color": "#CE1141",
+          "imageUrl": "https://assets.gemini.com/predictions/images/HOU_55ffc374-c780-4aa2-9055-57351ab86be9.png",
+          "expiryDate": "2027-06-20T00:00:00.000Z",
+          "effectiveDate": "2026-06-16T14:00:00.000Z",
+          "isCombo": false,
+          "quantityIncrement": "1",
+          "quantityMinimum": "1",
+          "priceIncrement": "0.01",
+          "quoteAssetPrecision": 2,
+          "priceMinimum": "0.01"
+        },
+        {
+          "id": "93348-281290",
+          "label": "LA Lakers",
+          "prices": {
+            "buy": {
+              "yes": "0.09",
+              "no": "0.97"
+            },
+            "sell": {
+              "yes": "0.03",
+              "no": "0.91"
+            },
+            "bestBid": "0.03",
+            "bestAsk": "0.09",
+            "lastTradePrice": "0.06"
+          },
+          "status": "active",
+          "createdAt": "2026-06-16T15:07:57.415Z",
+          "termsAndConditionsUrl": "https://cdn.builder.io/o/assets%2F1b77ce3a269a43e985e77f3d65f715ba%2Fc2d5e4e082ad4474aed8dc47ce46c601?alt=media&token=87c8f8b7-0646-4105-bb60-6ee4307ce404&apiKey=1b77ce3a269a43e985e77f3d65f715ba",
+          "ticker": "LAL",
+          "instrumentSymbol": "GEMI-NBAF-2627CHAMP-LAL",
+          "marketState": "open",
+          "abbreviatedName": "LAL",
+          "color": "#552583",
+          "imageUrl": "https://assets.gemini.com/predictions/images/LAL_b9eaf22e-3646-42fa-aec4-8f64cfda7f76.png",
+          "expiryDate": "2027-06-20T00:00:00.000Z",
+          "effectiveDate": "2026-06-16T14:00:00.000Z",
+          "isCombo": false,
+          "quantityIncrement": "1",
+          "quantityMinimum": "1",
+          "priceIncrement": "0.01",
+          "quoteAssetPrecision": 2,
+          "priceMinimum": "0.01"
+        },
+        {
+          "id": "93348-281288",
+          "label": "Minnesota",
+          "prices": {
+            "buy": {
+              "yes": "0.08",
+              "no": "0.95"
+            },
+            "sell": {
+              "yes": "0.05",
+              "no": "0.92"
+            },
+            "bestBid": "0.05",
+            "bestAsk": "0.08",
+            "lastTradePrice": "0.08"
+          },
+          "status": "active",
+          "createdAt": "2026-06-16T15:07:57.415Z",
+          "termsAndConditionsUrl": "https://cdn.builder.io/o/assets%2F1b77ce3a269a43e985e77f3d65f715ba%2Fc2d5e4e082ad4474aed8dc47ce46c601?alt=media&token=87c8f8b7-0646-4105-bb60-6ee4307ce404&apiKey=1b77ce3a269a43e985e77f3d65f715ba",
+          "ticker": "MIN",
+          "instrumentSymbol": "GEMI-NBAF-2627CHAMP-MIN",
+          "marketState": "open",
+          "abbreviatedName": "MIN",
+          "color": "#0C2340",
+          "imageUrl": "https://assets.gemini.com/predictions/images/MIN_785101e4-755a-4850-a4ff-4bed91f39e81.png",
+          "expiryDate": "2027-06-20T00:00:00.000Z",
+          "effectiveDate": "2026-06-16T14:00:00.000Z",
+          "isCombo": false,
+          "quantityIncrement": "1",
+          "quantityMinimum": "1",
+          "priceIncrement": "0.01",
+          "quoteAssetPrecision": 2,
+          "priceMinimum": "0.01"
+        },
+        {
+          "id": "93348-281293",
+          "label": "Memphis",
+          "prices": {
+            "buy": {
+              "yes": "0.07",
+              "no": "0.97"
+            },
+            "sell": {
+              "yes": "0.03",
+              "no": "0.93"
+            },
+            "bestAsk": "0.07",
+            "lastTradePrice": "0.03"
+          },
+          "status": "active",
+          "createdAt": "2026-06-16T15:07:57.415Z",
+          "termsAndConditionsUrl": "https://cdn.builder.io/o/assets%2F1b77ce3a269a43e985e77f3d65f715ba%2Fc2d5e4e082ad4474aed8dc47ce46c601?alt=media&token=87c8f8b7-0646-4105-bb60-6ee4307ce404&apiKey=1b77ce3a269a43e985e77f3d65f715ba",
+          "ticker": "MEM",
+          "instrumentSymbol": "GEMI-NBAF-2627CHAMP-MEM",
+          "marketState": "open",
+          "abbreviatedName": "MEM",
+          "color": "#5D76A9",
+          "imageUrl": "https://assets.gemini.com/predictions/images/MEM_2be4a8e9-7b9f-4aec-bb0a-a73dc884a58a.png",
+          "expiryDate": "2027-06-20T00:00:00.000Z",
+          "effectiveDate": "2026-06-16T14:00:00.000Z",
+          "isCombo": false,
+          "quantityIncrement": "1",
+          "quantityMinimum": "1",
+          "priceIncrement": "0.01",
+          "quoteAssetPrecision": 2,
+          "priceMinimum": "0.01"
+        },
+        {
+          "id": "93348-281294",
+          "label": "LA Clippers",
+          "prices": {
+            "buy": {
+              "yes": "0.07",
+              "no": "0.97"
+            },
+            "sell": {
+              "yes": "0.03",
+              "no": "0.93"
+            },
+            "bestAsk": "0.07",
+            "lastTradePrice": "0.03"
+          },
+          "status": "active",
+          "createdAt": "2026-06-16T15:07:57.415Z",
+          "termsAndConditionsUrl": "https://cdn.builder.io/o/assets%2F1b77ce3a269a43e985e77f3d65f715ba%2Fc2d5e4e082ad4474aed8dc47ce46c601?alt=media&token=87c8f8b7-0646-4105-bb60-6ee4307ce404&apiKey=1b77ce3a269a43e985e77f3d65f715ba",
+          "ticker": "LAC",
+          "instrumentSymbol": "GEMI-NBAF-2627CHAMP-LAC",
+          "marketState": "open",
+          "abbreviatedName": "LAC",
+          "color": "#C8102E",
+          "imageUrl": "https://assets.gemini.com/predictions/images/LAC_991bc9a1-b0cd-462d-826c-b27692efb746.png",
+          "expiryDate": "2027-06-20T00:00:00.000Z",
+          "effectiveDate": "2026-06-16T14:00:00.000Z",
+          "isCombo": false,
+          "quantityIncrement": "1",
+          "quantityMinimum": "1",
+          "priceIncrement": "0.01",
+          "quoteAssetPrecision": 2,
+          "priceMinimum": "0.01"
+        },
+        {
+          "id": "93348-281296",
+          "label": "Utah",
+          "prices": {
+            "buy": {
+              "yes": "0.07",
+              "no": "0.98"
+            },
+            "sell": {
+              "yes": "0.02",
+              "no": "0.93"
+            },
+            "bestAsk": "0.07",
+            "lastTradePrice": "0.02"
+          },
+          "status": "active",
+          "createdAt": "2026-06-16T15:07:57.415Z",
+          "termsAndConditionsUrl": "https://cdn.builder.io/o/assets%2F1b77ce3a269a43e985e77f3d65f715ba%2Fc2d5e4e082ad4474aed8dc47ce46c601?alt=media&token=87c8f8b7-0646-4105-bb60-6ee4307ce404&apiKey=1b77ce3a269a43e985e77f3d65f715ba",
+          "ticker": "UTA",
+          "instrumentSymbol": "GEMI-NBAF-2627CHAMP-UTA",
+          "marketState": "open",
+          "abbreviatedName": "UTA",
+          "color": "#002B5C",
+          "imageUrl": "https://assets.gemini.com/predictions/images/UTA_0b5fddbb-acc2-44f5-b60f-3d23e28406e5.png",
+          "expiryDate": "2027-06-20T00:00:00.000Z",
+          "effectiveDate": "2026-06-16T14:00:00.000Z",
+          "isCombo": false,
+          "quantityIncrement": "1",
+          "quantityMinimum": "1",
+          "priceIncrement": "0.01",
+          "quoteAssetPrecision": 2,
+          "priceMinimum": "0.01"
+        },
+        {
+          "id": "93348-281298",
+          "label": "Sacramento",
+          "prices": {
+            "buy": {
+              "yes": "0.07",
+              "no": "0.99"
+            },
+            "sell": {
+              "yes": "0.01",
+              "no": "0.93"
+            },
+            "bestAsk": "0.07",
+            "lastTradePrice": "0.01"
+          },
+          "status": "active",
+          "createdAt": "2026-06-16T15:07:57.415Z",
+          "termsAndConditionsUrl": "https://cdn.builder.io/o/assets%2F1b77ce3a269a43e985e77f3d65f715ba%2Fc2d5e4e082ad4474aed8dc47ce46c601?alt=media&token=87c8f8b7-0646-4105-bb60-6ee4307ce404&apiKey=1b77ce3a269a43e985e77f3d65f715ba",
+          "ticker": "SAC",
+          "instrumentSymbol": "GEMI-NBAF-2627CHAMP-SAC",
+          "marketState": "open",
+          "abbreviatedName": "SAC",
+          "color": "#5A2D81",
+          "imageUrl": "https://assets.gemini.com/predictions/images/SAC_015354ea-8108-4e38-a08f-b5cb6fd3df6b.png",
+          "expiryDate": "2027-06-20T00:00:00.000Z",
+          "effectiveDate": "2026-06-16T14:00:00.000Z",
+          "isCombo": false,
+          "quantityIncrement": "1",
+          "quantityMinimum": "1",
+          "priceIncrement": "0.01",
+          "quoteAssetPrecision": 2,
+          "priceMinimum": "0.01"
+        },
+        {
+          "id": "93348-281299",
+          "label": "Phoenix",
+          "prices": {
+            "buy": {
+              "yes": "0.07",
+              "no": "0.98"
+            },
+            "sell": {
+              "yes": "0.02",
+              "no": "0.93"
+            },
+            "bestAsk": "0.07",
+            "lastTradePrice": "0.02"
+          },
+          "status": "active",
+          "createdAt": "2026-06-16T15:07:57.415Z",
+          "termsAndConditionsUrl": "https://cdn.builder.io/o/assets%2F1b77ce3a269a43e985e77f3d65f715ba%2Fc2d5e4e082ad4474aed8dc47ce46c601?alt=media&token=87c8f8b7-0646-4105-bb60-6ee4307ce404&apiKey=1b77ce3a269a43e985e77f3d65f715ba",
+          "ticker": "PHX",
+          "instrumentSymbol": "GEMI-NBAF-2627CHAMP-PHX",
+          "marketState": "open",
+          "abbreviatedName": "PHX",
+          "color": "#1D1160",
+          "imageUrl": "https://assets.gemini.com/predictions/images/PHX_2129010b-5e82-4842-b376-a67b0fa0d6ec.png",
+          "expiryDate": "2027-06-20T00:00:00.000Z",
+          "effectiveDate": "2026-06-16T14:00:00.000Z",
+          "isCombo": false,
+          "quantityIncrement": "1",
+          "quantityMinimum": "1",
+          "priceIncrement": "0.01",
+          "quoteAssetPrecision": 2,
+          "priceMinimum": "0.01"
+        },
+        {
+          "id": "93348-281300",
+          "label": "Milwaukee",
+          "prices": {
+            "buy": {
+              "yes": "0.07",
+              "no": "0.98"
+            },
+            "sell": {
+              "yes": "0.02",
+              "no": "0.93"
+            },
+            "bestAsk": "0.07",
+            "lastTradePrice": "0.02"
+          },
+          "status": "active",
+          "createdAt": "2026-06-16T15:07:57.415Z",
+          "termsAndConditionsUrl": "https://cdn.builder.io/o/assets%2F1b77ce3a269a43e985e77f3d65f715ba%2Fc2d5e4e082ad4474aed8dc47ce46c601?alt=media&token=87c8f8b7-0646-4105-bb60-6ee4307ce404&apiKey=1b77ce3a269a43e985e77f3d65f715ba",
+          "ticker": "MIL",
+          "instrumentSymbol": "GEMI-NBAF-2627CHAMP-MIL",
+          "marketState": "open",
+          "abbreviatedName": "MIL",
+          "color": "#00471B",
+          "imageUrl": "https://assets.gemini.com/predictions/images/MIL_5d06f35a-b234-4ee0-b615-ae4eb0452046.png",
+          "expiryDate": "2027-06-20T00:00:00.000Z",
+          "effectiveDate": "2026-06-16T14:00:00.000Z",
+          "isCombo": false,
+          "quantityIncrement": "1",
+          "quantityMinimum": "1",
+          "priceIncrement": "0.01",
+          "quoteAssetPrecision": 2,
+          "priceMinimum": "0.01"
+        },
+        {
+          "id": "93348-281305",
+          "label": "Charlotte",
+          "prices": {
+            "buy": {
+              "yes": "0.07",
+              "no": "0.98"
+            },
+            "sell": {
+              "yes": "0.02",
+              "no": "0.93"
+            },
+            "bestAsk": "0.07",
+            "lastTradePrice": "0.02"
+          },
+          "status": "active",
+          "createdAt": "2026-06-16T15:07:57.415Z",
+          "termsAndConditionsUrl": "https://cdn.builder.io/o/assets%2F1b77ce3a269a43e985e77f3d65f715ba%2Fc2d5e4e082ad4474aed8dc47ce46c601?alt=media&token=87c8f8b7-0646-4105-bb60-6ee4307ce404&apiKey=1b77ce3a269a43e985e77f3d65f715ba",
+          "ticker": "CHA",
+          "instrumentSymbol": "GEMI-NBAF-2627CHAMP-CHA",
+          "marketState": "open",
+          "abbreviatedName": "CHA",
+          "color": "#1D1160",
+          "imageUrl": "https://assets.gemini.com/predictions/images/CHA_80ee586f-28bb-40e8-a81c-5739ddd1bdfd.png",
+          "expiryDate": "2027-06-20T00:00:00.000Z",
+          "effectiveDate": "2026-06-16T14:00:00.000Z",
+          "isCombo": false,
+          "quantityIncrement": "1",
+          "quantityMinimum": "1",
+          "priceIncrement": "0.01",
+          "quoteAssetPrecision": 2,
+          "priceMinimum": "0.01"
+        },
+        {
+          "id": "93348-281308",
+          "label": "Atlanta",
+          "prices": {
+            "buy": {
+              "yes": "0.07",
+              "no": "0.98"
+            },
+            "sell": {
+              "yes": "0.02",
+              "no": "0.93"
+            },
+            "bestAsk": "0.07",
+            "lastTradePrice": "0.02"
+          },
+          "status": "active",
+          "createdAt": "2026-06-16T15:07:57.415Z",
+          "termsAndConditionsUrl": "https://cdn.builder.io/o/assets%2F1b77ce3a269a43e985e77f3d65f715ba%2Fc2d5e4e082ad4474aed8dc47ce46c601?alt=media&token=87c8f8b7-0646-4105-bb60-6ee4307ce404&apiKey=1b77ce3a269a43e985e77f3d65f715ba",
+          "ticker": "ATL",
+          "instrumentSymbol": "GEMI-NBAF-2627CHAMP-ATL",
+          "marketState": "open",
+          "abbreviatedName": "ATL",
+          "color": "#E03A3E",
+          "imageUrl": "https://assets.gemini.com/predictions/images/ATL_9a65de7f-ea47-4d1e-910c-889ef04bcc9d.png",
+          "expiryDate": "2027-06-20T00:00:00.000Z",
+          "effectiveDate": "2026-06-16T14:00:00.000Z",
+          "isCombo": false,
+          "quantityIncrement": "1",
+          "quantityMinimum": "1",
+          "priceIncrement": "0.01",
+          "quoteAssetPrecision": 2,
+          "priceMinimum": "0.01"
+        },
+        {
+          "id": "93348-281309",
+          "label": "Brooklyn",
+          "prices": {
+            "buy": {
+              "yes": "0.07",
+              "no": "0.98"
+            },
+            "sell": {
+              "yes": "0.02",
+              "no": "0.93"
+            },
+            "bestAsk": "0.07",
+            "lastTradePrice": "0.02"
+          },
+          "status": "active",
+          "createdAt": "2026-06-16T15:07:57.415Z",
+          "termsAndConditionsUrl": "https://cdn.builder.io/o/assets%2F1b77ce3a269a43e985e77f3d65f715ba%2Fc2d5e4e082ad4474aed8dc47ce46c601?alt=media&token=87c8f8b7-0646-4105-bb60-6ee4307ce404&apiKey=1b77ce3a269a43e985e77f3d65f715ba",
+          "ticker": "BKN",
+          "instrumentSymbol": "GEMI-NBAF-2627CHAMP-BKN",
+          "marketState": "open",
+          "abbreviatedName": "BKN",
+          "color": "#6F7C85",
+          "imageUrl": "https://assets.gemini.com/predictions/images/BKN_cf29f190-53e7-4194-8b3b-4c29110610b0.png",
+          "expiryDate": "2027-06-20T00:00:00.000Z",
+          "effectiveDate": "2026-06-16T14:00:00.000Z",
+          "isCombo": false,
+          "quantityIncrement": "1",
+          "quantityMinimum": "1",
+          "priceIncrement": "0.01",
+          "quoteAssetPrecision": 2,
+          "priceMinimum": "0.01"
+        },
+        {
+          "id": "93348-281311",
+          "label": "Washington",
+          "prices": {
+            "buy": {
+              "yes": "0.07",
+              "no": "0.98"
+            },
+            "sell": {
+              "yes": "0.02",
+              "no": "0.93"
+            },
+            "bestAsk": "0.07",
+            "lastTradePrice": "0.02"
+          },
+          "status": "active",
+          "createdAt": "2026-06-16T15:07:57.415Z",
+          "termsAndConditionsUrl": "https://cdn.builder.io/o/assets%2F1b77ce3a269a43e985e77f3d65f715ba%2Fc2d5e4e082ad4474aed8dc47ce46c601?alt=media&token=87c8f8b7-0646-4105-bb60-6ee4307ce404&apiKey=1b77ce3a269a43e985e77f3d65f715ba",
+          "ticker": "WAS",
+          "instrumentSymbol": "GEMI-NBAF-2627CHAMP-WAS",
+          "marketState": "open",
+          "abbreviatedName": "WAS",
+          "color": "#002B5C",
+          "imageUrl": "https://assets.gemini.com/predictions/images/WAS_0aec0a1f-1737-48cd-8410-84b88db78ab0.png",
+          "expiryDate": "2027-06-20T00:00:00.000Z",
+          "effectiveDate": "2026-06-16T14:00:00.000Z",
+          "isCombo": false,
+          "quantityIncrement": "1",
+          "quantityMinimum": "1",
+          "priceIncrement": "0.01",
+          "quoteAssetPrecision": 2,
+          "priceMinimum": "0.01"
+        },
+        {
+          "id": "93348-281312",
+          "label": "Orlando",
+          "prices": {
+            "buy": {
+              "yes": "0.07",
+              "no": "0.97"
+            },
+            "sell": {
+              "yes": "0.03",
+              "no": "0.93"
+            },
+            "bestAsk": "0.07",
+            "lastTradePrice": "0.03"
+          },
+          "status": "active",
+          "createdAt": "2026-06-16T15:07:57.415Z",
+          "termsAndConditionsUrl": "https://cdn.builder.io/o/assets%2F1b77ce3a269a43e985e77f3d65f715ba%2Fc2d5e4e082ad4474aed8dc47ce46c601?alt=media&token=87c8f8b7-0646-4105-bb60-6ee4307ce404&apiKey=1b77ce3a269a43e985e77f3d65f715ba",
+          "ticker": "ORL",
+          "instrumentSymbol": "GEMI-NBAF-2627CHAMP-ORL",
+          "marketState": "open",
+          "abbreviatedName": "ORL",
+          "color": "#0077C0",
+          "imageUrl": "https://assets.gemini.com/predictions/images/ORL_42ec2c09-92b1-4453-b84c-35db0bf31d9c.png",
+          "expiryDate": "2027-06-20T00:00:00.000Z",
+          "effectiveDate": "2026-06-16T14:00:00.000Z",
+          "isCombo": false,
+          "quantityIncrement": "1",
+          "quantityMinimum": "1",
+          "priceIncrement": "0.01",
+          "quoteAssetPrecision": 2,
+          "priceMinimum": "0.01"
+        },
+        {
+          "id": "93348-281314",
+          "label": "Chicago",
+          "prices": {
+            "buy": {
+              "yes": "0.07",
+              "no": "0.99"
+            },
+            "sell": {
+              "yes": "0.01",
+              "no": "0.93"
+            },
+            "bestAsk": "0.07",
+            "lastTradePrice": "0.01"
+          },
+          "status": "active",
+          "createdAt": "2026-06-16T15:07:57.415Z",
+          "termsAndConditionsUrl": "https://cdn.builder.io/o/assets%2F1b77ce3a269a43e985e77f3d65f715ba%2Fc2d5e4e082ad4474aed8dc47ce46c601?alt=media&token=87c8f8b7-0646-4105-bb60-6ee4307ce404&apiKey=1b77ce3a269a43e985e77f3d65f715ba",
+          "ticker": "CHI",
+          "instrumentSymbol": "GEMI-NBAF-2627CHAMP-CHI",
+          "marketState": "open",
+          "abbreviatedName": "CHI",
+          "color": "#CE1141",
+          "imageUrl": "https://assets.gemini.com/predictions/images/CHI_40120e92-39c2-4920-9ba3-5723e95ce866.png",
+          "expiryDate": "2027-06-20T00:00:00.000Z",
+          "effectiveDate": "2026-06-16T14:00:00.000Z",
+          "isCombo": false,
+          "quantityIncrement": "1",
+          "quantityMinimum": "1",
+          "priceIncrement": "0.01",
+          "quoteAssetPrecision": 2,
+          "priceMinimum": "0.01"
+        },
+        {
+          "id": "93348-281297",
+          "label": "Portland",
+          "prices": {
+            "buy": {
+              "yes": "0.06",
+              "no": "0.98"
+            },
+            "sell": {
+              "yes": "0.02",
+              "no": "0.94"
+            },
+            "bestBid": "0.02",
+            "bestAsk": "0.06",
+            "lastTradePrice": "0.05"
+          },
+          "status": "active",
+          "createdAt": "2026-06-16T15:07:57.415Z",
+          "termsAndConditionsUrl": "https://cdn.builder.io/o/assets%2F1b77ce3a269a43e985e77f3d65f715ba%2Fc2d5e4e082ad4474aed8dc47ce46c601?alt=media&token=87c8f8b7-0646-4105-bb60-6ee4307ce404&apiKey=1b77ce3a269a43e985e77f3d65f715ba",
+          "ticker": "POR",
+          "instrumentSymbol": "GEMI-NBAF-2627CHAMP-POR",
+          "marketState": "open",
+          "abbreviatedName": "POR",
+          "color": "#E03A3E",
+          "imageUrl": "https://assets.gemini.com/predictions/images/POR_72e78369-fef1-49c0-913e-4fab2445cb5d.png",
+          "expiryDate": "2027-06-20T00:00:00.000Z",
+          "effectiveDate": "2026-06-16T14:00:00.000Z",
+          "isCombo": false,
+          "quantityIncrement": "1",
+          "quantityMinimum": "1",
+          "priceIncrement": "0.01",
+          "quoteAssetPrecision": 2,
+          "priceMinimum": "0.01"
+        },
+        {
+          "id": "93348-281306",
+          "label": "Detroit",
+          "prices": {
+            "buy": {
+              "yes": "0.06",
+              "no": "0.99"
+            },
+            "sell": {
+              "yes": "0.01",
+              "no": "0.94"
+            },
+            "bestBid": "0.01",
+            "bestAsk": "0.06",
+            "lastTradePrice": "0.06"
+          },
+          "status": "active",
+          "createdAt": "2026-06-16T15:07:57.415Z",
+          "termsAndConditionsUrl": "https://cdn.builder.io/o/assets%2F1b77ce3a269a43e985e77f3d65f715ba%2Fc2d5e4e082ad4474aed8dc47ce46c601?alt=media&token=87c8f8b7-0646-4105-bb60-6ee4307ce404&apiKey=1b77ce3a269a43e985e77f3d65f715ba",
+          "ticker": "DET",
+          "instrumentSymbol": "GEMI-NBAF-2627CHAMP-DET",
+          "marketState": "open",
+          "abbreviatedName": "DET",
+          "color": "#C8102E",
+          "imageUrl": "https://assets.gemini.com/predictions/images/DET_e9740772-1cda-47ef-9008-874e76666b0c.png",
+          "expiryDate": "2027-06-20T00:00:00.000Z",
+          "effectiveDate": "2026-06-16T14:00:00.000Z",
+          "isCombo": false,
+          "quantityIncrement": "1",
+          "quantityMinimum": "1",
+          "priceIncrement": "0.01",
+          "quoteAssetPrecision": 2,
+          "priceMinimum": "0.01"
+        },
+        {
+          "id": "93348-281310",
+          "label": "Toronto",
+          "prices": {
+            "buy": {
+              "yes": "0.06",
+              "no": "0.99"
+            },
+            "sell": {
+              "yes": "0.01",
+              "no": "0.94"
+            },
+            "bestBid": "0.01",
+            "bestAsk": "0.06"
+          },
+          "status": "active",
+          "createdAt": "2026-06-16T15:07:57.415Z",
+          "termsAndConditionsUrl": "https://cdn.builder.io/o/assets%2F1b77ce3a269a43e985e77f3d65f715ba%2Fc2d5e4e082ad4474aed8dc47ce46c601?alt=media&token=87c8f8b7-0646-4105-bb60-6ee4307ce404&apiKey=1b77ce3a269a43e985e77f3d65f715ba",
+          "ticker": "TOR",
+          "instrumentSymbol": "GEMI-NBAF-2627CHAMP-TOR",
+          "marketState": "open",
+          "abbreviatedName": "TOR",
+          "color": "#CE1141",
+          "imageUrl": "https://assets.gemini.com/predictions/images/TOR_9a2cf4cb-eab8-428b-aa2e-e598ecad0a52.png",
+          "expiryDate": "2027-06-20T00:00:00.000Z",
+          "effectiveDate": "2026-06-16T14:00:00.000Z",
+          "isCombo": false,
+          "quantityIncrement": "1",
+          "quantityMinimum": "1",
+          "priceIncrement": "0.01",
+          "quoteAssetPrecision": 2,
+          "priceMinimum": "0.01"
+        },
+        {
+          "id": "93348-281313",
+          "label": "Miami",
+          "prices": {
+            "buy": {
+              "yes": "0.06",
+              "no": "0.99"
+            },
+            "sell": {
+              "yes": "0.01",
+              "no": "0.94"
+            },
+            "bestBid": "0.01",
+            "bestAsk": "0.06",
+            "lastTradePrice": "0.07"
+          },
+          "status": "active",
+          "createdAt": "2026-06-16T15:07:57.415Z",
+          "termsAndConditionsUrl": "https://cdn.builder.io/o/assets%2F1b77ce3a269a43e985e77f3d65f715ba%2Fc2d5e4e082ad4474aed8dc47ce46c601?alt=media&token=87c8f8b7-0646-4105-bb60-6ee4307ce404&apiKey=1b77ce3a269a43e985e77f3d65f715ba",
+          "ticker": "MIA",
+          "instrumentSymbol": "GEMI-NBAF-2627CHAMP-MIA",
+          "marketState": "open",
+          "abbreviatedName": "MIA",
+          "color": "#98002E",
+          "imageUrl": "https://assets.gemini.com/predictions/images/MIA_f9592bde-552d-4464-924a-539dc91e6411.png",
+          "expiryDate": "2027-06-20T00:00:00.000Z",
+          "effectiveDate": "2026-06-16T14:00:00.000Z",
+          "isCombo": false,
+          "quantityIncrement": "1",
+          "quantityMinimum": "1",
+          "priceIncrement": "0.01",
+          "quoteAssetPrecision": 2,
+          "priceMinimum": "0.01"
+        },
+        {
+          "id": "93348-281286",
+          "label": "Denver",
+          "prices": {
+            "buy": {
+              "yes": "0.05",
+              "no": "0.99"
+            },
+            "sell": {
+              "yes": "0.01",
+              "no": "0.95"
+            },
+            "bestBid": "0.01",
+            "bestAsk": "0.05",
+            "lastTradePrice": "0.03"
+          },
+          "status": "active",
+          "createdAt": "2026-06-16T15:07:57.415Z",
+          "termsAndConditionsUrl": "https://cdn.builder.io/o/assets%2F1b77ce3a269a43e985e77f3d65f715ba%2Fc2d5e4e082ad4474aed8dc47ce46c601?alt=media&token=87c8f8b7-0646-4105-bb60-6ee4307ce404&apiKey=1b77ce3a269a43e985e77f3d65f715ba",
+          "ticker": "DEN",
+          "instrumentSymbol": "GEMI-NBAF-2627CHAMP-DEN",
+          "marketState": "open",
+          "abbreviatedName": "DEN",
+          "color": "#0E2240",
+          "imageUrl": "https://assets.gemini.com/predictions/images/DEN_b0e0069c-ea3c-4dac-a63f-0d706bb78ecc.png",
+          "expiryDate": "2027-06-20T00:00:00.000Z",
+          "effectiveDate": "2026-06-16T14:00:00.000Z",
+          "isCombo": false,
+          "quantityIncrement": "1",
+          "quantityMinimum": "1",
+          "priceIncrement": "0.01",
+          "quoteAssetPrecision": 2,
+          "priceMinimum": "0.01"
+        },
+        {
+          "id": "93348-281291",
+          "label": "Golden State",
+          "prices": {
+            "buy": {
+              "yes": "0.05",
+              "no": "0.98"
+            },
+            "sell": {
+              "yes": "0.02",
+              "no": "0.95"
+            },
+            "bestBid": "0.02",
+            "bestAsk": "0.05",
+            "lastTradePrice": "0.02"
+          },
+          "status": "active",
+          "createdAt": "2026-06-16T15:07:57.415Z",
+          "termsAndConditionsUrl": "https://cdn.builder.io/o/assets%2F1b77ce3a269a43e985e77f3d65f715ba%2Fc2d5e4e082ad4474aed8dc47ce46c601?alt=media&token=87c8f8b7-0646-4105-bb60-6ee4307ce404&apiKey=1b77ce3a269a43e985e77f3d65f715ba",
+          "ticker": "GSW",
+          "instrumentSymbol": "GEMI-NBAF-2627CHAMP-GSW",
+          "marketState": "open",
+          "abbreviatedName": "GSW",
+          "color": "#1D428A",
+          "imageUrl": "https://assets.gemini.com/predictions/images/GSW_b0a939fd-54b4-4507-a66c-e36c60356a1c.png",
+          "expiryDate": "2027-06-20T00:00:00.000Z",
+          "effectiveDate": "2026-06-16T14:00:00.000Z",
+          "isCombo": false,
+          "quantityIncrement": "1",
+          "quantityMinimum": "1",
+          "priceIncrement": "0.01",
+          "quoteAssetPrecision": 2,
+          "priceMinimum": "0.01"
+        },
+        {
+          "id": "93348-281301",
+          "label": "Cleveland",
+          "prices": {
+            "buy": {
+              "yes": "0.05",
+              "no": "0.95"
+            },
+            "sell": {
+              "yes": "0.05",
+              "no": "0.95"
+            },
+            "bestAsk": "0.05",
+            "lastTradePrice": "0.05"
+          },
+          "status": "active",
+          "createdAt": "2026-06-16T15:07:57.415Z",
+          "termsAndConditionsUrl": "https://cdn.builder.io/o/assets%2F1b77ce3a269a43e985e77f3d65f715ba%2Fc2d5e4e082ad4474aed8dc47ce46c601?alt=media&token=87c8f8b7-0646-4105-bb60-6ee4307ce404&apiKey=1b77ce3a269a43e985e77f3d65f715ba",
+          "ticker": "CLE",
+          "instrumentSymbol": "GEMI-NBAF-2627CHAMP-CLE",
+          "marketState": "open",
+          "abbreviatedName": "CLE",
+          "color": "#860038",
+          "imageUrl": "https://assets.gemini.com/predictions/images/CLE_a1e4317a-cc1e-4d9c-ab1a-2be5108f499e.png",
+          "expiryDate": "2027-06-20T00:00:00.000Z",
+          "effectiveDate": "2026-06-16T14:00:00.000Z",
+          "isCombo": false,
+          "quantityIncrement": "1",
+          "quantityMinimum": "1",
+          "priceIncrement": "0.01",
+          "quoteAssetPrecision": 2,
+          "priceMinimum": "0.01"
+        },
+        {
+          "id": "93348-281292",
+          "label": "Dallas",
+          "prices": {
+            "buy": {
+              "yes": "0.04",
+              "no": "0.96"
+            },
+            "sell": {
+              "yes": "0.04",
+              "no": "0.96"
+            },
+            "bestAsk": "0.04",
+            "lastTradePrice": "0.04"
+          },
+          "status": "active",
+          "createdAt": "2026-06-16T15:07:57.415Z",
+          "termsAndConditionsUrl": "https://cdn.builder.io/o/assets%2F1b77ce3a269a43e985e77f3d65f715ba%2Fc2d5e4e082ad4474aed8dc47ce46c601?alt=media&token=87c8f8b7-0646-4105-bb60-6ee4307ce404&apiKey=1b77ce3a269a43e985e77f3d65f715ba",
+          "ticker": "DAL",
+          "instrumentSymbol": "GEMI-NBAF-2627CHAMP-DAL",
+          "marketState": "open",
+          "abbreviatedName": "DAL",
+          "color": "#00538C",
+          "imageUrl": "https://assets.gemini.com/predictions/images/DAL_ee2889e6-eec2-4253-b5e8-af38e7f572ec.png",
+          "expiryDate": "2027-06-20T00:00:00.000Z",
+          "effectiveDate": "2026-06-16T14:00:00.000Z",
+          "isCombo": false,
+          "quantityIncrement": "1",
+          "quantityMinimum": "1",
+          "priceIncrement": "0.01",
+          "quoteAssetPrecision": 2,
+          "priceMinimum": "0.01"
+        },
+        {
+          "id": "93348-281304",
+          "label": "Indiana",
+          "prices": {
+            "buy": {
+              "yes": "0.04",
+              "no": "0.96"
+            },
+            "sell": {
+              "yes": "0.04",
+              "no": "0.96"
+            },
+            "bestAsk": "0.04",
+            "lastTradePrice": "0.04"
+          },
+          "status": "active",
+          "createdAt": "2026-06-16T15:07:57.415Z",
+          "termsAndConditionsUrl": "https://cdn.builder.io/o/assets%2F1b77ce3a269a43e985e77f3d65f715ba%2Fc2d5e4e082ad4474aed8dc47ce46c601?alt=media&token=87c8f8b7-0646-4105-bb60-6ee4307ce404&apiKey=1b77ce3a269a43e985e77f3d65f715ba",
+          "ticker": "IND",
+          "instrumentSymbol": "GEMI-NBAF-2627CHAMP-IND",
+          "marketState": "open",
+          "abbreviatedName": "IND",
+          "color": "#002D62",
+          "imageUrl": "https://assets.gemini.com/predictions/images/IND_cad31268-7756-4681-b52c-1099a01b112e.png",
+          "expiryDate": "2027-06-20T00:00:00.000Z",
+          "effectiveDate": "2026-06-16T14:00:00.000Z",
+          "isCombo": false,
+          "quantityIncrement": "1",
+          "quantityMinimum": "1",
+          "priceIncrement": "0.01",
+          "quoteAssetPrecision": 2,
+          "priceMinimum": "0.01"
+        },
+        {
+          "id": "93348-281295",
+          "label": "New Orleans",
+          "prices": {
+            "buy": {
+              "yes": "0.02",
+              "no": "0.98"
+            },
+            "sell": {
+              "yes": "0.02",
+              "no": "0.98"
+            },
+            "bestAsk": "0.02",
+            "lastTradePrice": "0.02"
+          },
+          "status": "active",
+          "createdAt": "2026-06-16T15:07:57.415Z",
+          "termsAndConditionsUrl": "https://cdn.builder.io/o/assets%2F1b77ce3a269a43e985e77f3d65f715ba%2Fc2d5e4e082ad4474aed8dc47ce46c601?alt=media&token=87c8f8b7-0646-4105-bb60-6ee4307ce404&apiKey=1b77ce3a269a43e985e77f3d65f715ba",
+          "ticker": "NOP",
+          "instrumentSymbol": "GEMI-NBAF-2627CHAMP-NOP",
+          "marketState": "open",
+          "abbreviatedName": "NOP",
+          "color": "#0C2340",
+          "imageUrl": "https://assets.gemini.com/predictions/images/NOP_c41d7638-06d6-4fda-93ba-769ba6d29a27.png",
+          "expiryDate": "2027-06-20T00:00:00.000Z",
+          "effectiveDate": "2026-06-16T14:00:00.000Z",
+          "isCombo": false,
+          "quantityIncrement": "1",
+          "quantityMinimum": "1",
+          "priceIncrement": "0.01",
+          "quoteAssetPrecision": 2,
+          "priceMinimum": "0.01"
+        }
+      ],
+      "effectiveDate": "2026-06-16T15:07:57.415Z",
+      "isLive": false,
+      "participants": [],
+      "imageUrl": "https://images.ctfassets.net/jg6lo9a2ukvr/3VHYzI1CjVhTB8mBTferqT/2f18ddafe1e2300d9b356a47eb1e889a/proFootballCompetition.png",
+      "volume": "202414",
+      "volume24h": "86",
+      "tags": [
+        "Pro Basketball"
+      ],
+      "expiryDate": "2027-06-20T00:00:00.000Z",
+      "termsLink": "https://cdn.builder.io/o/assets%2F1b77ce3a269a43e985e77f3d65f715ba%2Fc2d5e4e082ad4474aed8dc47ce46c601?alt=media&token=87c8f8b7-0646-4105-bb60-6ee4307ce404&apiKey=1b77ce3a269a43e985e77f3d65f715ba",
+      "subcategory": {
+        "id": 14,
+        "slug": "sports_basketball_pro-basketball",
+        "name": "Pro Basketball",
+        "path": [
+          "Sports",
+          "Basketball",
+          "Pro Basketball"
+        ]
+      },
+      "socialImageUrl": "https://images.ctfassets.net/jg6lo9a2ukvr/3VHYzI1CjVhTB8mBTferqT/2f18ddafe1e2300d9b356a47eb1e889a/proFootballCompetition.png",
+      "eventTags": [
+        {
+          "id": 1,
+          "name": "Futures",
+          "slug": "futures"
+        }
+      ],
+      "volumeDelta24hPct": "-99.52"
+    }
+  ],
+  "pagination": {
+    "limit": 10,
+    "offset": 0,
+    "total": 29
+  }
+}

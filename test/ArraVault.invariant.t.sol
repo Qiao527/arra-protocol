@@ -185,6 +185,18 @@ contract ArraVaultInvariantTest is Test {
     }
 
     /// Locked collateral is exactly the sum over unsettled events of max_i L_i.
+    function invariant_WorstUnhedgedMatchesRescan() public view {
+        for (uint256 i; i < 3; i++) {
+            bytes32 id = handler.eventIds(i);
+            uint256 m;
+            for (uint8 o; o < 4; o++) {
+                uint256 u = vault.liability(id, o) - vault.hedged(id, o);
+                if (u > m) m = u;
+            }
+            assertEq(vault.worstUnhedged(id), m);
+        }
+    }
+
     function invariant_LockedIsWorstCaseOutcome() public view {
         uint256 sum;
         for (uint256 i; i < 3; i++) {

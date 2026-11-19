@@ -53,7 +53,7 @@ Prediction-market prices for long shots tend to run *above* their true win rates
 | Control | Implementation | Tested by |
 | --- | --- | --- |
 | Signed quotes | EIP-712 `Quote(eventId, outcome, payout, premium, expiry, eventStart, buyer, nonce)`; 60-second expiry; bound to buyer; nonce consumed | `test_RevertWhen_QuoteExpired`, `_PremiumTampered`, `_QuoteReused`, `_SomeoneElseUsesQuote`, `_SignedByStranger` |
-| Outcome netting | up to 16 mutually exclusive outcomes; `locked = max_i L_i` | `test_OppositeSidesNetCollateral`, `test_ChampionshipEightCitiesLockOnePayout`, `testFuzz_NettingAndSolvency`, `invariant_LockedIsWorstCaseOutcome` |
+| Outcome netting | up to 128 mutually exclusive outcomes; `locked = max_i L_i`, maintained in O(1) per sale | `test_OppositeSidesNetCollateral`, `test_ChampionshipEightCitiesLockOnePayout`, `test_LargeChampionshipLastTeamWins`, `test_BuyGasIndependentOfOutcomeCount`, `test_WorstUnhedgedTracksHedges`, `testFuzz_NettingAndSolvency`, `invariant_LockedIsWorstCaseOutcome`, `invariant_WorstUnhedgedMatchesRescan` |
 | Per-event cap | worst-case unhedged payout `max_i (L_i − H_i)` ≤ `eventCapBps` × assets; netting covers that reduce risk are allowed past the cap | `test_RevertWhen_OverEventCap`, `test_HedgeFreesCapRoom`, `test_OppositeSideAllowedPastCap`, `invariant_EventCapNeverBreachedAtSale` |
 | Full collateral | `totalLocked + pendingClaims ≤ USDC balance` | `test_RevertWhen_Insolvent`, `invariant_FullyCollateralized` |
 | Sales close | per-quote `eventStart`: kickoff for pre-game cover, later for in-game cover | `test_RevertWhen_GameAlreadyStarted`, `test_InGameQuoteAllowedWithLaterSalesClose` |

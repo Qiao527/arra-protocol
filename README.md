@@ -11,7 +11,7 @@ Track: **DeFi & Onchain Applications** · Chain award: **Best use of Arc** · Bo
 | | |
 | --- | --- |
 | Network | Arc Testnet (chain ID 5042002) |
-| `ArraVault` | [`0x9A60F13454E641c8d7a745675DDDa022C322235B`](https://explorer.testnet.arc.io/address/0x9A60F13454E641c8d7a745675DDDa022C322235B) (source verified) |
+| `ArraVault` | [`0x3CC34beE579B6caD4Ab3c13582138c263812831C`](https://explorer.testnet.arc.io/address/0x3CC34beE579B6caD4Ab3c13582138c263812831C) (source verified) |
 | LP share token | `Arra LP` (`arLP`), ERC-4626 |
 | Settlement | 2-of-3 settlers, 60 s dispute window, unanimous vote settles instantly |
 | Live smoke test | deposit → signed quote → buyCover → recordHedge → 3/3 votes → claim. Tx hashes in [`deployments/arc-testnet.json`](deployments/arc-testnet.json) |
@@ -65,7 +65,7 @@ The pricer **refuses covers on likely outcomes** (`MAX_PROBABILITY`, default 50%
 
 ### Outcome netting: one payout locked, many promises backed
 
-Every event has up to 16 **mutually exclusive** outcomes (a game: YES/NO; a championship: one per team). Only one can pay, so the vault locks `max_i L_i`, not `Σ L_i`.
+Every event has up to 128 **mutually exclusive** outcomes (a game: one per team; a championship: one per team, e.g. 30 for the NBA title, 94 for college basketball). Only one can pay, so the vault locks `max_i L_i`, not `Σ L_i`. Both `max_i L_i` and the worst unhedged payout are tracked incrementally, so `buyCover` costs the same gas whether an event has 2 outcomes or 128.
 
 | Scenario (local E2E run) | Insured | Locked | A 1:1 wrapper would lock |
 | --- | --- | --- | --- |
@@ -96,7 +96,7 @@ As one event fills up, each extra dollar of cover costs more (`k·u²`). The vau
 
 ### Which Gemini markets Arra covers
 
-Only markets whose outcomes are **mutually exclusive**, because netting depends on it: game winners (`sports_market_type=moneyline`) and championship futures (`futures`), plus any single-contract YES/NO market. Player props are refused ("2+ assists" and "4+ assists" can both resolve YES). Outcome `i` is the `i`-th contract sorted by `instrumentSymbol`, so the pricer, hedger, settler and the public verify page all derive the same mapping from the same Gemini event. Contracts must be `marketState: open` (not `post_only`) so the hedge can actually execute. Game markets nest period markets (quarters, halves, each with a tie contract); the pricer lists them too, so live "halftime comeback" cover prices off Gemini's real 2nd-half winner market.
+Only markets whose outcomes are **mutually exclusive**, because netting depends on it: game and period winners (`sports_market_type=moneyline`), championships (Gemini tags these `eventTags: futures` with a single-winner title such as "Pro Basketball Champion"), and any single-contract YES/NO market. Player props are refused ("2+ assists" and "4+ assists" can both resolve YES). Outcome `i` is the `i`-th contract sorted by `instrumentSymbol`, so the pricer, hedger, settler and the public verify page all derive the same mapping from the same Gemini event. Contracts must be `marketState: open` (not `post_only`) so the hedge can actually execute. Game markets nest period markets (quarters, halves, each with a tie contract); the pricer lists them too, so live "halftime comeback" cover prices off Gemini's real 2nd-half winner market.
 
 **Pricing without published depth.** Gemini's event endpoints return top of book (`bestBid`, `bestAsk`, `buy.{yes,no}`) but usually no depth. The pricer then models a ladder: each level is one tick worse and holds `TOP_OF_BOOK_DEPTH` contracts (default 1,000), so a $5k cover pays slippage instead of the best ask. **In-game quotes** are allowed only while Gemini keeps the contract open, and live for `IN_GAME_TTL_SEC` (default 20 s).
 
@@ -115,8 +115,8 @@ Full math, the favorite–longshot discussion, regulatory context and references
 ```
 src/ArraVault.sol                   vault, quotes, netting, caps, settlement (Solidity 0.8.26, OpenZeppelin v5.1)
 src/mocks/MockUSDC.sol              local testing only
-test/ArraVault.t.sol                30 unit + fuzz tests
-test/ArraVault.invariant.t.sol      6 invariants over random action sequences
+test/ArraVault.t.sol                33 unit + fuzz tests
+test/ArraVault.invariant.t.sol      7 invariants over random action sequences
 script/Deploy.s.sol                 Arc / local deploy
 script/e2e-anvil.sh                 one-command local end-to-end run
 offchain/src/pricer.js              HTTP quote server (Gemini depth → EIP-712 signed quote)
@@ -135,8 +135,8 @@ docs/ECONOMICS.md                   pricing math, reconciliation, regulation, re
 
 ```bash
 git clone --recurse-submodules https://github.com/Qiao527/arra-protocol && cd arra-protocol
-forge test                                         # 37 contract tests
-(cd offchain && npm ci && npm test)                # 13 Gemini adapter tests (real API fixtures)
+forge test                                         # 41 contract tests
+(cd offchain && npm ci && npm test)                # 16 Gemini adapter tests (real API fixtures)
 ./script/e2e-anvil.sh                              # full local flow, no keys needed
 ```
 
@@ -172,9 +172,9 @@ The hedger decodes each log, checks unhedged exposure on that outcome, places a 
 
 ```
 forge test
-  ArraVault.t.sol             30 passed  (quotes, netting, championship, caps, solvency, quorum, fast path, veto, in-game sales, LP locks, fuzz)
-  ArraVault.invariant.t.sol    6 passed  (256 runs × 32 calls: full collateral, cap at sale, locked == max_i L_i, LP locks, hedge bounds)
-npm test (offchain)            13 passed (real Gemini responses: shape, empty books, settled resolutionSide; props refused; canonical outcome order)
+  ArraVault.t.sol             33 passed  (quotes, netting, 128-team championships, O(1) gas, caps, solvency, quorum, fast path, veto, in-game sales, LP locks, fuzz)
+  ArraVault.invariant.t.sol    7 passed  (256 runs × 32 calls: full collateral, cap at sale, locked == max_i L_i, incremental worst case == rescan, LP locks, hedge bounds)
+npm test (offchain)            16 passed (real Gemini responses: props, NFL moneyline, NBA champion: shape, empty books, settled resolutionSide; props refused; canonical outcome order)
 ./script/e2e-anvil.sh          E2E OK    (single game via 2-of-3 + dispute window; 4-city championship via 3-of-3 instant)
 ```
 

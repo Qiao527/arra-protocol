@@ -64,12 +64,19 @@ const MOCKS = { [MOCK_EVENT.ticker]: MOCK_EVENT, [MOCK_CHAMP.ticker]: MOCK_CHAMP
  * exclusive: game winners (moneyline) and championship futures. Player props are excluded:
  * "2+ assists" and "4+ assists" can both resolve YES, so they cannot be netted.
  */
-export async function listActiveEvents({ category = "sports", types = ["moneyline", "futures"], limit = 50 } = {}) {
+export async function listActiveEvents({
+  category = "sports",
+  types = ["moneyline", "futures"],
+  searches = ["Champion"], // championships are tagged eventTags[futures], not sports_market_type
+  limit = 50,
+} = {}) {
   if (config.mockGemini) return Object.values(MOCKS);
   const base = `${config.geminiBase}/v1/prediction-markets/events?status=active&category=${encodeURIComponent(category)}&limit=${limit}`;
-  const pages = await Promise.all(
-    (types.length ? types : [null]).map((t) => getJson(t ? `${base}&sports_market_type=${encodeURIComponent(t)}` : base))
-  );
+  const urls = [
+    ...types.map((t) => `${base}&sports_market_type=${encodeURIComponent(t)}`),
+    ...searches.map((q) => `${base}&search=${encodeURIComponent(q)}`),
+  ];
+  const pages = await Promise.all((urls.length ? urls : [base]).map(getJson));
   // Game markets nest period markets (quarters, halves) as child events[]. Flatten them so
   // e.g. the 2nd-half winner market is quotable for in-game ("halftime comeback") cover.
   const seen = new Set();
@@ -222,15 +229,22 @@ export async function placeSandboxOrder({ symbol, side = "buy", outcome = "yes",
 // ---------------------------------------------------------------- outcome mapping
 
 const EXCLUSIVE_TYPES = new Set(["moneyline", "futures"]);
+export const MAX_OUTCOMES = 128; // ArraVault.MAX_OUTCOMES
 
 /**
  * True when at most one contract of the event can resolve YES, so the vault may lock
  * max_i L_i instead of the sum. Single-contract events are binary (YES vs NO).
+ *   - Game and period winners: sportsMarket.type "moneyline".
+ *   - Championships: Gemini tags them eventTags[futures] without a sportsMarket object, and
+ *     the futures tag also covers non-exclusive season props (e.g. win totals), so we
+ *     additionally require a single-winner title ("Champion", "Championship Winner", "Cup").
  */
 export function isMutuallyExclusive(event) {
   const n = (event.contracts ?? []).length;
   if (n <= 1) return true;
-  return EXCLUSIVE_TYPES.has(event.sportsMarket?.type);
+  if (EXCLUSIVE_TYPES.has(event.sportsMarket?.type)) return true;
+  const futures = (event.eventTags ?? []).some((t) => t?.slug === "futures");
+  return futures && event.type === "categorical" && /\b(champion|championship winner|cup)\b/i.test(event.title ?? "");
 }
 
 /**
@@ -256,7 +270,7 @@ export function outcomeIndex(event, instrumentSymbol, side) {
     throw new Error("This market's outcomes are not mutually exclusive (e.g. player props); Arra covers game winners and championships");
   }
   if (side !== "YES") throw new Error("On multi-outcome events, cover the team you are rooting for (YES)");
-  if (contracts.length > 16) throw new Error("Vault supports up to 16 outcomes per event");
+  if (contracts.length > MAX_OUTCOMES) throw new Error(`Vault supports up to ${MAX_OUTCOMES} outcomes per event`);
   return i;
 }
 

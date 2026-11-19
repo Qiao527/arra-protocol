@@ -2,7 +2,7 @@
   "network": "Arc Testnet",
   "chainId": 5042002,
   "explorer": "https://explorer.testnet.arc.io",
-  "arraVault": "0x9A60F13454E641c8d7a745675DDDa022C322235B",
+  "arraVault": "0x3CC34beE579B6caD4Ab3c13582138c263812831C",
   "usdc": "0x3600000000000000000000000000000000000000",
   "operator": "0xd2674640ea12c9fC2320CEa38987Bf73D96c348c",
   "settlers": [
@@ -13,18 +13,19 @@
   "settlerThreshold": 2,
   "disputeWindowSec": 60,
   "smokeTest": {
-    "at": "2026-11-19T01:16:52.414Z",
+    "at": "2026-11-19T05:58:04.547Z",
     "eventTicker": "DEMO-UNDERDOG (mock Gemini book)",
     "policyId": 0,
     "txs": {
-      "approve": "0x4eb00af5d99a5e86ab389c6fc1ab9d86d808ea4e2effe4660e26ab264ed852c7",
-      "lpDeposit": "0x8f19be78d99bb0463519e8da7083d35826b7a8f16388028c4fd7950691257608",
-      "buyCover": "0x8f07297e8b33a3d30bbed1d39ef7cc4c056be3e23e872940380a32bf03416bf7",
-      "recordHedge": "0x3d6e16f2c16cdbd64db35f5d329d5448a517b02d7ca1863622acb0ee986b1db2",
-      "vote1": "0xe795549f787e82301650b1de3e84d9083c3f5ae917c39a17553cccb0b0a2383b",
-      "vote2": "0x6339441d48104f2c3086ef8725b03f74774ced2829bd4e9a9d37a1b0f7615a97",
-      "vote3": "0x6d8223d823173ac75b2c1d967d78e2df54c7579cb8412d188742e8dbcf5ea3bd",
-      "claim": "0x55b9950a43bf859b375a64f9c4a9644a7e9a4454bb164a5be5718805a1da360c"
+      "approve": "0x0fd0703424533838e2dff6bb429cdcda8ebc716930f851a8c15c4da077a0a363",
+      "lpDeposit": "0x4bef35b8b6109f6fbb04285d8080e370882c45e229f4236c1a24a10cc0d8b219",
+      "buyCover": "0xa75b2d6542bae845dfd44d613b3b468d6d01664b675bb877b028513aac4f9c76",
+      "recordHedge": "0x87861a969b2985f1be798deebcb826c01ef21d3af184f69500dcd8e085e26d88",
+      "vote1": "0x16f3ff2e48341668212fb3a30258081acbd01f5e2a6be2ad738dca7080aa53df",
+      "vote2": "0xfeaeaf91f38dd326609ac1affb84ab9e7931174682244925a33313db2e5696ea",
+      "vote3": "0x6471007e81d472286dc2ca4d1fe52db19a0e607e2415dad28e0c82e377b1e91e",
+      "claim": "0xfb51e57a87b3ffa3ab02618a42fcdaa3b28e570c15fa6847516922ed9855b3ce",
+      "sweepHedge": "0xa927ad4ff37b5718fc188a8fb9ead569206c0e6da15cf3f2039943e4223599f8"
     }
   }
 }

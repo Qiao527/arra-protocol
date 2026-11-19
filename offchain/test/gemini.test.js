@@ -82,9 +82,9 @@ test("multi-outcome events: YES only; binary events: YES=0, NO=1", () => {
   assert.equal(hedgeTarget(bin, 1).side, "NO");
 });
 
-test("more than 16 mutually exclusive outcomes is refused", () => {
-  const ev = { ticker: "F", sportsMarket: { type: "futures" }, contracts: Array.from({ length: 17 }, (_, i) => c(`GEMI-F-${String(i).padStart(2, "0")}`)) };
-  assert.throws(() => outcomeIndex(ev, "GEMI-F-00", "YES"), /16/);
+test("more than 128 mutually exclusive outcomes is refused", () => {
+  const ev = { ticker: "F", sportsMarket: { type: "futures" }, contracts: Array.from({ length: 129 }, (_, i) => c(`GEMI-F-${String(i).padStart(3, "0")}`)) };
+  assert.throws(() => outcomeIndex(ev, "GEMI-F-000", "YES"), /128/);
 });
 
 // ---------------------------------------------------------------- real moneyline (NFL)
@@ -140,4 +140,30 @@ test("sales window: pre-game closes at kickoff; in-game is short-lived", () => {
   const live = salesWindow(game, start + 1800);
   assert.equal(live.mode, "in-game");
   assert.ok(live.salesClose - (start + 1800) <= 60);
+});
+
+// ---------------------------------------------------------------- real championship (NBA)
+const champ = JSON.parse(fs.readFileSync(new URL("./fixtures/gemini-events-champion.json", import.meta.url), "utf8")).data[0];
+
+test("real NBA champion market: tagged futures (no sportsMarket), 30 teams, coverable", () => {
+  assert.equal(champ.sportsMarket, undefined);
+  assert.ok(champ.eventTags.some((t) => t.slug === "futures"));
+  assert.equal(champ.contracts.length, 30);
+  assert.equal(isMutuallyExclusive(champ), true);
+  const idx = new Set(champ.contracts.map((k) => outcomeIndex(champ, k.instrumentSymbol, "YES")));
+  assert.equal(idx.size, 30, "every team gets its own outcome slot");
+  assert.equal(Math.max(...idx), 29);
+});
+
+test("futures-tagged events without a single-winner title are not netted", () => {
+  const winTotals = { ...champ, title: "2027 Pro Basketball Regular Season Win Totals" };
+  assert.equal(isMutuallyExclusive(winTotals), false);
+});
+
+test("championship without startTime: sales stay open until expiry (live futures pricing)", () => {
+  assert.equal(champ.startTime, undefined);
+  const now = Math.floor(Date.parse("2026-11-19T12:00:00Z") / 1000);
+  const w = salesWindow(champ, now);
+  assert.equal(w.mode, "pre-game");
+  assert.equal(w.salesClose, Math.floor(Date.parse(champ.expiryDate) / 1000));
 });

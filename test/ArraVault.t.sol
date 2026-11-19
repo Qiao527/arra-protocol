@@ -181,6 +181,62 @@ contract ArraVaultTest is Test {
         assertEq(vault.totalAssets(), (50_000 + 8 * 700 - 5_000) * USDC);
     }
 
+    /// Real championships have 30-94 teams (NBA 30, NHL 32, college basketball 94).
+    /// The last team index must be sellable and settle like any other.
+    function test_LargeChampionshipLastTeamWins() public {
+        bytes32 champ = keccak256("NCAAMCHAMP27");
+        uint8 last = vault.MAX_OUTCOMES() - 1;
+        _buy(champ, bar, 3, 2_000 * USDC, 100 * USDC);
+        _buy(champ, cafe, last, 4_000 * USDC, 100 * USDC);
+        assertEq(vault.totalLocked(), 4_000 * USDC);
+        assertEq(vault.insuredVolume(champ), 6_000 * USDC);
+        _settle(champ, last);
+        uint256 before = usdc.balanceOf(cafe);
+        vault.claim(1);
+        assertEq(usdc.balanceOf(cafe) - before, 4_000 * USDC);
+        // An uncovered team winning pays nobody and releases the lock.
+        bytes32 other = keccak256("NBAF-2627CHAMP");
+        _buy(other, bar, 7, 1_000 * USDC, 50 * USDC);
+        _settle(other, 29);
+        assertEq(vault.totalLocked(), 0);
+        assertEq(vault.pendingClaims(), 0);
+    }
+
+    /// buyCover does O(1) work: its gas must not grow with the number of outcomes sold.
+    function test_BuyGasIndependentOfOutcomeCount() public {
+        bytes32 champ = keccak256("MANY");
+        _buy(champ, bar, 0, 100 * USDC, 5 * USDC);
+        (ArraVault.Quote memory q1, bytes memory sig1) = _quote(champ, cafe, 1, 100 * USDC, 5 * USDC);
+        vm.prank(cafe);
+        uint256 g0 = gasleft();
+        vault.buyCover(q1, sig1);
+        uint256 few = g0 - gasleft();
+
+        for (uint8 i = 2; i < 120; i++) _buy(champ, bar, i, 10 * USDC, 1 * USDC);
+        (ArraVault.Quote memory q2, bytes memory sig2) = _quote(champ, cafe, 125, 100 * USDC, 5 * USDC);
+        vm.prank(cafe);
+        g0 = gasleft();
+        vault.buyCover(q2, sig2);
+        uint256 many = g0 - gasleft();
+        assertLt(many, few + 30_000, "buy gas grew with outcome count");
+    }
+
+    /// The incrementally tracked worst case must equal a full rescan after hedges move the max.
+    function test_WorstUnhedgedTracksHedges() public {
+        _buy(bar, 0, 4_000 * USDC, 100 * USDC);
+        _buy(cafe, 1, 3_000 * USDC, 100 * USDC);
+        assertEq(vault.worstUnhedged(EVT), 4_000 * USDC);
+        vm.startPrank(operator);
+        vault.recordHedge(EVT, 0, 2_000 * USDC, "g1"); // outcome 0 drops to 2k; max moves to outcome 1
+        assertEq(vault.worstUnhedged(EVT), 3_000 * USDC);
+        vault.recordHedge(EVT, 1, 500 * USDC, "g2"); // 2.5k
+        assertEq(vault.worstUnhedged(EVT), 2_500 * USDC);
+        vault.recordHedge(EVT, 0, 1_000 * USDC, "g3"); // not the max holder: unchanged
+        assertEq(vault.worstUnhedged(EVT), 2_500 * USDC);
+        vm.stopPrank();
+        assertEq(vault.totalLocked(), 4_000 * USDC, "hedges never reduce onchain collateral");
+    }
+
     /// Selling a different outcome is allowed even when one outcome is "full",
     /// because it does not raise the worst case.
     function test_OppositeSideAllowedPastCap() public {
@@ -248,7 +304,7 @@ contract ArraVaultTest is Test {
     }
 
     function test_RevertWhen_OutcomeOutOfRange() public {
-        (ArraVault.Quote memory q,) = _quote(EVT, bar, 16, 1_000 * USDC, 150 * USDC);
+        (ArraVault.Quote memory q,) = _quote(EVT, bar, vault.MAX_OUTCOMES(), 1_000 * USDC, 150 * USDC);
         bytes memory sig = _sign(q, OPERATOR_PK);
         vm.prank(bar);
         vm.expectRevert(ArraVault.BadOutcome.selector);

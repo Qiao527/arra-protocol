@@ -45,6 +45,12 @@ const policyId = (await publicClient.readContract({ ...vault, functionName: "pol
 await send("claim", operatorWallet(), { ...vault, functionName: "claim", args: [policyId] });
 console.log(`merchant received ${(await bal() - before).toFixed(6)} USDC (minus 0 gas: claim sent by operator)`);
 
+// Winning hedge proceeds sit at Gemini; LP withdrawals stay frozen until they are swept back
+// (production: Circle Mint / CCTP). Simulate the sweep so the vault ends unfrozen.
+const receivable = await publicClient.readContract({ ...vault, functionName: "hedgeReceivable" });
+if (receivable > 0n) await send("sweepHedge", merchant, { ...vault, functionName: "returnHedgeProceeds", args: [receivable] });
+console.log("LP withdrawable after sweep:", Number(await publicClient.readContract({ ...vault, functionName: "maxWithdraw", args: [merchant.account.address] })) / 1e6, "USDC");
+
 fs.mkdirSync("../deployments", { recursive: true });
 fs.writeFileSync("../deployments/arc-testnet.json", JSON.stringify({
   network: "Arc Testnet", chainId: 5042002,

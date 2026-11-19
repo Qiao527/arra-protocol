@@ -15,7 +15,7 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 ///         - LPs deposit USDC and receive ERC-4626 shares.
 ///         - Merchants buy cover with a 60-second EIP-712 quote signed by the operator,
 ///           which prices off Gemini Prediction Markets order-book depth.
-///         - An event has up to 16 mutually exclusive outcomes (a binary game: 0 = YES, 1 = NO;
+///         - An event has up to 128 mutually exclusive outcomes (a binary game: 0 = YES, 1 = NO;
 ///           a championship: one outcome per team). Exactly one outcome can pay, so collateral
 ///           is locked for the WORST outcome only: locked(event) = max_i L_i. Eight bars in
 ///           eight cities each insuring their own team lock one payout, not eight.
@@ -76,7 +76,7 @@ contract ArraVault is ERC4626, EIP712, Ownable {
     );
 
     uint256 public constant BPS = 10_000;
-    uint8 public constant MAX_OUTCOMES = 16;
+    uint8 public constant MAX_OUTCOMES = 128; // a 94-team college championship fits
 
     // ------------------------------------------------------------------
     // Storage
@@ -96,6 +96,7 @@ contract ArraVault is ERC4626, EIP712, Ownable {
     mapping(bytes32 => EventInfo) public events;
     mapping(bytes32 => mapping(uint8 => uint256)) public liability; // eventId => outcome => payouts sold
     mapping(bytes32 => mapping(uint8 => uint256)) public hedged;    // eventId => outcome => payout hedged on Gemini
+    mapping(bytes32 => uint256) internal _worstUnhedged;              // eventId => max_i (L_i - H_i), kept incrementally
     mapping(bytes32 => mapping(uint32 => mapping(address => bool))) public hasVoted;
     mapping(bytes32 => mapping(uint32 => mapping(uint8 => uint8))) public voteCount;
     mapping(uint256 => bool) public nonceUsed;
@@ -255,15 +256,20 @@ contract ArraVault is ERC4626, EIP712, Ownable {
         // Pull the premium first so it counts toward assets.
         IERC20(asset()).safeTransferFrom(msg.sender, address(this), q.premium);
 
-        // Update outcome liability and the netted collateral requirement.
+        // Update outcome liability and the netted collateral requirement. A sale only raises
+        // L_o, so both maxima update in O(1): max_i L_i and max_i (L_i - H_i) can only grow to
+        // the new value at o. Gas does not depend on how many outcomes the event has.
         if (q.outcome >= e.numOutcomes) e.numOutcomes = q.outcome + 1;
-        liability[q.eventId][q.outcome] += q.payout;
-        uint256 newLocked = _worstCase(q.eventId);
+        uint256 l = liability[q.eventId][q.outcome] + q.payout;
+        liability[q.eventId][q.outcome] = l;
+        uint256 newLocked = l > e.locked ? l : e.locked;
         totalLocked = totalLocked + newLocked - e.locked;
         e.locked = newLocked;
+        uint256 u = l - hedged[q.eventId][q.outcome];
+        if (u > _worstUnhedged[q.eventId]) _worstUnhedged[q.eventId] = u;
 
         // Risk limit: the worst-case unhedged payout on this event stays under the cap.
-        if (worstUnhedged(q.eventId) * BPS > totalAssets() * eventCapBps) revert ExceedsEventCap();
+        if (_worstUnhedged[q.eventId] * BPS > totalAssets() * eventCapBps) revert ExceedsEventCap();
 
         // Solvency: the worst case of every open event is fully backed by onchain USDC.
         if (totalLocked + pendingClaims > _usdcBalance()) revert Insolvent();
@@ -293,9 +299,13 @@ contract ArraVault is ERC4626, EIP712, Ownable {
     {
         if (outcome >= MAX_OUTCOMES) revert BadOutcome();
         if (events[eventId].state != EventState.Open) revert EventNotOpen();
-        uint256 h = hedged[eventId][outcome] + payoutCovered;
-        if (h > liability[eventId][outcome]) revert HedgeExceedsLiability();
+        uint256 l = liability[eventId][outcome];
+        uint256 h0 = hedged[eventId][outcome];
+        uint256 h = h0 + payoutCovered;
+        if (h > l) revert HedgeExceedsLiability();
         hedged[eventId][outcome] = h;
+        // A hedge only lowers (L_o - H_o). Rescan only if o held the maximum (operator-paid).
+        if (l - h0 == _worstUnhedged[eventId]) _worstUnhedged[eventId] = _scanWorstUnhedged(eventId);
         emit HedgeRecorded(eventId, outcome, payoutCovered, geminiOrderId);
     }
 
@@ -398,12 +408,8 @@ contract ArraVault is ERC4626, EIP712, Ownable {
 
     /// @notice Worst-case payout not covered by Gemini hedges: max_i (L_i - H_i).
     ///         Only one outcome can win, so this is the most the vault can lose to payouts.
-    function worstUnhedged(bytes32 eventId) public view returns (uint256 m) {
-        uint8 n = events[eventId].numOutcomes;
-        for (uint8 i; i < n; i++) {
-            uint256 u = liability[eventId][i] - hedged[eventId][i];
-            if (u > m) m = u;
-        }
+    function worstUnhedged(bytes32 eventId) public view returns (uint256) {
+        return _worstUnhedged[eventId];
     }
 
     /// @notice Total payouts sold on an event across all outcomes (insured volume).
@@ -465,11 +471,11 @@ contract ArraVault is ERC4626, EIP712, Ownable {
         return 6;
     }
 
-    function _worstCase(bytes32 eventId) internal view returns (uint256 m) {
+    function _scanWorstUnhedged(bytes32 eventId) internal view returns (uint256 m) {
         uint8 n = events[eventId].numOutcomes;
         for (uint8 i; i < n; i++) {
-            uint256 l = liability[eventId][i];
-            if (l > m) m = l;
+            uint256 u = liability[eventId][i] - hedged[eventId][i];
+            if (u > m) m = u;
         }
     }
 

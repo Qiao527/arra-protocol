@@ -2,7 +2,7 @@
   "network": "Arc Testnet",
   "chainId": 5042002,
   "explorer": "https://explorer.testnet.arc.io",
-  "arraVault": "0x8fA63E69a91101156a2ebda4bAD78B518Ceee334",
+  "arraVault": "0x1D69e0fE014df1007aE66A68a5c9714a7E833d6f",
   "usdc": "0x3600000000000000000000000000000000000000",
   "operator": "0xd2674640ea12c9fC2320CEa38987Bf73D96c348c",
   "settlers": [
@@ -13,31 +13,23 @@
   "settlerThreshold": 2,
   "disputeWindowSec": 60,
   "smokeTest": {
-    "at": "2026-11-19T07:49:52.255Z",
+    "at": "2026-11-19T08:06:45.153Z",
     "eventTicker": "DEMO-UNDERDOG (mock Gemini book)",
     "policyId": 0,
     "txs": {
-      "approve": "0x552b27983789df358f931850805153721be4c50b98f1d967f42ed57de56c9a72",
-      "lpDeposit": "0xcd05dd7503bacf05a9d4c734b94d8f0d1b28832d5acf724b3429f7bb3769db88",
-      "buyCover": "0xa84eb3daaf5cd1e98133e0687b116ba0a5ffdddf1b56b1f51f2121157fd1adf0",
-      "recordHedge": "0x93f7e12686a4e1272ba634794efdfc463a0009c668a813b54b0c88582af51bcc",
-      "vote1": "0x3a02e800c981dd36b7b0cbe315094e1af056bce01a5fd83bc2891266b220b533",
-      "vote2": "0x7b60a689f79c3898fe4f1216221e7edfed1cb540f67a2767205ae9ce1bef3211",
-      "vote3": "0x2a2f49749a8623737a66f9dbeecea7a2a1539bcbdffb455d2bf931a12c1f2fdf",
-      "claim": "0x3dba84f5e36e0d11c8289552b1c4d783bb42a77adf14ef86d7a3bda00534f503",
-      "sweepHedge": "0xe53ae734a275a75602040c7e2dca058e8c417b2762be35e1784642d5cce7efe4"
+      "approve": "0x24db03922ebc83101aa4c28f28775bb17fbf5fcf7369287a501c25c1dec07405",
+      "lpDeposit": "0x5f7367c646cd7a9cbf3cff778a1adf646ae7eafc47c4609ba1b627e3028289c3",
+      "buyCover": "0x82d0133078f90bb8c6781839991882034f7997f287c5bbeefea5fe48f00756fc",
+      "recordHedge": "0xc9171140adbbc2283f0a59cbd1d8d88eb9180ec2984ad97968c51c95d164c13b",
+      "vote1": "0x4f8007c9270dc8dc47d75c6c406554b4328ab255f183f4a7b99cfb355d7a20bd",
+      "vote2": "0xabc7e5e31e611bf5f3cbe995bcb692d29da552f0588acab268c19a7ab9689b66",
+      "vote3": "0xa52b9fc039fccd79f8ce65a0f03da8c2901ad07f5067a7f6be68413bb557cabd",
+      "claim": "0xabe7c68bbb6918b7a43b5f4f7bd728f430aafadc92e840c8db899ff77abe11b6",
+      "sweepHedge": "0xc07b6163cd664f511eb684fe8adc187e8512137dae7daa190d565535ba0e67ae"
     }
   },
-  "deployTx": "0x84a1942a0765da173e8c0d02211e9e7c79509fe794b4baf0fa42bc0c336e64d6",
-  "sourceVerified": true,
-  "eventCapBps": 1000,
-  "previousVault": {
-    "address": "0x3CC34beE579B6caD4Ab3c13582138c263812831C",
-    "retired": "2026-11-19",
-    "lpFundsRecoveredTx": "0x57092299ca8a93b504e0876290455ea14c2b3913d2ef9a6277a335c58d61f235"
-  },
   "sandboxHedgeRun": {
-    "at": "2026-11-19T08:00:22.945Z",
+    "at": "2026-11-19T08:07:16.712Z",
     "market": {
       "eventTicker": "NHL-2611200000-PHI-OTT-M",
       "instrumentSymbol": "GEMI-NHL-2611200000-PHI-OTT-M-PHI",
@@ -51,21 +43,38 @@
     "hedge": {
       "venue": "Gemini sandbox",
       "standInSymbol": "GEMI-BTC2611192200-HI62250",
-      "geminiOrderId": "145853902323008335",
+      "geminiOrderId": "145853902323013843",
       "filledContracts": 5,
       "recordedOnchainUsdc": 5
     },
     "settlement": "synthetic result (real game not yet played), 3/3 votes, instant",
     "txs": {
-      "approve": "0x2ebe521a598d0ef014ff768ece65220972177d705ea72e2a8379595928771397",
-      "lpDeposit": "0x0d3f22e38bbcb4f0805c7bcad8ca0414a5d7e9e5738fe5f3d0a51232abec08ca",
-      "buyCover": "0x21ba06cedeea26c863f15d14258d15c69fd135af7c66ab007eb4ccb4d41b483b",
-      "recordHedge": "0xda5da04681c425218278dda03717912fb529c5fd861e9ba19f6f0d16df106323",
-      "vote1": "0x131a86ff794947483d947d591a06c2c351415063c86930309da2b5db355ace92",
-      "vote2": "0x3fa49cb8b05609583824f0bbec293176ac77631180f3f9a69e04d7df9b722da3",
-      "vote3": "0xb965aa83fdb6d4ff5ee5e9932e39f453e2a5f60ee67450f2acbe02ee65f3c2fa",
-      "claim": "0xb2936da0958017683ef44182c3b2bfaf4b2713c1cb8a95b45c0313a5bfaef359",
-      "sweepHedge": "0x0d8530ff9f90636ff75df75ac42aeea330ea8af1dd2f7a47237d500d382af862"
+      "approve": "0x72001f9cb718c3d23e4f2e2441988135fc3e18bd9f52d2b9f691ee7649a931f6",
+      "lpDeposit": "0x694a40ee5989a7ae259cee8843b884929ab27dd73d94d2f24839d2ea75718419",
+      "buyCover": "0x4dfa42e816ba46f33e00b464e1bd07737ec30521c757f55b0a317e130d2cfdb3",
+      "recordHedge": "0xe64f99ff2f61b1addbb9434f5141ffc7c5781d503ce3b635866b6fa63a16e0ad",
+      "vote1": "0xddfccab51b413528bbdaf3cb1a61cd59d73d1d27b980363b36b45fdc65b669c1",
+      "vote2": "0xb7b6b2b40ea39e44b7f5efb69f800a957321e9ddd1665310334903d186817031",
+      "vote3": "0x6b707c777ef41ef900a968efd0148720884532c024536be365e94125120bc373",
+      "claim": "0xe110746baf39698f9b27627df15d57c7e8718a959610a7fe85558b25d362210a",
+      "sweepHedge": "0x542a707b47affc604d2e02b921f54588d3dabf9d3835dddddbd22b959376ac0c"
     }
-  }
+  },
+  "deployTx": "0x09a23ecaa4e25ee0daa52803690f8df5f04a6b63aa5ad63b88656e79ceebd874",
+  "sourceVerified": true,
+  "eventCapBps": 1000,
+  "previousVaults": [
+    {
+      "address": "0x3CC34beE579B6caD4Ab3c13582138c263812831C",
+      "retired": "2026-11-19",
+      "reason": "pre-review contract",
+      "lpFundsRecoveredTx": "0x57092299ca8a93b504e0876290455ea14c2b3913d2ef9a6277a335c58d61f235"
+    },
+    {
+      "address": "0x8fA63E69a91101156a2ebda4bAD78B518Ceee334",
+      "retired": "2026-11-19",
+      "reason": "first review fixes; superseded by void bound, dispute-time deposit freeze, settler epochs",
+      "lpFundsRecoveredTx": "0x83c89aa61032e1c110bd94e22847dd30b6f544e1d96cb31d9ad7bc95104935fa"
+    }
+  ]
 }

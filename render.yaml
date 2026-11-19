@@ -19,7 +19,7 @@ services:
       - key: CHAIN_ID
         value: "5042002"
       - key: VAULT_ADDRESS
-        value: "0x8fA63E69a91101156a2ebda4bAD78B518Ceee334"
+        value: "0x1D69e0fE014df1007aE66A68a5c9714a7E833d6f"
       - key: MOCK_GEMINI
         value: "false"
       - key: TRUST_PROXY

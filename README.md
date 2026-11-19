@@ -11,11 +11,11 @@ Track: **DeFi & Onchain Applications** · Chain award: **Best use of Arc** · Bo
 | | |
 | --- | --- |
 | Network | Arc Testnet (chain ID 5042002) |
-| `ArraVault` | [`0x8fA63E69a91101156a2ebda4bAD78B518Ceee334`](https://explorer.testnet.arc.io/address/0x8fA63E69a91101156a2ebda4bAD78B518Ceee334) (source verified). Replaces `0x3CC3…831C` after the [review](docs/REVIEW.md). |
+| `ArraVault` | [`0x1D69e0fE014df1007aE66A68a5c9714a7E833d6f`](https://explorer.testnet.arc.io/address/0x1D69e0fE014df1007aE66A68a5c9714a7E833d6f) (source verified). Replaces `0x3CC3…831C` and `0x8fA6…e334` after the [review](docs/REVIEW.md). |
 | LP share token | `Arra LP` (`arLP`), ERC-4626 |
 | Settlement | 2-of-3 settlers, 60 s dispute window, unanimous vote settles instantly |
 | Live smoke test | deposit → signed quote → buyCover → recordHedge → 3/3 votes → claim. Tx hashes in [`deployments/arc-testnet.json`](deployments/arc-testnet.json) |
-| Real Gemini hedge | Gemini sandbox order `145853902323008335`, 5/5 filled, recorded onchain with that id ([details](#gemini-sandbox-hedge-on-arc-testnet)) |
+| Real Gemini hedge | Gemini sandbox order `145853902323013843`, 5/5 filled, recorded onchain with that id ([details](#gemini-sandbox-hedge-on-arc-testnet)) |
 | USDC (ERC-20 interface) | `0x3600000000000000000000000000000000000000` |
 | Explorer | https://explorer.testnet.arc.io |
 
@@ -120,7 +120,7 @@ Full math, the favorite–longshot discussion, regulatory context and references
 ```
 src/ArraVault.sol                   vault, quotes, netting, caps, settlement (Solidity 0.8.26, OpenZeppelin v5.1)
 src/mocks/MockUSDC.sol              local testing only
-test/ArraVault.t.sol                44 unit + fuzz tests
+test/ArraVault.t.sol                48 unit + fuzz tests
 test/ArraVault.invariant.t.sol      8 invariants over random action sequences
 script/Deploy.s.sol                 Arc / local deploy
 script/e2e-anvil.sh                 one-command local end-to-end run (mock Gemini)
@@ -149,7 +149,7 @@ docs/REVIEW.md                      independent review: findings, evidence, fixe
 
 ```bash
 git clone --recurse-submodules https://github.com/Qiao527/arra-protocol && cd arra-protocol
-forge test                                         # 46 contract tests (incl. 8 invariants)
+forge test                                         # 50 contract tests (incl. 8 invariants)
 (cd offchain && npm ci && npm test)                # 59 offchain tests on real Gemini captures
 ./script/e2e-anvil.sh                              # full local flow, no keys needed
 ./script/e2e-live-gemini.sh                        # same, on live Gemini markets (needs network)
@@ -190,12 +190,12 @@ The hedger decodes each log, checks unhedged exposure on that outcome, places a 
 | Step | Value |
 | --- | --- |
 | Cover | $5 on Philadelphia, `NHL-2611200000-PHI-OTT-M`, premium $2.41, p = 0.38 off live WebSocket depth |
-| Gemini order | sandbox `145853902323008335` on stand-in `GEMI-BTC2611192200-HI62250`, IOC, 5/5 filled at 0.59 |
-| buyCover | [`0x21ba06ce…b483b`](https://explorer.testnet.arc.io/tx/0x21ba06cedeea26c863f15d14258d15c69fd135af7c66ab007eb4ccb4d41b483b) |
-| recordHedge (5 USDC, order id onchain) | [`0xda5da046…6323`](https://explorer.testnet.arc.io/tx/0xda5da04681c425218278dda03717912fb529c5fd861e9ba19f6f0d16df106323) |
-| votes 1–3 (instant settle) | [`0x131a86ff…ce92`](https://explorer.testnet.arc.io/tx/0x131a86ff794947483d947d591a06c2c351415063c86930309da2b5db355ace92), [`0x3fa49cb8…a735`](https://explorer.testnet.arc.io/tx/0x3fa49cb8b05609583824f0bbec293176ac77631180f3f9a69e04d7df9b722da3), [`0xb965aa83…c2fa`](https://explorer.testnet.arc.io/tx/0xb965aa83fdb6d4ff5ee5e9932e39f453e2a5f60ee67450f2acbe02ee65f3c2fa) |
-| claim (5 USDC to the merchant) | [`0xb2936da0…f359`](https://explorer.testnet.arc.io/tx/0xb2936da0958017683ef44182c3b2bfaf4b2713c1cb8a95b45c0313a5bfaef359) |
-| sweep hedge proceeds | [`0x0d8530ff…f862`](https://explorer.testnet.arc.io/tx/0x0d8530ff9f90636ff75df75ac42aeea330ea8af1dd2f7a47237d500d382af862) |
+| Gemini order | sandbox `145853902323013843` on stand-in `GEMI-BTC2611192200-HI62250`, IOC, 5/5 filled at 0.59 |
+| buyCover | [`0x4dfa42e8…fdb3`](https://explorer.testnet.arc.io/tx/0x4dfa42e816ba46f33e00b464e1bd07737ec30521c757f55b0a317e130d2cfdb3) |
+| recordHedge (5 USDC, order id onchain) | [`0xe64f99ff…e0ad`](https://explorer.testnet.arc.io/tx/0xe64f99ff2f61b1addbb9434f5141ffc7c5781d503ce3b635866b6fa63a16e0ad) |
+| votes 1–3 (instant settle) | [`0xddfccab5…69c1`](https://explorer.testnet.arc.io/tx/0xddfccab51b413528bbdaf3cb1a61cd59d73d1d27b980363b36b45fdc65b669c1), [`0xb7b6b2b4…7031`](https://explorer.testnet.arc.io/tx/0xb7b6b2b40ea39e44b7f5efb69f800a957321e9ddd1665310334903d186817031), [`0x6b707c77…c373`](https://explorer.testnet.arc.io/tx/0x6b707c777ef41ef900a968efd0148720884532c024536be365e94125120bc373) |
+| claim (5 USDC to the merchant) | [`0xe110746b…210a`](https://explorer.testnet.arc.io/tx/0xe110746baf39698f9b27627df15d57c7e8718a959610a7fe85558b25d362210a) |
+| sweep hedge proceeds | [`0x542a707b…ac0c`](https://explorer.testnet.arc.io/tx/0x542a707b47affc604d2e02b921f54588d3dabf9d3835dddddbd22b959376ac0c) |
 
 Three things only showed up once real orders went through: the request nonce must be a number of seconds, `orderId` is a JSON number above 2^53 that `JSON.parse` silently rounds, and the fill is reported in `filledQuantity`. The captured responses are in [`offchain/test/fixtures/gemini-sandbox-orders.json`](offchain/test/fixtures/gemini-sandbox-orders.json).
 
@@ -217,7 +217,7 @@ It reads the onchain `evidenceHash` and winning outcome, hashes the bytes stored
 
 ```
 forge test
-  ArraVault.t.sol             44 passed  (quotes, netting, 128-team championships, O(1) gas, caps, solvency, quorum, fast path, veto, void, NAV during disputes, inflation attack, LP locks, fuzz)
+  ArraVault.t.sol             48 passed  (quotes, netting, 128-team championships, O(1) gas, caps, solvency, quorum, fast path, veto, void, settler changes, NAV during disputes, inflation attack, LP locks, fuzz)
   ArraVault.invariant.t.sol    8 passed  (256 runs × 32 calls incl. propose / veto / void: full collateral, cap at sale, locked == worst case incl. void, proposedLoss == rescan, LP locks, hedge bounds)
 npm test (offchain)            59 passed (real Gemini captures: REST events, stale in-game markets, WebSocket depth, sandbox orders; settler, hedger webhook, verifier, API)
 ./script/e2e-anvil.sh          E2E OK    (single game via 2-of-3 + dispute window; 4-city championship via 3-of-3 instant; verifier PASS)

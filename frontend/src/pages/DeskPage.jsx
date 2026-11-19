@@ -2,12 +2,14 @@ import { useEffect, useMemo, useState } from "react";
 import { readVault, readPolicies, readEvent, vaultLogs, eventIdOf } from "../lib/chain.js";
 import { deposit, withdrawMax, lpPosition, usdcBalance } from "../lib/wallet.js";
 import { loadEvents } from "../lib/pricer.js";
+import snapshot from "../data/snapshot.json";
 import { txUrl, STATE, VOID_OUTCOME, deploymentInfo } from "../lib/config.js";
 import { usd, pct, short, prettyTicker } from "../lib/format.js";
 
 function knownTickers(events) {
-  const extra = ["DEMO-UNDERDOG", "DEMO-CHAMP", deploymentInfo.sandboxHedgeRun?.market?.eventTicker].filter(Boolean);
+  const extra = ["DEMO-UNDERDOG", "DEMO-CHAMP", "NFL-2611221800-ARI-KC-M", "NFL-2611221800-ARI-KC-2HM", deploymentInfo.sandboxHedgeRun?.market?.eventTicker].filter(Boolean);
   const map = {};
+  for (const e of snapshot.events) map[eventIdOf(e.ticker)] = e; // games outside the live list (e.g. Sunday's demo game)
   for (const e of events) map[eventIdOf(e.ticker)] = e;
   for (const t of extra) map[eventIdOf(t)] ??= { ticker: t, title: t.startsWith("DEMO") ? `${t} (mock book)` : prettyTicker(t), contracts: [] };
   // label the outcome the recorded runs actually used

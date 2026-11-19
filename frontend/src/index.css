@@ -222,7 +222,8 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 13.5px; }
 .tick.no { background: var(--seal-soft); color: var(--seal); }
 .tick.wait { background: var(--warn-soft); color: var(--warn); }
 .checks .d { font-size: 13px; color: var(--muted); }
-.mono-s { font: 12.5px var(--mono); color: var(--muted); word-break: break-all; }
+.mono-s { font: 12.5px var(--mono); color: var(--muted); overflow-wrap: anywhere; }
+.tbl .mono-s { white-space: nowrap; }
 
 .note { font-size: 13px; color: var(--muted); border-left: 2px solid var(--line); padding: 2px 0 2px 12px; }
 .err { color: var(--err); font-size: 13.5px; }

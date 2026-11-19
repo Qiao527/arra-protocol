@@ -114,12 +114,12 @@ export default function VerifyPage({ policyId, params, account }) {
       </section>
 
       <aside>
-        <h2 className="section">Proof of promise</h2>
+        <h2 className="section" data-enter="1">Proof of promise</h2>
         <p className="sub muted" style={{ marginTop: 0 }}>Live checks against the vault contract on Arc testnet. Refreshes every 8 seconds.</p>
         <div className="panel">
-          <ul className="checks">
+          <ul className="checks reveal">
             <Check state="ok" title={`Promise #${policy.id} exists onchain`}>
-              Holder <a href={addrUrl(policy.holder)} target="_blank" rel="noreferrer" className="mono-s">{short(policy.holder, 6)}</a> · vault <a href={addrUrl(VAULT)} target="_blank" rel="noreferrer" className="mono-s">{short(VAULT, 6)}</a>
+              Holder <a href={addrUrl(policy.holder)} target="_blank" rel="noreferrer" className="mono-s">{short(policy.holder, 6)}</a>, vault <a href={addrUrl(VAULT)} target="_blank" rel="noreferrer" className="mono-s">{short(VAULT, 6)}</a>
             </Check>
             {tickerOk !== null && (
               <Check state={tickerOk ? "ok" : "no"} title={tickerOk ? `It covers the Gemini market ${ticker}` : "The market named in this link does not match the policy"}>
@@ -127,7 +127,7 @@ export default function VerifyPage({ policyId, params, account }) {
               </Check>
             )}
             <Check state={lockedOk ? "ok" : "no"} title={event.state === 3 ? "Collateral released at settlement" : `${usd(event.locked)} USDC locked for this game`}>
-              {event.state !== 3 && <>This game's worst case is {usd(event.locked)}. Outcomes are mutually exclusive, so one lock backs {usd(event.insured)} of promises across all teams.</>}
+              {event.state !== 3 && <>This game’s worst case is {usd(event.locked)}. Outcomes are mutually exclusive, so one lock backs {usd(event.insured)} of promises across all teams.</>}
             </Check>
             <Check state={solvent ? "ok" : "no"} title={solvent ? "The vault can pay every open promise at once" : "Vault under-collateralized"}>
               USDC held {usd(vault.balance)} ≥ locked {usd(vault.totalLocked)} + owed {usd(vault.pendingClaims)}
@@ -135,7 +135,7 @@ export default function VerifyPage({ policyId, params, account }) {
             <Check state={hedgedAmt > 0 ? "ok" : "wait"} title={hedgedAmt > 0 ? `${usd(hedgedAmt)} of this outcome hedged on Gemini` : "Not hedged yet (hedger runs above a size threshold)"}>
               {hedges.map((h) => (
                 <div key={h.txHash}>
-                  Gemini order <span className="mono-s">{h.geminiOrderId}</span> · <a href={txUrl(h.txHash)} target="_blank" rel="noreferrer">recorded onchain</a>
+                  Gemini order <span className="mono-s">{h.geminiOrderId}</span>, <a href={txUrl(h.txHash)} target="_blank" rel="noreferrer">recorded onchain</a>
                 </div>
               ))}
             </Check>
@@ -150,7 +150,7 @@ export default function VerifyPage({ policyId, params, account }) {
               }
             >
               {event.state === 3 && settled && (
-                <>Evidence <span className="mono-s">{short(event.evidenceHash, 8)}</span> (hash of the raw Gemini response) · <a href={txUrl(settled.txHash)} target="_blank" rel="noreferrer">settlement tx</a></>
+                <>Evidence <span className="mono-s">{short(event.evidenceHash, 8)}</span> (hash of the raw Gemini response), <a href={txUrl(settled.txHash)} target="_blank" rel="noreferrer">settlement tx</a></>
               )}
               {event.state !== 3 && <>Dispute window {vault.disputeWindow}s, guardian can veto a wrong result.</>}
             </Check>

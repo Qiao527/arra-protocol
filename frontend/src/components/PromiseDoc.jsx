@@ -14,7 +14,7 @@ export default function PromiseDoc({ merchant, team, eventTitle, payout, lines =
 
   const sealed = status === "locked" || status === "paid";
   return (
-    <article className="promise" aria-label="Promise">
+    <article className={`promise ${sealed ? "pressed" : ""}`} aria-label="Promise">
       <div className="row">
         <div className="who">{merchant || "Your business"} promises</div>
         <div className="who num">{policyId != null ? `Promise #${policyId}` : status === "quoted" ? "Quote, signed" : "Draft"}</div>

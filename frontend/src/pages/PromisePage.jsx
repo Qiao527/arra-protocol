@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import PromiseDoc from "../components/PromiseDoc.jsx";
+import CountUp from "../components/CountUp.jsx";
+import Ring from "../components/Ring.jsx";
 import { loadEvents, requestQuote, indicativePremium, pricerConfigured } from "../lib/pricer.js";
 import { buyCover } from "../lib/wallet.js";
 import { txUrl } from "../lib/config.js";
@@ -18,6 +20,7 @@ export function verifyLink(policyId, { ticker, label, merchant }) {
 export default function PromisePage({ account, onConnect }) {
   const [data, setData] = useState(null);
   const [filter, setFilter] = useState("All");
+  const [showAll, setShowAll] = useState(false);
   const [eventTicker, setEventTicker] = useState(null);
   const [symbol, setSymbol] = useState(null);
   const [payout, setPayout] = useState(5000);
@@ -27,6 +30,7 @@ export default function PromisePage({ account, onConnect }) {
   const [err, setErr] = useState(null);
   const [done, setDone] = useState(null);
   const [now, setNow] = useState(Date.now());
+  const [quoteAt, setQuoteAt] = useState(0);
 
   useEffect(() => {
     loadEvents().then((d) => {
@@ -74,6 +78,7 @@ export default function PromisePage({ account, onConnect }) {
     setBusy("Pricing from Gemini…");
     try {
       setQuote(await requestQuote({ eventTicker: event.ticker, instrumentSymbol: symbol, payoutUsdc: payout, buyer: account }));
+      setQuoteAt(Math.floor(Date.now() / 1000));
     } catch (e) {
       setErr(e.message);
     } finally {
@@ -102,14 +107,14 @@ export default function PromisePage({ account, onConnect }) {
           ["Hedge on Gemini", `${usd(b.hedgeCost)} @ ${cents(b.pExec)}`],
           ["Buffer + capacity", usd((b.buffer ?? 0) + (b.utilizationSurcharge ?? 0))],
           ["Capital charge", usd(b.capitalCharge)],
-          ["Premium", usd(b.premium), "total"],
+          ["Premium", <CountUp key="p" value={b.premium} format={(x) => usd(x)} />, "total"],
         ]
       : indicative
         ? [
             ["Hedge on Gemini", `${usd(indicative.hedge)} @ ${cents(indicative.p)}`],
             ["Buffer + capacity", usd(indicative.buffer + indicative.surcharge)],
             ["Capital charge", usd(indicative.capital)],
-            ["Premium (indicative)", usd(indicative.premium), "total"],
+            ["Premium (indicative)", <CountUp key="p" value={indicative.premium} format={(x) => usd(x)} />, "total"],
           ]
         : [];
 
@@ -118,22 +123,21 @@ export default function PromisePage({ account, onConnect }) {
   return (
     <div className="grid-2">
       <section>
-        <h1 className="display">
+        <h1 className="display" data-enter="1">
           Make the promise.
-          <br />
-          <em>Keep it, provably.</em>
+          <span className="second">Keep it, provably.</span>
         </h1>
-        <p className="lede">
-          "If our team wins, it's on us." Arra prices the upset from Gemini's order book, locks the payout in USDC on Arc, and
-          pays you the moment the result settles. Your customers scan to check it's real.
+        <p className="lede" data-enter="2">
+          “If our team wins, it’s on us.” Arra prices the upset from Gemini’s order book, locks the payout in USDC on Arc, and
+          pays you the moment the result settles. Your customers scan to check it’s real.
         </p>
 
-        <div className="panel">
+        <div className="panel" data-enter="3">
           <div className="row" style={{ marginBottom: 12 }}>
-            <h3>1 · Pick the game</h3>
+            <h3>Pick the game</h3>
             <span className="chip">
               <span className={`dot ${data?.live ? "live" : "warn"}`} />
-              {data ? (data.live ? "Live Gemini markets" : `Gemini snapshot · ${when(data.capturedAt)}`) : "Loading markets"}
+              {data ? (data.live ? "Live Gemini markets" : <>Gemini snapshot<span className="sep" />{when(data.capturedAt)}</>) : "Loading markets"}
             </span>
           </div>
           <div className="tabs" role="group" aria-label="Sport">
@@ -145,7 +149,7 @@ export default function PromisePage({ account, onConnect }) {
           </div>
           <div className="games">
             {!data && [0, 1, 2].map((i) => <div key={i} className="skeleton" style={{ height: 56 }} />)}
-            {list.map((e) => {
+            {(showAll ? list : list.slice(0, 5)).map((e) => {
               const p = phase(e, now);
               return (
                 <button key={e.ticker} className="game" aria-pressed={parent?.ticker === e.ticker} onClick={() => setEventTicker(e.ticker)}>
@@ -156,12 +160,17 @@ export default function PromisePage({ account, onConnect }) {
               );
             })}
           </div>
+          {list.length > 5 && (
+            <button className="btn ghost" style={{ marginTop: 12, width: "100%" }} onClick={() => setShowAll((v) => !v)}>
+              {showAll ? "Show fewer" : `Show all ${list.length} markets`}
+            </button>
+          )}
         </div>
 
         {parent && (
           <div className="panel">
             <div className="row" style={{ marginBottom: 12 }}>
-              <h3>2 · Pick your team</h3>
+              <h3>Pick your team</h3>
               {half && (
                 <button className={`btn ${event?.ticker === half.ticker ? "primary" : "ghost"}`} onClick={() => setEventTicker(event?.ticker === half.ticker ? parent.ticker : half.ticker)}>
                   {event?.ticker === half.ticker ? "Halftime comeback: on" : "Halftime comeback"}
@@ -169,7 +178,7 @@ export default function PromisePage({ account, onConnect }) {
               )}
             </div>
             {event?.ticker === half?.ticker && (
-              <p className="sub">Cover just the 2nd half, priced live off Gemini's 2nd-half winner market. In-game quotes live 20 seconds.</p>
+              <p className="sub">Cover just the 2nd half, priced live off Gemini’s 2nd-half winner market. In-game quotes live 20 seconds.</p>
             )}
             <div className="teams">
               {event.contracts.map((c) => {
@@ -188,7 +197,7 @@ export default function PromisePage({ account, onConnect }) {
         )}
 
         <div className="panel">
-          <h3>3 · How big is the promise?</h3>
+          <h3>How big is the promise?</h3>
           <p className="sub">Your real cost of honoring it (cost of goods, not menu price).</p>
           <label className="field" htmlFor="payout">Payout if they win (USDC)</label>
           <div className="amount">
@@ -212,7 +221,7 @@ export default function PromisePage({ account, onConnect }) {
         </div>
       </section>
 
-      <aside style={{ position: "sticky", top: 24 }}>
+      <aside style={{ position: "sticky", top: 24 }} data-enter="4">
         <PromiseDoc
           merchant={merchant}
           team={contract?.label}
@@ -238,7 +247,7 @@ export default function PromisePage({ account, onConnect }) {
             <div className="stack">
               <div className="row">
                 <span className="muted">Marketing multiple</span>
-                <span className="num">{multiple ? `${multiple.toFixed(1)}×` : "—"}</span>
+                <span className="num"><CountUp value={multiple} format={(x) => `${x.toFixed(1)}×`} /></span>
               </div>
               <div className="row">
                 <span className="muted">Premium as % of payout</span>
@@ -256,7 +265,7 @@ export default function PromisePage({ account, onConnect }) {
                     {busy ?? (secsLeft === 0 ? "Quote expired" : "Seal the promise")}
                   </button>
                   <div className="row">
-                    <span className="countdown">Signed quote · {secsLeft}s</span>
+                    <span className="countdown meta"><Ring left={secsLeft} total={Math.max(1, Number(quote.quote.expiry) - quoteAt)} />Signed quote, {secsLeft}s left</span>
                     <button className="btn ghost" onClick={getQuote} disabled={!!busy}>Re-quote</button>
                   </div>
                 </>

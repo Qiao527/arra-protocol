@@ -74,15 +74,15 @@ export default function App() {
 
       {route.page === "promise" && (
         <section className="how" aria-label="How it works">
-          <div><div className="n">01</div><h4>Priced by the market</h4><p>Gemini's prediction-market order book says what the upset is worth. The pricer walks the book for your full size and signs a 60-second quote.</p></div>
+          <div><div className="n">01</div><h4>Priced by the market</h4><p>Gemini’s prediction-market order book says what the upset is worth. The pricer walks the book for your full size and signs a 60-second quote.</p></div>
           <div><div className="n">02</div><h4>Locked, not promised</h4><p>Your payout sits in USDC in a vault on Arc. One lock backs every team at once, because only one can win.</p></div>
-          <div><div className="n">03</div><h4>Paid at the whistle</h4><p>Settlers vote Gemini's result with a hash of the raw response. Unanimous means you're paid in seconds; anyone can check it.</p></div>
+          <div><div className="n">03</div><h4>Paid at the whistle</h4><p>Settlers vote Gemini's result with a hash of the raw response. Unanimous means you’re paid in seconds; anyone can check it.</p></div>
         </section>
       )}
 
       <footer className="foot">
-        <span>Arra · testnet prototype · no real money</span>
-        <span>Vault <a href={addrUrl(VAULT)} target="_blank" rel="noreferrer" className="num">{short(VAULT, 6)}</a> on Arc · prices from Gemini Prediction Markets</span>
+        <span className="meta">Arra<span className="sep" />Testnet prototype, no real money</span>
+        <span className="meta">Vault <a href={addrUrl(VAULT)} target="_blank" rel="noreferrer" className="num">{short(VAULT, 6)}</a> on Arc<span className="sep" />Prices from Gemini Prediction Markets</span>
       </footer>
     </div>
   );

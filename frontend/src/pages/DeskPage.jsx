@@ -82,10 +82,10 @@ export default function DeskPage({ account, onConnect }) {
     <div>
       <div className="row" style={{ alignItems: "flex-end", marginBottom: 20, flexWrap: "wrap" }}>
         <div>
-          <h1 className="display" style={{ marginBottom: 6 }}>Risk desk</h1>
+          <h1 className="display" style={{ marginBottom: 8 }} data-enter="1">Risk desk</h1>
           <p className="muted" style={{ margin: 0 }}>The pool that backs every promise. Read live from Arc.</p>
         </div>
-        <span className="chip"><span className="dot live" />Arc testnet · refreshes every 15s</span>
+        <span className="chip"><span className="dot live" />Arc testnet<span className="sep" />refreshes every 15s</span>
       </div>
 
       <div className="stats">
@@ -128,7 +128,7 @@ export default function DeskPage({ account, onConnect }) {
                       )}
                     </div>
                     <div className="netting" style={{ marginTop: 8 }}>
-                      Insured <b>{usd(r.insured)}</b> · locked <b>{usd(r.state === 3 ? 0 : r.locked)}</b> · worst unhedged <span className="num">{usd(r.worstUnhedged)}</span>
+                      <span>Insured <b>{usd(r.insured)}</b></span><span className="sep" /><span>Locked <b>{usd(r.state === 3 ? 0 : r.locked)}</b></span><span className="sep" /><span>Worst unhedged <span className="num">{usd(r.worstUnhedged)}</span></span>
                     </div>
                   </div>
                 );
@@ -173,7 +173,7 @@ export default function DeskPage({ account, onConnect }) {
               <button className="btn primary" disabled={!!busy || !(Number(amt) > 0)} onClick={() => act((s) => deposit(account, amt, s), "Deposit")}>{busy ?? (account ? "Deposit" : "Connect wallet")}</button>
               <button className="btn" disabled={!!busy || !account} onClick={() => act((s) => withdrawMax(account, s), "Withdrawal")}>Withdraw max</button>
             </div>
-            {msg?.ok && <p className="muted" style={{ marginTop: 10 }}>{msg.ok} · <a href={txUrl(msg.h)} target="_blank" rel="noreferrer">tx</a></p>}
+            {msg?.ok && <p className="muted" style={{ marginTop: 10 }}>{msg.ok}: <a href={txUrl(msg.h)} target="_blank" rel="noreferrer">tx</a></p>}
             {msg?.err && <p className="err" role="alert" style={{ marginTop: 10 }}>{msg.err}</p>}
           </div>
 

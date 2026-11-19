@@ -221,7 +221,7 @@ forge test
   ArraVault.invariant.t.sol    8 passed  (256 runs × 32 calls incl. propose / veto / void: full collateral, cap at sale, locked == worst case incl. void, proposedLoss == rescan, LP locks, hedge bounds)
 npm test (offchain)            59 passed (real Gemini captures: REST events, stale in-game markets, WebSocket depth, sandbox orders; settler, hedger webhook, verifier, API)
 ./script/e2e-anvil.sh          E2E OK    (single game via 2-of-3 + dispute window; 4-city championship via 3-of-3 instant; verifier PASS)
-./script/e2e-live-gemini.sh    E2E LIVE OK (real moneyline + 94-team championship off live depth; settles outcome 21; verifier PASS)
+./script/e2e-live-gemini.sh    E2E LIVE OK (real moneyline + championship off live depth; settles a team past index 16; verifier PASS)
 ```
 
 ## What's next

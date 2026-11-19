@@ -53,6 +53,18 @@ No role can transfer vault USDC to an arbitrary address. Every outflow is either
 | Gemini data drift | Mis-settle on a changed response | The settler votes only when every contract is settled and exactly one is YES (or none, which is VOID, with only threshold votes so the guardian can look). Outcome order is pinned at the first sale, so a contract Gemini adds later can't shift indexes already sold. The evidence hash covers the exact response bytes. | Gemini's own result is trusted. Settlers only attest it. The pricer, hedger and settler must share the registry that holds the pinned order. |
 | Gas griefing | DoS through unbounded loops | No loop is reachable by unprivileged callers. `recordHedge` rescans at most 128 outcomes and is operator-paid. `insuredVolume` is a view. | None found. |
 
+## The demo keeper
+
+`offchain/src/keeper.js` runs the pricer, the settler and (with Gemini keys) the hedger in one Render service so the testnet demo settles itself. That concentrates keys that are meant to be independent:
+
+| Held by the keeper | What it could do if the host were compromised |
+| --- | --- |
+| Operator key | Sign quotes and record hedges (see the operator rows above). |
+| All three settler keys | Settle any event on any outcome instantly (unanimous fast path), bypassing the guardian veto. |
+| GitHub token (Contents on this repo only) | Rewrite the `keeper-data` branch (registry, evidence copies). Evidence integrity doesn't depend on it: the verifier checks every file against the onchain `evidenceHash`, and `/evidence` serves a file only if it hashes to its own name. |
+
+This is acceptable for a testnet demo with no real money. In production each settler is a separate operator with its own key and its own Gemini fetch, and the guardian is a multisig. The keeper's public surface is the pricer API plus two read-only routes: `GET /keeper` (loop health, no secrets) and `GET /evidence/:ticker/:file` (strict input checks, hash-verified).
+
 ## Known limits
 
 - Hedge proceeds are custodial: they come back from Gemini through the operator, not trustlessly.

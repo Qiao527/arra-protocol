@@ -112,3 +112,26 @@ test("M-5 residual: without live depth, the modeled ladder is sized to real book
   const fill = executablePrice(getBook({ contracts: [c] }, c, () => null), "YES", 5000);
   assert.ok(fill.filled <= 1000, `modeled ladder still offers ${fill.filled} contracts`);
 });
+
+// ---------------------------------------------------------------- listing pages through everything
+
+test("listActiveEvents pages through results (a 50-per-query cap hid live games from the settler)", async () => {
+  const { listActiveEvents } = await import("../src/gemini.js");
+  const all = [...Array(130).keys()].map((i) => ({ ticker: `NFL-G${i}-M`, sportsMarket: { type: "moneyline" }, contracts: [] }));
+  const orig = globalThis.fetch;
+  globalThis.fetch = async (url) => {
+    const u = new URL(url);
+    const isMoneyline = u.searchParams.get("sports_market_type") === "moneyline";
+    const offset = Number(u.searchParams.get("offset") ?? 0);
+    const limit = Number(u.searchParams.get("limit"));
+    const data = isMoneyline ? all.slice(offset, offset + limit) : [];
+    return new Response(JSON.stringify({ data, pagination: { limit, offset, total: isMoneyline ? all.length : 0 } }), { status: 200 });
+  };
+  try {
+    const events = await listActiveEvents({ maxPages: 10 });
+    assert.equal(events.filter((e) => e.ticker.startsWith("NFL-G")).length, 130);
+    assert.equal((await listActiveEvents()).filter((e) => e.ticker.startsWith("NFL-G")).length, 50, "the public list stays one page");
+  } finally {
+    globalThis.fetch = orig;
+  }
+});

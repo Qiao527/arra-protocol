@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import { outcomeSymbols } from "./gemini.js";
 
 const FILE = process.env.REGISTRY_PATH ? new URL(`file://${process.env.REGISTRY_PATH}`) : new URL("../data/registry.json", import.meta.url);
+export const REGISTRY_FILE = fileURLToPath(FILE);
 
 export function readRegistry() {
   try {

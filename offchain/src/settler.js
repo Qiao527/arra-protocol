@@ -152,29 +152,45 @@ export async function settle(eventTicker, outcome, evidence) {
   await finalizeAndPay(eventTicker);
 }
 
+/**
+ * One pass over every event we sold cover on: finalize Proposed ones whose window has passed,
+ * and vote any Open event whose Gemini market has settled. Returns { acted, errors }.
+ */
+export async function settleOnce({ onAction = () => {} } = {}) {
+  const acted = [];
+  const errors = [];
+  for (const [eventId, info] of Object.entries(readRegistry())) {
+    try {
+      const st = await eventState(eventId);
+      if (st.state === "Proposed") {
+        await finalizeAndPay(info.eventTicker);
+        acted.push(info.eventTicker);
+        onAction(`${info.eventTicker}: finalized and paid`);
+        continue;
+      }
+      if (st.state !== "Open") continue;
+      const { event, bytes } = await getEventRaw(info.eventTicker);
+      const outcome = settledOutcome(event, info.outcomes);
+      if (outcome !== null) {
+        const { saveOutcomes } = await import("./verify.js");
+        saveOutcomes({ dir: process.env.EVIDENCE_DIR, eventTicker: info.eventTicker, outcomes: info.outcomes });
+        await vote(info.eventTicker, outcome, bytes); // evidence = keccak256 of the exact Gemini response bytes
+        await finalizeAndPay(info.eventTicker);
+        acted.push(info.eventTicker);
+        onAction(`${info.eventTicker}: Gemini settled -> outcome ${outcome === VOID_OUTCOME ? "VOID" : outcome}, voted and paid`);
+      }
+    } catch (err) {
+      errors.push(`${info.eventTicker}: ${err.message.split("\n")[0]}`);
+    }
+  }
+  return { acted, errors };
+}
+
 async function watch() {
   console.log("Settler watching Gemini for settled markets...");
   for (;;) {
-    for (const [eventId, info] of Object.entries(readRegistry())) {
-      try {
-        const st = await eventState(eventId);
-        if (st.state === "Proposed") {
-          await finalizeAndPay(info.eventTicker);
-          continue;
-        }
-        if (st.state !== "Open") continue;
-        const { event, bytes } = await getEventRaw(info.eventTicker);
-        const outcome = settledOutcome(event, info.outcomes);
-        if (outcome !== null) {
-          const { saveOutcomes } = await import("./verify.js");
-          saveOutcomes({ dir: process.env.EVIDENCE_DIR, eventTicker: info.eventTicker, outcomes: info.outcomes });
-          await vote(info.eventTicker, outcome, bytes); // evidence = keccak256 of the exact Gemini response bytes
-          await finalizeAndPay(info.eventTicker);
-        }
-      } catch (err) {
-        console.error(`settler: ${info.eventTicker}: ${err.message}`);
-      }
-    }
+    const { errors } = await settleOnce({ onAction: (m) => console.log(m) });
+    for (const e of errors) console.error(`settler: ${e}`);
     await sleep(30_000);
   }
 }

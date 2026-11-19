@@ -1,14 +1,17 @@
-# Render Blueprint for the public pricer API (the frontend's quote backend).
-# New > Blueprint > this repo. Set the two `sync: false` values in the dashboard:
-#   OPERATOR_PRIVATE_KEY  testnet operator key (secret, never committed)
-#   ALLOWED_ORIGINS       the frontend origin(s), comma-separated
+# Render Blueprint for the keeper: the public pricer API plus the settler loop in one process
+# (src/keeper.js). New > Blueprint > this repo. Set the `sync: false` values in the dashboard:
+#   OPERATOR_PRIVATE_KEY   testnet operator key (signs quotes; pays gas for claims)
+#   SETTLER_PRIVATE_KEYS   testnet settler keys, comma-separated (demo: all settlers in one process)
+#   ALLOWED_ORIGINS        the frontend origin(s), comma-separated
+#   GITHUB_EVIDENCE_TOKEN  fine-grained token, Contents read/write on this repo only (registry +
+#                          evidence persist on the keeper-data branch across restarts)
 services:
   - type: web
     name: arra-pricer
     runtime: node
     rootDir: offchain
     buildCommand: npm ci --omit=dev
-    startCommand: node src/pricer.js
+    startCommand: node src/keeper.js
     healthCheckPath: /health
     plan: free
     envVars:
@@ -26,7 +29,13 @@ services:
         value: "1"
       - key: RATE_LIMIT_PER_MIN
         value: "60"
+      - key: FROM_BLOCK
+        value: "72987227"
       - key: OPERATOR_PRIVATE_KEY
+        sync: false
+      - key: SETTLER_PRIVATE_KEYS
+        sync: false
+      - key: GITHUB_EVIDENCE_TOKEN
         sync: false
       - key: ALLOWED_ORIGINS
         sync: false

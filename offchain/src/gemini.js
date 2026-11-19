@@ -70,6 +70,7 @@ export async function listActiveEvents({
   types = ["moneyline", "futures"],
   searches = ["Champion"], // championships are tagged eventTags[futures], not sports_market_type
   limit = 50,
+  maxPages = 1, // the keeper's registry recovery pages through everything (~1,400 events, ~15 s)
 } = {}) {
   if (config.mockGemini) return Object.values(MOCKS);
   const base = `${config.geminiBase}/v1/prediction-markets/events?status=active&category=${encodeURIComponent(category)}&limit=${limit}`;
@@ -77,7 +78,20 @@ export async function listActiveEvents({
     ...types.map((t) => `${base}&sports_market_type=${encodeURIComponent(t)}`),
     ...searches.map((q) => `${base}&search=${encodeURIComponent(q)}`),
   ];
-  const pages = await Promise.all((urls.length ? urls : [base]).map(getJson));
+  // Page through every result: with one page per query, live games past the first `limit`
+  // never reached the pricer's list or the keeper's registry recovery.
+  const allPages = async (url) => {
+    const out = [];
+    for (let offset = 0, page = 0; page < maxPages; page++, offset += limit) {
+      const d = await getJson(`${url}&offset=${offset}`);
+      const rows = Array.isArray(d) ? d : d.data ?? d.events ?? [];
+      out.push(rows);
+      const total = d.pagination?.total;
+      if (rows.length < limit || (Number.isFinite(total) && offset + limit >= total)) break;
+    }
+    return out;
+  };
+  const pages = (await Promise.all((urls.length ? urls : [base]).map(allPages))).flat();
   // Game markets nest period markets (quarters, halves) as child events[]. Flatten them so
   // e.g. the 2nd-half winner market is quotable for in-game ("halftime comeback") cover.
   const seen = new Set();
@@ -89,7 +103,7 @@ export async function listActiveEvents({
     out.push(parentTicker ? { ...rest, parentTicker } : rest);
     for (const c of children ?? []) add(c, e.ticker);
   };
-  for (const d of pages) for (const e of Array.isArray(d) ? d : d.data ?? d.events ?? []) add(e);
+  for (const rows of pages) for (const e of rows) add(e);
   return out;
 }
 

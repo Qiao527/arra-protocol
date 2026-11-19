@@ -1,0 +1,17 @@
+name: keepalive
+# Render's free plan sleeps a service after 15 idle minutes, which also stops the keeper's settler
+# loop. A ping every 10 minutes keeps it awake (GitHub may delay scheduled runs by a few minutes).
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+permissions: {}
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - run: |
+          url="${{ vars.PRICER_URL }}"
+          [ -n "$url" ] || { echo "PRICER_URL not set"; exit 0; }
+          curl -fsS --max-time 90 "$url/health" && echo && curl -fsS --max-time 30 "$url/keeper" | head -c 600

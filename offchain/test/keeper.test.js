@@ -157,3 +157,21 @@ test("store: identical bytes are not re-committed; concurrent puts are serialize
   await Promise.all([s2.put("p.json", new TextEncoder().encode("p"), "m"), s2.put("q.json", new TextEncoder().encode("q"), "m")]);
   assert.equal(maxInFlight, 1, "one GitHub request at a time");
 });
+
+test("GET /registry lists tracked events (tickers + pinned outcome order) and GET /proofs serves the latest run", async () => {
+  const gh = fakeGitHub();
+  const store = createStore({ token: "t", repo: "o/r", fetchImpl: gh.fetch });
+  const proofs = { generatedAt: "2026-11-19T21:00:00Z", events: [{ eventTicker: "NFL-X-M", verdict: "PASS" }] };
+  await store.put("offchain/proofs/arc-testnet.json", new TextEncoder().encode(JSON.stringify(proofs)), "proofs");
+  const a = app({ allowedOrigins: ["https://x.example"] });
+  const registry = { ["0x" + "ab".repeat(32)]: { eventTicker: "NFL-X-M", title: "X vs Y", outcomes: ["GEMI-NFL-X-M-X", "GEMI-NFL-X-M-Y"] } };
+  keeperRoutes(a, { evidenceDir: os.tmpdir(), store, status: () => ({}), registry: () => registry });
+  await withServer(a, async (base) => {
+    const r = await (await fetch(`${base}/registry`)).json();
+    assert.equal(r["0x" + "ab".repeat(32)].eventTicker, "NFL-X-M");
+    assert.deepEqual(r["0x" + "ab".repeat(32)].outcomes, ["GEMI-NFL-X-M-X", "GEMI-NFL-X-M-Y"]);
+    const p = await fetch(`${base}/proofs`);
+    assert.equal(p.status, 200);
+    assert.equal((await p.json()).events[0].verdict, "PASS");
+  });
+});

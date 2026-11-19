@@ -34,8 +34,22 @@ export function resolveTickers(eventIds, events) {
 }
 
 /** Add the public keeper routes to an express app. */
-export function keeperRoutes(a, { evidenceDir, store, status }) {
+export function keeperRoutes(a, { evidenceDir, store, status, registry = readRegistry }) {
   a.get("/keeper", (_req, res) => res.json(status()));
+  // Tracked events: ticker, title and the outcome order pinned at first sale (all public facts).
+  a.get("/registry", (_req, res) =>
+    res.json(Object.fromEntries(Object.entries(registry()).map(([id, v]) => [id, { eventTicker: v.eventTicker, title: v.title ?? null, outcomes: v.outcomes ?? null }])))
+  );
+  // Latest independent proof run (scripts/verify-all.js, scheduled in GitHub Actions).
+  let proofsCache = { at: 0, body: null };
+  a.get("/proofs", async (_req, res) => {
+    if (Date.now() - proofsCache.at > 60_000) {
+      const b = await store.get("offchain/proofs/arc-testnet.json").catch(() => null);
+      proofsCache = { at: Date.now(), body: b ? Buffer.from(b) : null };
+    }
+    if (!proofsCache.body) return res.status(404).json({ error: "no proof run published yet" });
+    res.type("application/json").send(proofsCache.body);
+  });
   a.get("/evidence/:ticker/:file", async (req, res) => {
     const { ticker, file } = req.params;
     if (!TICKER.test(ticker) || !FILE.test(file)) return res.status(400).json({ error: "bad ticker or file" });

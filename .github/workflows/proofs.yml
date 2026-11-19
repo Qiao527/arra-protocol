@@ -1,0 +1,41 @@
+name: proofs
+# Independent re-check of every promise the vault sold, from public inputs only: the chain, the
+# keeper's /registry and hash-checked /evidence, and Gemini's live API. With the
+# GITHUB_EVIDENCE_TOKEN secret set, the result is published to the keeper-data branch and served
+# at <keeper>/proofs. Fails if any settled promise fails its proof.
+on:
+  schedule:
+    - cron: "15,45 * * * *"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: proofs
+  cancel-in-progress: false
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: offchain/package-lock.json
+      - run: npm ci --omit=dev
+        working-directory: offchain
+      - name: Wake the keeper (free plan sleeps)
+        run: curl -fsS --retry 5 --retry-delay 15 --max-time 90 "${{ vars.PRICER_URL }}/health"
+      - run: node scripts/verify-all.js --out proofs.json
+        working-directory: offchain
+        env:
+          KEEPER_URL: ${{ vars.PRICER_URL }}
+          PUBLISH: "true"
+          GITHUB_EVIDENCE_TOKEN: ${{ secrets.GITHUB_EVIDENCE_TOKEN }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: proofs
+          path: offchain/proofs.json
+          if-no-files-found: ignore

@@ -193,6 +193,7 @@ export function app({
           startTime: e.startTime ?? null,
           expiry: e.expiryDate ?? e.expiry ?? null,
           sportsMarket: e.sportsMarket ?? null,
+          parentTicker: e.parentTicker ?? null,
           participants: e.participants ?? [],
           coverable: isMutuallyExclusive(e),
           contracts: orderedContracts(e).map((c, outcome) => ({

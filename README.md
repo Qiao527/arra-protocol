@@ -172,6 +172,22 @@ npm run hedger      # webhook on :8788/quicknode (add -- --poll to poll instead)
 npm run settler     # watch mode; demo: npm run settle -- <EVENT-TICKER> <outcome index | YES | NO>
 ```
 
+## Frontend
+
+`frontend/` (Vite + React + viem). Three pages, all reading the vault live from Arc:
+
+- **Make a promise**: pick a Gemini game (or championship), pick the long shot, set the payout, get a signed quote from the pricer, seal it with one wallet transaction, and get a QR code. "Halftime comeback" switches to Gemini's real 2nd-half winner market for live in-game cover.
+- **Proof of promise** (`#/p/<id>`): what a customer sees after scanning the QR. Checks that the policy exists, that `keccak256(ticker)` matches its event, that the payout is locked, that the vault is solvent, the Gemini hedge order IDs (from onchain `HedgeRecorded` logs), and the settlement evidence. No server of ours is involved.
+- **Risk desk**: NAV, utilization, per-game outcome bars (owed vs hedged), netting ratio, the hedge log with Gemini order IDs, and LP deposit/withdraw.
+
+Without a pricer URL the app browses a captured Gemini snapshot and shows indicative premiums (same formula); sealing needs the live pricer. Contract reads are batched through Multicall3 (Arc's public RPC rate-limits), and history comes from the Blockscout API (Arc's RPC caps `eth_getLogs` ranges).
+
+```bash
+cd frontend && npm ci
+VITE_PRICER_URL=https://<pricer-host> npm run dev     # or npm run build -> dist/
+```
+Deployed by `.github/workflows/pages.yml` to GitHub Pages; set the repo variable `PRICER_URL` to bake in the live pricer.
+
 ## QuickNode Streams (real-time hedging)
 
 | Setting | Value |

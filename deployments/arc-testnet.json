@@ -77,5 +77,30 @@
       "lpFundsRecoveredTx": "0x83c89aa61032e1c110bd94e22847dd30b6f544e1d96cb31d9ad7bc95104935fa"
     }
   ],
-  "pricerUrl": "https://arra-pricer.onrender.com"
+  "pricerUrl": "https://arra-pricer.onrender.com",
+  "demoChampionship": {
+    "at": "2026-11-19T20:25:10.445Z",
+    "eventTicker": "NBAF-2627CHAMP",
+    "payoutUsdcEach": 5,
+    "bars": {
+      "NOP": {
+        "address": "0x23e4C3E8c38b58Cd317BE44969831eFb3464Fb5c",
+        "buyCoverTx": "0xaac68aa7a7bad01078fc679f915cd13c63ac9079ff7283853b62144457456670"
+      },
+      "DAL": {
+        "address": "0xC48015f28dF07540ee5335e589D4410901EDd321",
+        "buyCoverTx": "0xf6496ad485c6ea03aa0a8f54540e9eb2f76ffc4e267f71d32b0fa56597a7f63c"
+      },
+      "IND": {
+        "address": "0x4A36DB264E28A4bE11A50D951163611C947a99E8",
+        "buyCoverTx": "0xc833964a98f79135f7f358f82a9f59cebf4e783a791e7241e90511a79a6a0f22"
+      },
+      "CLE": {
+        "address": "0x4e1fD1056530B62E04B1D1639f3b6550e7CAC589",
+        "buyCoverTx": "0x2466a5f9c32d0840fef1549b1e598a81b01ba0156401516cf66097340e993aad"
+      }
+    },
+    "insuredUsdc": 20,
+    "lockedUsdc": 5
+  }
 }

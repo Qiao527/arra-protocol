@@ -36,7 +36,9 @@ export async function proveEvent({ eventTicker, onchain, outcomes, loadBytes, ge
   } catch {
     live = "unreachable";
   }
-  const verdict =
-    live === "agrees" ? "PASS" : live === "disagrees" ? "FAIL" : live === "unreachable" ? "UNCHECKED" : synthetic ? "SYNTHETIC" : "UNCONFIRMED";
+  // A synthetic settlement never claimed Gemini's real result, so Gemini can't confirm or refute it.
+  const verdict = synthetic
+    ? "SYNTHETIC"
+    : live === "agrees" ? "PASS" : live === "disagrees" ? "FAIL" : live === "unreachable" ? "UNCHECKED" : "UNCONFIRMED";
   return { ...base, verdict, evidence: "ok", live, synthetic, checks: v.checks };
 }

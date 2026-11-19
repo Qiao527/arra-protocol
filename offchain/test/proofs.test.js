@@ -62,3 +62,11 @@ test("open events are PENDING; Gemini being unreachable never turns a good proof
   assert.equal(r2.verdict, "UNCHECKED");
   assert.equal(r2.evidence, "ok");
 });
+
+test("a synthetic settlement that Gemini later contradicts stays SYNTHETIC (it never claimed the real result)", async () => {
+  const ev = settled("-ARI", { _arraSynthetic: "testnet demo" });
+  const bytes = bytesOf(ev);
+  const r = await proveEvent({ ...base(bytes, winnerIndex(ev, "-ARI")), loadBytes: async () => bytes, getLive: async () => settled("-SF") });
+  assert.equal(r.verdict, "SYNTHETIC");
+  assert.equal(r.live, "disagrees");
+});

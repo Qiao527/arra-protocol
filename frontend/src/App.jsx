@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import Logo from "./components/Logo.jsx";
 import PromisePage from "./pages/PromisePage.jsx";
 import VerifyPage from "./pages/VerifyPage.jsx";
 import DeskPage from "./pages/DeskPage.jsx";
@@ -52,7 +51,7 @@ export default function App() {
     <>
     <div className="shell shell-top">
       <header className="top">
-        <a className="brand" href="#/" aria-label="Arra home"><Logo /><span className="brand-name">Arra</span></a>
+        <a className="brand" href="#/" aria-label="Arra home"><span className="brand-name">Arra</span></a>
         <nav className="nav" aria-label="Main">
           {nav.map(([k, href, label]) => (
             <a key={k} href={href} aria-current={route.page === k ? "page" : undefined}>{label}</a>

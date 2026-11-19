@@ -698,6 +698,72 @@ contract ArraVaultTest is Test {
         assertEq(vault.pendingClaims(), 0);
     }
 
+    // ---------------------------------------------------------------- independent-verifier findings
+
+    /// N-1: the guardian may void a Proposed result only inside its dispute window, like a veto.
+    function test_Void_RevertWhen_ProposedWindowClosed() public {
+        _buy(bar, 0, 5_000 * USDC, 718 * USDC);
+        vm.prank(s1);
+        vault.voteResult(EVT, 0, EVIDENCE);
+        vm.prank(s2);
+        vault.voteResult(EVT, 0, EVIDENCE);
+        vm.warp(block.timestamp + WINDOW);
+        vm.expectRevert(ArraVault.DisputeWindowClosed.selector);
+        vault.voidEvent(EVT);
+        vault.finalize(EVT); // the proposed result stands
+        assertEq(uint8(_state(EVT)), uint8(ArraVault.EventState.Settled));
+    }
+
+    /// N-2: while a loss is booked (Proposed), deposits are closed: a veto would hand a
+    /// depositor the marked-down shares' rebound at the other LPs' expense.
+    function test_Review_NoDepositWhileLossProposed() public {
+        _buy(bar, 0, 5_000 * USDC, 500 * USDC);
+        vm.prank(s1);
+        vault.voteResult(EVT, 0, EVIDENCE);
+        vm.prank(s2);
+        vault.voteResult(EVT, 0, EVIDENCE);
+        assertEq(vault.maxDeposit(cafe), 0);
+        assertEq(vault.maxMint(cafe), 0);
+        vm.prank(cafe);
+        vm.expectRevert();
+        vault.deposit(1_000 * USDC, cafe);
+        vault.vetoResult(EVT);
+        assertEq(vault.maxDeposit(cafe), type(uint256).max);
+    }
+
+    /// N-3 (L-4): votes cast before a settler-set change no longer count. A removed settler's
+    /// vote can neither complete a quorum nor, with the smaller count, the unanimous fast path.
+    function test_Review_SettlerChangeResetsOpenVotes() public {
+        _buy(bar, 0, 1_000 * USDC, 150 * USDC);
+        vm.prank(s1);
+        vault.voteResult(EVT, 1, EVIDENCE); // s1 later found compromised
+        vault.setSettler(s1, false);
+        address s4 = makeAddr("s4");
+        vault.setSettler(s4, true);
+        vm.prank(s2);
+        vault.voteResult(EVT, 1, EVIDENCE); // would have reached 2-of-3 with s1's stale vote
+        assertEq(uint8(_state(EVT)), uint8(ArraVault.EventState.Open));
+        vm.prank(s4);
+        vault.voteResult(EVT, 1, EVIDENCE);
+        assertEq(uint8(_state(EVT)), uint8(ArraVault.EventState.Proposed));
+    }
+
+    function test_Review_SettlerChangeBlocksFastPathWhileProposed() public {
+        _buy(bar, 0, 1_000 * USDC, 150 * USDC);
+        vm.prank(s1);
+        vault.voteResult(EVT, 0, EVIDENCE);
+        vm.prank(s2);
+        vault.voteResult(EVT, 0, EVIDENCE); // Proposed
+        vault.setSettler(s1, false); // settlerCount 3 -> 2: s3 alone would now "complete" unanimity
+        vm.prank(s3);
+        vm.expectRevert(ArraVault.SettlersChanged.selector);
+        vault.voteResult(EVT, 0, EVIDENCE);
+        // The guardian still has the window; afterwards anyone finalizes as usual.
+        vm.warp(block.timestamp + WINDOW);
+        vault.finalize(EVT);
+        assertEq(uint8(_state(EVT)), uint8(ArraVault.EventState.Settled));
+    }
+
     /// Check (no fix needed): the 6-decimal virtual offset makes a first-depositor
     /// donation attack cost the attacker ~1e6x what it takes from the victim.
     function test_Review_InflationAttackUnprofitable() public {

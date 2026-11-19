@@ -89,6 +89,7 @@ contract ArraVault is ERC4626, EIP712, Ownable {
     uint8 public settlerThreshold;  // votes needed to propose a result (e.g. 2 of 3)
     uint64 public disputeWindow;    // seconds the guardian has to veto a proposed result
     uint256 public eventCapBps;     // max worst-case unhedged payout per event, as bps of assets
+    uint64 public settlerEpoch;     // bumps on any settler-set or threshold change; older votes stop counting
 
     uint256 public totalLocked;     // sum over unsettled events of max_i L_i
     uint256 public pendingClaims;   // payouts owed to winners not yet claimed
@@ -102,6 +103,7 @@ contract ArraVault is ERC4626, EIP712, Ownable {
     mapping(bytes32 => uint256) public premiumsOf;                    // eventId => premiums taken (refunded if void)
     mapping(bytes32 => mapping(uint32 => mapping(address => bool))) public hasVoted;
     mapping(bytes32 => mapping(uint32 => mapping(uint8 => uint8))) public voteCount;
+    mapping(bytes32 => mapping(uint32 => uint64)) internal _roundEpoch; // settlerEpoch + 1 at a round's first vote
     mapping(uint256 => bool) public nonceUsed;
 
     Policy[] public policies;
@@ -159,6 +161,7 @@ contract ArraVault is ERC4626, EIP712, Ownable {
     error NotWinner();
     error HedgeExceedsLiability();
     error BadParams();
+    error SettlersChanged();
 
     modifier onlyOperator() {
         if (msg.sender != operator) revert NotOperator();
@@ -203,6 +206,7 @@ contract ArraVault is ERC4626, EIP712, Ownable {
         if (allowed && !isSettler[settler]) settlerCount++;
         if (!allowed && isSettler[settler]) settlerCount--;
         isSettler[settler] = allowed;
+        settlerEpoch++;
         emit SettlerUpdated(settler, allowed);
     }
 
@@ -210,6 +214,7 @@ contract ArraVault is ERC4626, EIP712, Ownable {
         if (threshold == 0) revert BadParams();
         settlerThreshold = threshold;
         disputeWindow = window;
+        settlerEpoch++;
         emit SettlementParamsUpdated(threshold, window);
     }
 
@@ -334,6 +339,16 @@ contract ArraVault is ERC4626, EIP712, Ownable {
         if (e.state != EventState.Open && e.state != EventState.Proposed) revert EventNotOpen();
         if (e.state == EventState.Proposed && outcome != e.winningOutcome) revert EventNotOpen();
         uint32 r = e.round;
+        // Votes only count against the settler set they were cast under. If the set (or the
+        // threshold) changed mid-round, earlier votes may come from removed keys: an Open event
+        // starts a fresh round; a Proposed one keeps its proposal (guardian veto, then finalize)
+        // but takes no more votes, so a shrunken set cannot fake the unanimous fast path.
+        uint64 ep = _roundEpoch[eventId][r];
+        if (ep != 0 && ep != settlerEpoch + 1) {
+            if (e.state == EventState.Proposed) revert SettlersChanged();
+            r = ++e.round;
+        }
+        if (_roundEpoch[eventId][r] == 0) _roundEpoch[eventId][r] = settlerEpoch + 1;
         if (hasVoted[eventId][r][msg.sender]) revert AlreadyVoted();
         hasVoted[eventId][r][msg.sender] = true;
         uint8 c = ++voteCount[eventId][r][outcome];
@@ -374,6 +389,8 @@ contract ArraVault is ERC4626, EIP712, Ownable {
     function voidEvent(bytes32 eventId) external onlyOwner {
         EventInfo storage e = events[eventId];
         if (e.state == EventState.Proposed) {
+            // Same bound as a veto: once the window closes, the proposed result stands.
+            if (block.timestamp >= uint256(e.proposedAt) + disputeWindow) revert DisputeWindowClosed();
             proposedLoss -= _netLoss(eventId, e.winningOutcome);
             e.state = EventState.Open;
         }
@@ -515,12 +532,14 @@ contract ArraVault is ERC4626, EIP712, Ownable {
         return _convertToShares(free, Math.Rounding.Floor);
     }
 
+    /// @dev Entries are closed while hedge proceeds sit offchain, and while a proposed loss is
+    ///      booked: a veto would otherwise hand a depositor the marked-down shares' rebound.
     function maxDeposit(address) public view override returns (uint256) {
-        return hedgeReceivable > 0 ? 0 : type(uint256).max;
+        return hedgeReceivable > 0 || proposedLoss > 0 ? 0 : type(uint256).max;
     }
 
     function maxMint(address) public view override returns (uint256) {
-        return hedgeReceivable > 0 ? 0 : type(uint256).max;
+        return hedgeReceivable > 0 || proposedLoss > 0 ? 0 : type(uint256).max;
     }
 
     /// @dev Virtual share offset blunts first-depositor inflation attacks.

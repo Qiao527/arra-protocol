@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 
 const BEATS = [
-  { h: "A promise is a liability.", p: "“If our team wins, it’s on us.” Great for a packed room. Ruinous if the upset actually happens." },
-  { h: "Arra locks it in USDC.", p: "Priced from Gemini’s prediction-market order book, hedged on Gemini, held in a vault on Arc. One lock backs every team, because only one can win." },
-  { h: "And pays it at the whistle.", p: "Settlers vote Gemini’s result with a hash of the raw response. Your customers scan a QR code and check it themselves." },
+  { h: <>A promise is a <em>liability.</em></>, p: "“If our team wins, it’s on us.” It packs the room. It’s ruinous if the upset happens." },
+  { h: <>Arra locks it in <em>USDC.</em></>, p: "Priced from Gemini’s prediction-market order book, hedged on Gemini, held in a vault on Arc. One lock backs every team, because only one can win." },
+  { h: <>And pays it at the <em>whistle.</em></>, p: "Settlers vote Gemini’s result with a hash of the raw response. Your customers scan a QR code and check it themselves." },
 ];
 
 /** Scroll-driven 3D hero. The WebGL scene loads lazily; without WebGL the copy still reads in order. */
@@ -46,19 +46,19 @@ export default function Hero() {
     <section className="hero3d" ref={wrap} aria-label="What Arra does">
       <div className="hero3d-sticky">
         <canvas ref={canvas} className={`hero3d-canvas ${ready ? "on" : ""}`} aria-hidden="true" />
-        <div className="hero3d-grain" aria-hidden="true" />
         <div className="hero3d-copy">
-          <p className="hero3d-kicker num">Arra</p>
           <h1 className="hero3d-title" key={beat}>{BEATS[beat].h}</h1>
           <p className="hero3d-p" key={`p${beat}`}>{BEATS[beat].p}</p>
-          <div className="hero3d-progress" aria-hidden="true">
-            {BEATS.map((_, i) => <span key={i} className={i <= beat ? "on" : ""} />)}
-          </div>
           {beat === 2 && (
-            <button className="btn primary big hero3d-cta" onClick={() => document.getElementById("make")?.scrollIntoView({ behavior: "smooth" })}>Make a promise</button>
+            <button className="btn primary big hero3d-cta" onClick={() => document.getElementById("make")?.scrollIntoView({ behavior: "smooth" })}>
+              Make a promise
+            </button>
           )}
         </div>
-        <div className="hero3d-scroll num" style={{ opacity: p < 0.05 ? 1 : 0 }}>Scroll</div>
+        <div className="hero3d-foot">
+          <span className="num">{String(beat + 1).padStart(2, "0")} / 03</span>
+          <span style={{ opacity: p < 0.05 ? 1 : 0, transition: "opacity .4s" }}>Scroll</span>
+        </div>
       </div>
     </section>
   );

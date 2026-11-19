@@ -101,7 +101,7 @@ export default function DeskPage({ account, onConnect }) {
         <section>
           <div className="panel">
             <h3>Games on the book</h3>
-            <p className="sub">Bars: payout owed if that outcome wins (white) and the part hedged on Gemini (green). The vault locks only the largest bar.</p>
+            <p className="sub">Bars: payout owed if that outcome wins (dark) and the part hedged on Gemini (green). The vault locks only the largest bar.</p>
             {!rows && <div className="skeleton" style={{ height: 120 }} />}
             {rows?.length === 0 && <p className="muted">No promises yet.</p>}
             <div className="stack">
@@ -141,7 +141,7 @@ export default function DeskPage({ account, onConnect }) {
           <div className="panel">
             <h3>Hedges on Gemini</h3>
             <p className="sub">Every hedge is recorded onchain with its Gemini order ID. Only filled quantity is recorded.</p>
-            <table className="tbl">
+            <div className="tbl-wrap"><table className="tbl">
               <thead><tr><th>Game</th><th>Outcome</th><th className="r">Covered</th><th>Gemini order</th></tr></thead>
               <tbody>
                 {hedges.length === 0 && <tr><td colSpan={4} className="muted">No hedges recorded yet.</td></tr>}
@@ -154,7 +154,7 @@ export default function DeskPage({ account, onConnect }) {
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </table></div>
           </div>
         </section>
 

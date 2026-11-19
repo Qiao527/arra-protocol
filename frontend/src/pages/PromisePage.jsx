@@ -124,8 +124,7 @@ export default function PromisePage({ account, onConnect }) {
     <div className="grid-2">
       <section>
         <h1 className="display" data-enter="1">
-          Make the promise.
-          <span className="second">Keep it, provably.</span>
+          Make the promise. Keep it, <em>provably.</em>
         </h1>
         <p className="lede" data-enter="2">
           “If our team wins, it’s on us.” Arra prices the upset from Gemini’s order book, locks the payout in USDC on Arc, and

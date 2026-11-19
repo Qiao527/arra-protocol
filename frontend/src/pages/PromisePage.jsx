@@ -123,17 +123,14 @@ export default function PromisePage({ account, onConnect }) {
   return (
     <div className="grid-2">
       <section>
-        <h1 className="display" data-enter="1">
-          Make the promise. Keep it, <em>provably.</em>
+        <h1 className="display reveal">
+          Make a <em>promise.</em>
         </h1>
-        <p className="lede" data-enter="2">
-          “If our team wins, it’s on us.” Arra prices the upset from Gemini’s order book, locks the payout in USDC on Arc, and
-          pays you the moment the result settles. Your customers scan to check it’s real.
-        </p>
+        <p className="lede reveal">Pick a game, pick the long shot, set the payout.</p>
 
-        <div className="panel" data-enter="3">
+        <div className="panel reveal">
           <div className="row" style={{ marginBottom: 12 }}>
-            <h3>Pick the game</h3>
+            <h3><span className="step-n num">01</span>Game</h3>
             <span className="chip">
               <span className={`dot ${data?.live ? "live" : "warn"}`} />
               {data ? (data.live ? "Live Gemini markets" : <>Gemini snapshot<span className="sep" />{when(data.capturedAt)}</>) : "Loading markets"}
@@ -169,7 +166,7 @@ export default function PromisePage({ account, onConnect }) {
         {parent && (
           <div className="panel">
             <div className="row" style={{ marginBottom: 12 }}>
-              <h3>Pick your team</h3>
+              <h3><span className="step-n num">02</span>Team</h3>
               {half && (
                 <button className={`btn ${event?.ticker === half.ticker ? "primary" : "ghost"}`} onClick={() => setEventTicker(event?.ticker === half.ticker ? parent.ticker : half.ticker)}>
                   {event?.ticker === half.ticker ? "Halftime comeback: on" : "Halftime comeback"}
@@ -177,27 +174,27 @@ export default function PromisePage({ account, onConnect }) {
               )}
             </div>
             {event?.ticker === half?.ticker && (
-              <p className="sub">Cover just the 2nd half, priced live off Gemini’s 2nd-half winner market. In-game quotes live 20 seconds.</p>
+              <p className="sub">Live cover on the 2nd half. Quotes last 20 seconds.</p>
             )}
             <div className="teams">
               {event.contracts.map((c) => {
                 const a = Number(c.prices?.bestAsk);
                 const disabled = c.marketState !== "open" || !(a > 0) || a > 0.5 || /-D$/.test(c.instrumentSymbol);
                 return (
-                  <button key={c.instrumentSymbol} className="team" aria-pressed={symbol === c.instrumentSymbol} disabled={disabled} onClick={() => setSymbol(c.instrumentSymbol)} title={a > 0.5 ? "Favorites can't be covered: cover would cost about as much as the promo" : ""}>
+                  <button key={c.instrumentSymbol} className="team" aria-pressed={symbol === c.instrumentSymbol} disabled={disabled} onClick={() => setSymbol(c.instrumentSymbol)} title={a > 0.5 ? "Favorites can’t be covered" : ""}>
                     <span>{c.label}</span>
                     <span className="p">{a > 0 ? cents(a) : "—"}</span>
                   </button>
                 );
               })}
             </div>
-            {tooLikely && <p className="note" style={{ marginTop: 12 }}>Arra only covers long shots: promising on a favorite costs about as much as the giveaway.</p>}
+            {tooLikely && <p className="note" style={{ marginTop: 12 }}>Favorites can’t be covered. The cover would cost about as much as the promo.</p>}
           </div>
         )}
 
         <div className="panel">
-          <h3>How big is the promise?</h3>
-          <p className="sub">Your real cost of honoring it (cost of goods, not menu price).</p>
+          <h3><span className="step-n num">03</span>Payout</h3>
+          <p className="sub">What honoring it would cost you.</p>
           <label className="field" htmlFor="payout">Payout if they win (USDC)</label>
           <div className="amount">
             <span className="num muted">$</span>
@@ -213,14 +210,14 @@ export default function PromisePage({ account, onConnect }) {
               $5 testnet
             </button>
           </div>
-          <label className="field" htmlFor="merchant" style={{ marginTop: 14 }}>Business name (shown on the promise)</label>
+          <label className="field" htmlFor="merchant" style={{ marginTop: 16 }}>Business name</label>
           <div className="amount">
             <input id="merchant" style={{ fontFamily: "var(--sans)", fontSize: 16 }} placeholder="e.g. Lone Star Taproom" value={merchant} onChange={(e) => setMerchant(e.target.value.slice(0, 40))} />
           </div>
         </div>
       </section>
 
-      <aside style={{ position: "sticky", top: 24 }} data-enter="4">
+      <aside className="reveal" style={{ position: "sticky", top: 32 }}>
         <PromiseDoc
           merchant={merchant}
           team={contract?.label}
@@ -236,7 +233,7 @@ export default function PromisePage({ account, onConnect }) {
           {done ? (
             <div className="stack">
               <h3>Sealed. The payout is locked on Arc.</h3>
-              <p className="sub">Print the QR on table tents. Anyone who scans it sees the locked USDC, the Gemini hedge and the settlement status.</p>
+              <p className="sub">Print the QR code for your tables.</p>
               <div className="row">
                 <a className="btn" href={txUrl(done.hash)} target="_blank" rel="noreferrer">View transaction</a>
                 <a className="btn primary" href={`#/p/${done.policyId}?${new URLSearchParams({ t: done.ticker, l: done.label, ...(merchant ? { m: merchant } : {}) })}`}>Open proof page</a>
@@ -273,7 +270,7 @@ export default function PromisePage({ account, onConnect }) {
                   {busy ?? (!account ? "Connect wallet to quote" : ph === "live" ? "Get live in-game quote" : "Get signed quote")}
                 </button>
               )}
-              {!pricerConfigured() && <p className="note">Live pricer not connected in this build: premiums shown are indicative, from the same formula and Gemini prices.</p>}
+              {!pricerConfigured() && <p className="note">Pricer offline. Showing an estimate.</p>}
               {err && <p className="err" role="alert">{err}</p>}
             </div>
           )}

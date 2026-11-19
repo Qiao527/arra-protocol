@@ -40,8 +40,8 @@ export default function PromiseDoc({ merchant, team, eventTitle, payout, lines =
         <div className="fine">
           {fine ??
             (sealed
-              ? "Backed by USDC locked on Arc. Scan to check it yourself: no account, no trust in us."
-              : "Priced from Gemini Prediction Markets. The payout is locked in USDC the moment you seal it.")}
+              ? "Scan to check the USDC is locked on Arc."
+              : "Priced by Gemini. Locked in USDC when you seal it.")}
         </div>
         {qr ? (
           <div className="qr">

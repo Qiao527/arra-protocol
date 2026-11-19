@@ -80,11 +80,11 @@ export default function App() {
       {route.page === "promise" && (
         <section className="band" aria-label="How it works">
           <div className="band-inner">
-          <h2>Built on a market that already knows the <em>odds.</em></h2>
-          <div className="how">
-          <div><div className="n">01</div><h4>Priced by the market</h4><p>Gemini’s prediction-market order book says what the upset is worth. The pricer walks the book for your full size and signs a 60-second quote.</p></div>
-          <div><div className="n">02</div><h4>Locked, not promised</h4><p>Your payout sits in USDC in a vault on Arc. One lock backs every team at once, because only one can win.</p></div>
-          <div><div className="n">03</div><h4>Paid at the whistle</h4><p>Settlers vote Gemini’s result with a hash of the raw response. Unanimous means you’re paid in seconds; anyone can check it.</p></div>
+          <h2 className="reveal">One lock backs <em>four cities.</em></h2>
+          <div className="figures">
+            <div className="reveal"><div className="fig">15%</div><p>Typical premium on a long shot, priced from Gemini’s order book.</p></div>
+            <div className="reveal"><div className="fig">4:1</div><p>Four bars promise four teams. Only one can win, so the vault locks one payout.</p></div>
+            <div className="reveal"><div className="fig">3/3</div><p>Settlers agree on Gemini’s result and the payout lands in seconds.</p></div>
           </div>
           </div>
         </section>

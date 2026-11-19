@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 
 const BEATS = [
-  { h: <>A promise is a <em>liability.</em></>, p: "“If our team wins, it’s on us.” It packs the room. It’s ruinous if the upset happens." },
-  { h: <>Arra locks it in <em>USDC.</em></>, p: "Priced from Gemini’s prediction-market order book, hedged on Gemini, held in a vault on Arc. One lock backs every team, because only one can win." },
-  { h: <>And pays it at the <em>whistle.</em></>, p: "Settlers vote Gemini’s result with a hash of the raw response. Your customers scan a QR code and check it themselves." },
+  { h: <>“If we win, it’s <em>on us.</em>”</>, p: "A bar’s best promo, until the upset happens." },
+  { h: <>Arra locks the payout in <em>USDC.</em></>, p: "Priced by Gemini’s prediction market. Held on Arc." },
+  { h: <>Paid at the <em>whistle.</em></>, p: "Customers scan a QR code to see the money is there." },
 ];
 
 /** Scroll-driven 3D hero. The WebGL scene loads lazily; without WebGL the copy still reads in order. */

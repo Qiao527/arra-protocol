@@ -126,18 +126,20 @@ export function createSealScene(canvas, { reducedMotion = false } = {}) {
   function frame(t) {
     const dt = Math.min(64, t - (last || t));
     last = t;
-    shown += (progress - shown) * (reducedMotion ? 1 : 0.08); // eased scrub: the coin trails the scroll, never jumps
+    shown += (progress - shown) * (reducedMotion ? 1 : 0.05); // eased scrub: the coin trails the scroll, never jumps
     const p = shown;
     const lock = smooth(0.2, 0.5, p);
     const pay = smooth(0.62, 0.92, p);
-    // in the air: flipping end over end, slowing as it locks, landing face-up
-    spin += dt * (reducedMotion ? 0 : (1 - lock) * 0.009);
-    const settle = Math.round(spin / (Math.PI * 2)) * Math.PI * 2;
-    group.rotation.x = spin * (1 - lock) + settle * lock + (1 - lock) * 0.3;
-    group.rotation.z = (1 - lock) * 0.25;
-    group.position.y = (narrow ? 1.3 : 0.85) + (1 - lock) * 0.45 + (reducedMotion ? 0 : Math.sin(t * 0.0007) * 0.05 * lock);
-    const yaw = -0.35 * lock + pointer.x * 0.2 * lock + (reducedMotion ? 0 : Math.sin(t * 0.0004) * 0.06);
-    group.rotation.y += (yaw - group.rotation.y) * 0.06;
+    // a slow, weighty turn: edge-on and tilted while unsealed, squaring to the camera as it
+    // locks. Idle drift is a few degrees over many seconds, never a spin.
+    spin += dt * (reducedMotion ? 0 : 0.00012);
+    const idle = reducedMotion ? 0 : Math.sin(spin) * 0.08;
+    const tiltX = 0.95 * (1 - lock) + 0.12 + pointer.y * 0.05;
+    const yaw = -1.1 * (1 - lock) - 0.28 * lock + idle + pointer.x * 0.08;
+    group.rotation.x += (tiltX - group.rotation.x) * 0.04;
+    group.rotation.y += (yaw - group.rotation.y) * 0.04;
+    group.rotation.z = 0.12 * (1 - lock);
+    group.position.y = (narrow ? 1.3 : 0.85) + (reducedMotion ? 0 : Math.sin(spin * 1.7) * 0.04);
     // paid: a band of light sweeps across the face, then holds soft
     sweep.intensity = pay > 0 && pay < 1 ? 160 * Math.sin(pay * Math.PI) : pay >= 1 ? 25 : 0;
     sweep.position.x = -6 + pay * 12;

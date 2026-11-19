@@ -35,5 +35,37 @@
     "address": "0x3CC34beE579B6caD4Ab3c13582138c263812831C",
     "retired": "2026-11-19",
     "lpFundsRecoveredTx": "0x57092299ca8a93b504e0876290455ea14c2b3913d2ef9a6277a335c58d61f235"
+  },
+  "sandboxHedgeRun": {
+    "at": "2026-11-19T08:00:22.945Z",
+    "market": {
+      "eventTicker": "NHL-2611200000-PHI-OTT-M",
+      "instrumentSymbol": "GEMI-NHL-2611200000-PHI-OTT-M-PHI",
+      "label": "Philadelphia",
+      "outcome": 1,
+      "payoutUsdc": 5,
+      "premiumUsdc": 2.413129,
+      "pExec": 0.38,
+      "bookSource": "ws-depth"
+    },
+    "hedge": {
+      "venue": "Gemini sandbox",
+      "standInSymbol": "GEMI-BTC2611192200-HI62250",
+      "geminiOrderId": "145853902323008335",
+      "filledContracts": 5,
+      "recordedOnchainUsdc": 5
+    },
+    "settlement": "synthetic result (real game not yet played), 3/3 votes, instant",
+    "txs": {
+      "approve": "0x2ebe521a598d0ef014ff768ece65220972177d705ea72e2a8379595928771397",
+      "lpDeposit": "0x0d3f22e38bbcb4f0805c7bcad8ca0414a5d7e9e5738fe5f3d0a51232abec08ca",
+      "buyCover": "0x21ba06cedeea26c863f15d14258d15c69fd135af7c66ab007eb4ccb4d41b483b",
+      "recordHedge": "0xda5da04681c425218278dda03717912fb529c5fd861e9ba19f6f0d16df106323",
+      "vote1": "0x131a86ff794947483d947d591a06c2c351415063c86930309da2b5db355ace92",
+      "vote2": "0x3fa49cb8b05609583824f0bbec293176ac77631180f3f9a69e04d7df9b722da3",
+      "vote3": "0xb965aa83fdb6d4ff5ee5e9932e39f453e2a5f60ee67450f2acbe02ee65f3c2fa",
+      "claim": "0xb2936da0958017683ef44182c3b2bfaf4b2713c1cb8a95b45c0313a5bfaef359",
+      "sweepHedge": "0x0d8530ff9f90636ff75df75ac42aeea330ea8af1dd2f7a47237d500d382af862"
+    }
   }
 }

@@ -231,9 +231,15 @@ export function executablePrice(book, side, contracts) {
 
 // ---------------------------------------------------------------- sandbox trading
 
-function signedHeaders(path, body) {
+// Time-based nonce in SECONDS: the sandbox rejects anything not "within 30 seconds of server
+// time" (it rejected milliseconds). Strictly increasing so two calls in one second differ.
+let lastNonce = 0;
+export const nextNonce = (nowMs = Date.now()) => (lastNonce = Math.max(Math.floor(nowMs / 1000), lastNonce + 1));
+
+export function signedHeaders(path, body) {
   if (!config.geminiKey || !config.geminiSecret) throw new Error("GEMINI_API_KEY / GEMINI_API_SECRET not set");
-  const payload = { request: path, nonce: Date.now().toString(), ...body };
+  // Gemini wants the nonce as a JSON number ("InvalidNonce ... not parseable as a number" for a string).
+  const payload = { request: path, nonce: nextNonce(), ...body };
   const b64 = Buffer.from(JSON.stringify(payload)).toString("base64");
   const sig = crypto.createHmac("sha384", config.geminiSecret).update(b64).digest("hex");
   return {
@@ -246,7 +252,48 @@ function signedHeaders(path, body) {
   };
 }
 
-/** Place a limit buy on the Gemini SANDBOX. Returns the parsed order response. */
+/** Signed POST to the Gemini SANDBOX (HMAC-SHA384 payload auth). Returns the parsed JSON body. */
+async function sandboxPost(path, body = {}) {
+  const res = await fetch(config.geminiSandboxBase + path, { method: "POST", headers: signedHeaders(path, body) });
+  const text = await res.text();
+  if (!res.ok) throw new Error(`Gemini sandbox ${path} failed ${res.status}: ${text.slice(0, 300)}`);
+  return text ? JSON.parse(text) : {};
+}
+
+/** One-time: accept the Prediction Markets terms on the sandbox account (required before trading). */
+export const acceptSandboxTerms = () => sandboxPost("/v1/prediction-markets/terms/accept");
+
+/**
+ * Parse an order response, keeping orderId exact. Gemini sends orderId as a bare JSON number
+ * above 2^53 (e.g. 145853902323006128), which JSON.parse silently rounds to a different order.
+ */
+export function parseOrderResponse(raw) {
+  return JSON.parse(raw, (k, v, ctx) => (k === "orderId" && typeof v === "number" ? (ctx?.source ?? String(raw.match(/"orderId"\s*:\s*(\d+)/)?.[1] ?? v)) : v));
+}
+
+/** Gemini event ticker for a contract symbol: GEMI-<EVENT>-<CONTRACT>. */
+export const eventTickerOf = (instrumentSymbol) => String(instrumentSymbol).replace(/^GEMI-/, "").replace(/-[^-]+$/, "");
+
+/**
+ * Which SANDBOX contract hedges a production contract. The sandbox lists different markets
+ * than production (no sports at all on 2026-11-19), so SANDBOX_SYMBOL_MAP maps production
+ * instrumentSymbols to sandbox stand-ins; unmapped symbols are used as they are.
+ */
+export function sandboxSymbolFor(instrumentSymbol, map = config.sandboxSymbolMap) {
+  return map?.[instrumentSymbol] ?? instrumentSymbol;
+}
+
+/** Best ask (YES space) of a SANDBOX contract, for the stand-in's IOC limit price. */
+export async function sandboxBestAsk(instrumentSymbol) {
+  const raw = await getText(`${config.geminiSandboxBase}/v1/prediction-markets/events/${encodeURIComponent(eventTickerOf(instrumentSymbol))}`);
+  const parsed = JSON.parse(raw);
+  const ev = parsed.data && !Array.isArray(parsed.data) ? parsed.data : parsed;
+  const c = (ev.contracts ?? []).find((x) => x.instrumentSymbol === instrumentSymbol);
+  if (!c || c.marketState !== "open") throw new Error(`sandbox contract ${instrumentSymbol} not open`);
+  return { ask: num(c.prices?.bestAsk), bid: num(c.prices?.bestBid) };
+}
+
+/** Place a limit buy on the Gemini SANDBOX. Returns the parsed order response (orderId as a string). */
 export async function placeSandboxOrder({ symbol, side = "buy", outcome = "yes", quantity, price }) {
   const path = "/v1/prediction-markets/order";
   const body = {
@@ -261,7 +308,7 @@ export async function placeSandboxOrder({ symbol, side = "buy", outcome = "yes",
   const res = await fetch(config.geminiSandboxBase + path, { method: "POST", headers: signedHeaders(path, body) });
   const text = await res.text();
   if (!res.ok) throw new Error(`Gemini sandbox order failed ${res.status}: ${text}`);
-  return JSON.parse(text);
+  return parseOrderResponse(text);
 }
 
 // ---------------------------------------------------------------- outcome mapping

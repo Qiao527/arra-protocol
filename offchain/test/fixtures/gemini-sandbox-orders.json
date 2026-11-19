@@ -1,0 +1,34 @@
+{
+  "capturedAt": "2026-11-19T07:57:42.291Z",
+  "endpoint": "POST https://api.sandbox.gemini.com/v1/prediction-markets/order",
+  "orders": [
+    {
+      "label": "filled",
+      "request": {
+        "symbol": "GEMI-BTC2611192200-HI62500",
+        "orderType": "limit",
+        "side": "buy",
+        "outcome": "yes",
+        "quantity": "5",
+        "price": "0.50",
+        "timeInForce": "immediate-or-cancel"
+      },
+      "httpStatus": 201,
+      "raw": "{\"orderId\":145853902323006128,\"hashOrderId\":\"qlZGxa7AQV5D\",\"clientOrderId\":\"6c1fb193-bff0-4a2d-8a62-9153101ce837\",\"globalOrderId\":\"02450e09b6949666d263f6f9f7afc693b291c5248570817de9998acc672ba081\",\"status\":\"filled\",\"symbol\":\"GEMI-BTC2611192200-HI62500\",\"side\":\"buy\",\"outcome\":\"yes\",\"orderType\":\"limit\",\"timeInForce\":\"immediate-or-cancel\",\"quantity\":\"5\",\"filledQuantity\":\"5\",\"remainingQuantity\":\"0\",\"price\":\"0.5\",\"avgExecutionPrice\":\"0.5\",\"createdAt\":\"2026-11-19T07:57:42.444Z\",\"updatedAt\":\"2026-11-19T07:57:42.444Z\"}"
+    },
+    {
+      "label": "unfilled",
+      "request": {
+        "symbol": "GEMI-BTC2611192200-HI62500",
+        "orderType": "limit",
+        "side": "buy",
+        "outcome": "yes",
+        "quantity": "5",
+        "price": "0.37",
+        "timeInForce": "immediate-or-cancel"
+      },
+      "httpStatus": 201,
+      "raw": "{\"orderId\":145853902323006131,\"hashOrderId\":\"5dmyzbOgXWQZ\",\"clientOrderId\":\"7d4be7c8-e570-42ff-8221-07c24dd7102e\",\"globalOrderId\":\"395a787761180580e79e451c5713c87ef070c77c34339d1b67171a33abf8639f\",\"status\":\"cancelled\",\"symbol\":\"GEMI-BTC2611192200-HI62500\",\"side\":\"buy\",\"outcome\":\"yes\",\"orderType\":\"limit\",\"timeInForce\":\"immediate-or-cancel\",\"quantity\":\"5\",\"filledQuantity\":\"0\",\"remainingQuantity\":\"5\",\"price\":\"0.37\",\"createdAt\":\"2026-11-19T07:57:42.606Z\",\"updatedAt\":\"2026-11-19T07:57:42.606Z\",\"cancelledAt\":\"2026-11-19T07:57:42.603Z\"}"
+    }
+  ]
+}

@@ -33,6 +33,8 @@ export const config = {
   geminiKey: env("GEMINI_API_KEY"),
   geminiSecret: env("GEMINI_API_SECRET"),
   mockGemini: env("MOCK_GEMINI", "false") === "true",
+  // {"<production instrumentSymbol>": "<sandbox instrumentSymbol>"}: the sandbox has different markets
+  sandboxSymbolMap: JSON.parse(env("SANDBOX_SYMBOL_MAP", "{}")),
   wsDepth: env("WS_DEPTH", "true") === "true", // real depth from wss://ws.gemini.com (else modeled ladder)
 
   // Hedger

@@ -8,7 +8,7 @@ import crypto from "node:crypto";
 import express from "express";
 import { decodeEventLog } from "viem";
 import { config } from "./config.js";
-import { getEvent, findContract, getBook, executablePrice, placeSandboxOrder, hedgeTarget, ensureDepth } from "./gemini.js";
+import { getEvent, findContract, getBook, executablePrice, placeSandboxOrder, hedgeTarget, ensureDepth, sandboxSymbolFor, sandboxBestAsk } from "./gemini.js";
 import { publicClient, operatorWallet, vaultAbi, readEventBooks } from "./chain.js";
 import { readRegistry } from "./registry.js";
 
@@ -71,11 +71,21 @@ async function hedgeNow(eventId) {
 
     let orderId = "dry-run";
     let filled = excess;
+    let venue = instrumentSymbol;
     if (!dryRun) {
-      const order = await placeSandboxOrder({ symbol: instrumentSymbol, outcome: side.toLowerCase(), quantity: excess, price: limit });
+      // Sandbox markets differ from production: hedge on the mapped stand-in at ITS ask.
+      venue = sandboxSymbolFor(instrumentSymbol);
+      let price = limit;
+      if (venue !== instrumentSymbol) {
+        const { ask } = await sandboxBestAsk(venue);
+        if (!Number.isFinite(ask)) throw new Error(`sandbox stand-in ${venue} has no ask`);
+        price = ask;
+        console.log(`  sandbox stand-in for ${instrumentSymbol}: ${venue} @ ${ask}`);
+      }
+      const order = await placeSandboxOrder({ symbol: venue, outcome: side.toLowerCase(), quantity: excess, price: price.toFixed(2) });
       orderId = String(order.orderId ?? order.order_id ?? order.id ?? "unknown");
       filled = filledContracts(order, excess);
-      console.log(`  Gemini sandbox order ${orderId}: filled ${filled}/${excess}`, order.status ?? "");
+      console.log(`  Gemini sandbox order ${orderId}: ${order.status ?? ""}, filled ${filled}/${excess} @ ${order.avgExecutionPrice ?? "-"}`);
     }
     if (filled <= 0) {
       console.warn(`  nothing filled on ${instrumentSymbol}; no hedge recorded`);
@@ -88,7 +98,7 @@ async function hedgeNow(eventId) {
     });
     await publicClient.waitForTransactionReceipt({ hash });
     console.log(`  recordHedge tx ${hash}`);
-    done.push({ outcome: i, instrumentSymbol, side, qty: filled, limit, orderId, hash });
+    done.push({ outcome: i, instrumentSymbol, venue, side, qty: filled, limit, orderId, hash });
   }
   return done;
 }

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import PromiseDoc from "../components/PromiseDoc.jsx";
 import CountUp from "../components/CountUp.jsx";
 import Ring from "../components/Ring.jsx";
@@ -6,8 +6,6 @@ import { loadEvents, requestQuote, indicativePremium, pricerConfigured } from ".
 import { buyCover } from "../lib/wallet.js";
 import { txUrl } from "../lib/config.js";
 import { usd, pct, cents, when, sportOf, isChampionship, isSecondHalf, phase } from "../lib/format.js";
-
-const PRESETS = [500, 2000, 5000];
 
 export function verifyLink(policyId, { ticker, label, merchant }) {
   const q = new URLSearchParams();
@@ -17,65 +15,111 @@ export function verifyLink(policyId, { ticker, label, merchant }) {
   return `${location.origin}${location.pathname}#/p/${policyId}?${q}`;
 }
 
+const coverable = (c) => c.marketState === "open" && Number(c.prices?.bestAsk) > 0 && Number(c.prices?.bestAsk) <= 0.5 && !/-D$/.test(c.instrumentSymbol);
+const shortTitle = (e) => (isChampionship(e) ? e.title.replace(/^\d{4}\s*/, "the ").replace(/Pro Basketball Champion/i, "NBA title") : e.title);
+const byAsk = (a, b) => Number(a.prices.bestAsk) - Number(b.prices.bestAsk);
+
+/** Full-screen picker: one list of games, teams inline. Esc or backdrop closes. */
+function Picker({ events, now, onPick, onClose }) {
+  const [q, setQ] = useState("");
+  const input = useRef(null);
+  useEffect(() => {
+    input.current?.focus();
+    const k = (e) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", k);
+    window.__lenis?.stop();
+    return () => { window.removeEventListener("keydown", k); window.__lenis?.start(); };
+  }, [onClose]);
+  const list = events
+    .filter((e) => !e.parentTicker && phase(e, now) !== "done" && e.contracts.some(coverable))
+    .filter((e) => !q || (e.title + " " + e.contracts.map((c) => c.label).join(" ")).toLowerCase().includes(q.toLowerCase()));
+  return (
+    <div className="sheet" role="dialog" aria-modal="true" aria-label="Choose a team" onClick={onClose}>
+      <div className="sheet-card" onClick={(e) => e.stopPropagation()}>
+        <div className="sheet-head">
+          <input ref={input} className="sheet-search" placeholder="Search a team or game" value={q} onChange={(e) => setQ(e.target.value)} />
+          <button className="btn ghost" onClick={onClose}>Close</button>
+        </div>
+        <div className="sheet-list" data-lenis-prevent>
+          {list.map((e) => (
+            <div className={`sheet-row ${isChampionship(e) ? "stack" : ""}`} key={e.ticker}>
+              <div className="sheet-game">
+                <span>{e.title}</span>
+                <span className="faint">{isChampionship(e) ? "Season" : `${sportOf(e)}, ${when(e.startTime)}`}</span>
+              </div>
+              <div className="sheet-teams">
+                {e.contracts.filter(coverable).sort(byAsk).slice(0, isChampionship(e) ? 8 : 3).map((c) => (
+                  <button key={c.instrumentSymbol} className="sheet-team" onClick={() => onPick(e.ticker, c.instrumentSymbol)}>
+                    {c.label} <span className="num faint">{cents(c.prices.bestAsk)}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+          {list.length === 0 && <p className="muted">No open long shots match.</p>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function PromisePage({ account, onConnect }) {
   const [data, setData] = useState(null);
-  const [filter, setFilter] = useState("All");
-  const [showAll, setShowAll] = useState(false);
   const [eventTicker, setEventTicker] = useState(null);
   const [symbol, setSymbol] = useState(null);
   const [payout, setPayout] = useState(5000);
   const [merchant, setMerchant] = useState("");
   const [quote, setQuote] = useState(null);
+  const [quoteAt, setQuoteAt] = useState(0);
   const [busy, setBusy] = useState(null);
   const [err, setErr] = useState(null);
   const [done, setDone] = useState(null);
+  const [picking, setPicking] = useState(false);
+  const [details, setDetails] = useState(false);
   const [now, setNow] = useState(Date.now());
-  const [quoteAt, setQuoteAt] = useState(0);
 
   useEffect(() => {
     loadEvents().then((d) => {
       setData(d);
-      const first = d.events.find((e) => e.ticker.startsWith("NFL-2611221800-ARI-KC-M")) ?? d.events[0];
-      if (first) setEventTicker(first.ticker);
+      const pick = d.events.find((e) => e.ticker === "NFL-2611221800-ARI-KC-M") ?? d.events.find((e) => !e.parentTicker && phase(e) === "pre" && e.contracts.some(coverable));
+      if (pick) {
+        setEventTicker(pick.ticker);
+        setSymbol(pick.contracts.filter(coverable).sort(byAsk)[0]?.instrumentSymbol ?? null);
+      }
     });
   }, []);
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(t);
   }, []);
+  useEffect(() => { setQuote(null); setErr(null); }, [symbol, payout, eventTicker]);
 
   const events = data?.events ?? [];
   const byTicker = useMemo(() => Object.fromEntries(events.map((e) => [e.ticker, e])), [events]);
-  const sports = useMemo(() => ["All", ...new Set(events.filter((e) => !e.parentTicker).map((e) => (isChampionship(e) ? "Championships" : sportOf(e))))], [events]);
-  const list = events.filter((e) => !e.parentTicker && (filter === "All" || (isChampionship(e) ? "Championships" : sportOf(e)) === filter));
-
   const event = byTicker[eventTicker];
   const parent = event?.parentTicker ? byTicker[event.parentTicker] : event;
   const half = parent ? events.find((e) => e.parentTicker === parent.ticker && isSecondHalf(e)) : null;
+  const onHalf = !!half && event?.ticker === half.ticker;
   const contract = event?.contracts.find((c) => c.instrumentSymbol === symbol);
   const ask = Number(contract?.prices?.bestAsk);
   const ph = event ? phase(event, now) : "pre";
-
-  // default team: the underdog (cheapest ask), which is the promo that makes sense
-  useEffect(() => {
-    if (!event) return;
-    const open = event.contracts.filter((c) => c.marketState === "open" && Number(c.prices?.bestAsk) > 0);
-    const dog = open.filter((c) => !/-D$/.test(c.instrumentSymbol)).sort((a, b) => Number(a.prices.bestAsk) - Number(b.prices.bestAsk))[0];
-    setSymbol(dog?.instrumentSymbol ?? null);
-    setQuote(null);
-    setDone(null);
-  }, [eventTicker]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => setQuote(null), [symbol, payout]);
-
   const indicative = contract && ask > 0 ? indicativePremium({ payout, ask }) : null;
-  const tooLikely = ask > 0.5;
+  const b = quote?.breakdown;
+  const premium = b?.premium ?? indicative?.premium;
   const secsLeft = quote ? Math.max(0, Number(quote.quote.expiry) - Math.floor(now / 1000)) : 0;
+
+  function toggleHalf() {
+    const target = onHalf ? parent : half;
+    if (!target) return;
+    const same = target.contracts.find((c) => c.label === contract?.label && coverable(c));
+    setEventTicker(target.ticker);
+    setSymbol(same?.instrumentSymbol ?? target.contracts.filter(coverable).sort(byAsk)[0]?.instrumentSymbol ?? null);
+  }
 
   async function getQuote() {
     setErr(null);
     if (!account) return onConnect();
-    setBusy("Pricing from Gemini…");
+    setBusy("Pricing");
     try {
       setQuote(await requestQuote({ eventTicker: event.ticker, instrumentSymbol: symbol, payoutUsdc: payout, buyer: account }));
       setQuoteAt(Math.floor(Date.now() / 1000));
@@ -89,8 +133,8 @@ export default function PromisePage({ account, onConnect }) {
   async function seal() {
     setErr(null);
     try {
-      const r = await buyCover(account, quote, (s) => setBusy(`${s}… confirm in your wallet`));
-      setDone({ ...r, label: contract.label, ticker: event.ticker });
+      const r = await buyCover(account, quote, (s) => setBusy(s));
+      setDone({ ...r, label: contract.label, ticker: event.ticker, premium: b.premium });
       setQuote(null);
     } catch (e) {
       setErr(e.shortMessage ?? e.message);
@@ -99,183 +143,100 @@ export default function PromisePage({ account, onConnect }) {
     }
   }
 
-  const b = quote?.breakdown;
-  const lines = done
-    ? [["Payout locked", usd(payout)], ["Premium paid", usd(b?.premium ?? indicative?.premium)], ["Settles from", "Gemini result, 2-of-3 quorum"]]
-    : b
-      ? [
-          ["Hedge on Gemini", `${usd(b.hedgeCost)} @ ${cents(b.pExec)}`],
-          ["Buffer + capacity", usd((b.buffer ?? 0) + (b.utilizationSurcharge ?? 0))],
-          ["Capital charge", usd(b.capitalCharge)],
-          ["Premium", <CountUp key="p" value={b.premium} format={(x) => usd(x)} />, "total"],
-        ]
-      : indicative
-        ? [
-            ["Hedge on Gemini", `${usd(indicative.hedge)} @ ${cents(indicative.p)}`],
-            ["Buffer + capacity", usd(indicative.buffer + indicative.surcharge)],
-            ["Capital charge", usd(indicative.capital)],
-            ["Premium (indicative)", <CountUp key="p" value={indicative.premium} format={(x) => usd(x)} />, "total"],
-          ]
-        : [];
-
-  const multiple = (b?.premium ?? indicative?.premium) ? payout / (b?.premium ?? indicative.premium) : null;
-
-  return (
-    <div className="grid-2">
-      <section>
-        <h1 className="display reveal">
-          Make a <em>promise.</em>
-        </h1>
-        <p className="lede reveal">Pick a game, pick the long shot, set the payout.</p>
-
-        <div className="panel reveal">
-          <div className="row" style={{ marginBottom: 12 }}>
-            <h3><span className="step-n num">01</span>Game</h3>
-            <span className="chip">
-              <span className={`dot ${data?.live ? "live" : "warn"}`} />
-              {data ? (data.live ? "Live Gemini markets" : <>Gemini snapshot<span className="sep" />{when(data.capturedAt)}</>) : "Loading markets"}
-            </span>
-          </div>
-          <div className="tabs" role="group" aria-label="Sport">
-            {sports.map((s) => (
-              <button key={s} className="tab" aria-pressed={filter === s} onClick={() => setFilter(s)}>
-                {s}
-              </button>
-            ))}
-          </div>
-          <div className="games">
-            {!data && [0, 1, 2].map((i) => <div key={i} className="skeleton" style={{ height: 56 }} />)}
-            {(showAll ? list : list.slice(0, 5)).map((e) => {
-              const p = phase(e, now);
-              return (
-                <button key={e.ticker} className="game" aria-pressed={parent?.ticker === e.ticker} onClick={() => setEventTicker(e.ticker)}>
-                  <span className="t">{e.title}</span>
-                  <span className={`badge ${p === "live" ? "live" : ""}`}>{p === "live" ? "Live" : p === "done" ? "Closed" : isChampionship(e) ? `${e.contracts.length} teams` : sportOf(e)}</span>
-                  <span className="when">{when(e.startTime)}</span>
-                </button>
-              );
-            })}
-          </div>
-          {list.length > 5 && (
-            <button className="btn ghost" style={{ marginTop: 12, width: "100%" }} onClick={() => setShowAll((v) => !v)}>
-              {showAll ? "Show fewer" : `Show all ${list.length} markets`}
-            </button>
-          )}
+  if (done) {
+    const link = verifyLink(done.policyId, { ticker: done.ticker, label: done.label, merchant });
+    return (
+      <section className="composer done">
+        <p className="composer-kicker">Sealed on Arc</p>
+        <div className="done-doc">
+          <PromiseDoc merchant={merchant} team={done.label} eventTitle={event?.title} payout={payout} policyId={done.policyId} status="locked" verifyUrl={link}
+            lines={[["Payout locked", usd(payout)], ["Premium paid", usd(done.premium)]]} />
         </div>
-
-        {parent && (
-          <div className="panel">
-            <div className="row" style={{ marginBottom: 12 }}>
-              <h3><span className="step-n num">02</span>Team</h3>
-              {half && (
-                <button className={`btn ${event?.ticker === half.ticker ? "primary" : "ghost"}`} onClick={() => setEventTicker(event?.ticker === half.ticker ? parent.ticker : half.ticker)}>
-                  {event?.ticker === half.ticker ? "Halftime comeback: on" : "Halftime comeback"}
-                </button>
-              )}
-            </div>
-            {event?.ticker === half?.ticker && (
-              <p className="sub">Live cover on the 2nd half. Quotes last 20 seconds.</p>
-            )}
-            <div className="teams">
-              {event.contracts.map((c) => {
-                const a = Number(c.prices?.bestAsk);
-                const disabled = c.marketState !== "open" || !(a > 0) || a > 0.5 || /-D$/.test(c.instrumentSymbol);
-                return (
-                  <button key={c.instrumentSymbol} className="team" aria-pressed={symbol === c.instrumentSymbol} disabled={disabled} onClick={() => setSymbol(c.instrumentSymbol)} title={a > 0.5 ? "Favorites can’t be covered" : ""}>
-                    <span>{c.label}</span>
-                    <span className="p">{a > 0 ? cents(a) : "—"}</span>
-                  </button>
-                );
-              })}
-            </div>
-            {tooLikely && <p className="note" style={{ marginTop: 12 }}>Favorites can’t be covered. The cover would cost about as much as the promo.</p>}
-          </div>
-        )}
-
-        <div className="panel">
-          <h3><span className="step-n num">03</span>Payout</h3>
-          <p className="sub">What honoring it would cost you.</p>
-          <label className="field" htmlFor="payout">Payout if they win (USDC)</label>
-          <div className="amount">
-            <span className="num muted">$</span>
-            <input id="payout" inputMode="decimal" value={payout} onChange={(e) => setPayout(Math.max(0, Number(e.target.value.replace(/[^0-9.]/g, "")) || 0))} />
-          </div>
-          <div className="presets">
-            {PRESETS.map((p) => (
-              <button key={p} className="tab" aria-pressed={payout === p} onClick={() => setPayout(p)}>
-                {usd(p, 0)}
-              </button>
-            ))}
-            <button className="tab" aria-pressed={payout === 5} onClick={() => setPayout(5)} title="Testnet-sized: fits the demo vault">
-              $5 testnet
-            </button>
-          </div>
-          <label className="field" htmlFor="merchant" style={{ marginTop: 16 }}>Business name</label>
-          <div className="amount">
-            <input id="merchant" style={{ fontFamily: "var(--sans)", fontSize: 16 }} placeholder="e.g. Lone Star Taproom" value={merchant} onChange={(e) => setMerchant(e.target.value.slice(0, 40))} />
-          </div>
+        <div className="composer-actions">
+          <a className="btn primary big" href={`#/p/${done.policyId}?${new URLSearchParams({ t: done.ticker, l: done.label, ...(merchant ? { m: merchant } : {}) })}`}>Open the proof page</a>
+          <a className="btn ghost big" href={txUrl(done.hash)} target="_blank" rel="noreferrer">Transaction</a>
         </div>
       </section>
+    );
+  }
 
-      <aside className="reveal" style={{ position: "sticky", top: 32 }}>
-        <PromiseDoc
-          merchant={merchant}
-          team={contract?.label}
-          eventTitle={event?.title}
-          payout={payout}
-          lines={lines}
-          status={done ? "locked" : quote ? "quoted" : "draft"}
-          policyId={done?.policyId}
-          verifyUrl={done ? verifyLink(done.policyId, { ticker: done.ticker, label: done.label, merchant }) : null}
-        />
+  const amount = payout.toLocaleString("en-US");
+  return (
+    <section className="composer">
+      <p className="composer-kicker reveal">
+        <span className={`dot ${data?.live ? "live" : "warn"}`} />
+        {data ? (data.live ? "Live prices from Gemini" : "Gemini prices, captured Nov 19") : "Loading markets"}
+      </p>
 
-        <div className="panel" style={{ marginTop: 16 }}>
-          {done ? (
-            <div className="stack">
-              <h3>Sealed. The payout is locked on Arc.</h3>
-              <p className="sub">Print the QR code for your tables.</p>
-              <div className="row">
-                <a className="btn" href={txUrl(done.hash)} target="_blank" rel="noreferrer">View transaction</a>
-                <a className="btn primary" href={`#/p/${done.policyId}?${new URLSearchParams({ t: done.ticker, l: done.label, ...(merchant ? { m: merchant } : {}) })}`}>Open proof page</a>
-              </div>
-            </div>
+      <h1 className="composer-line reveal">
+        If{" "}
+        <button className="token" onClick={() => setPicking(true)} aria-label="Change team">{contract?.label ?? "your team"}</button>{" "}
+        {event && isChampionship(event) ? <>wins {shortTitle(event)},</> : onHalf ? <>wins the 2nd half,</> : <>wins,</>} it’s <em>on us.</em>
+        <br />
+        Up to{" "}
+        <label className="token token-amount">
+          <span className="sr-only">Payout in USDC</span>$
+          <span className="autosize">
+            <span aria-hidden="true">{amount || "0"}</span>
+            <input inputMode="numeric" size={1} value={amount}
+              onChange={(e) => setPayout(Math.min(1e7, Number(e.target.value.replace(/[^0-9]/g, "")) || 0))} />
+          </span>
+        </label>
+        .
+      </h1>
+
+      <div className="composer-meta reveal">
+        <span>{event ? (isChampionship(event) ? "Season-long" : `${parent?.title}, ${when(parent?.startTime)}`) : ""}</span>
+        {half && (
+          <button className={`linkish ${onHalf ? "on" : ""}`} onClick={toggleHalf}>
+            {onHalf ? "Back to full game" : "Halftime comeback"}
+          </button>
+        )}
+      </div>
+
+      <div className="composer-price reveal">
+        <div>
+          <div className="price-label">{b ? "Premium, signed" : "Premium"}</div>
+          <div className="price-value"><CountUp value={premium} format={(x) => usd(x)} /></div>
+          <div className="price-sub">{premium ? `${pct(premium / payout)} of the payout` : " "}</div>
+        </div>
+        <div className="composer-cta">
+          {quote ? (
+            <>
+              <button className="btn primary big" onClick={seal} disabled={!!busy || secsLeft === 0}>
+                {busy ? `${busy}…` : secsLeft === 0 ? "Quote expired" : "Seal the promise"}
+              </button>
+              <span className="countdown meta"><Ring left={secsLeft} total={Math.max(1, Number(quote.quote.expiry) - quoteAt)} />{secsLeft}s</span>
+            </>
           ) : (
-            <div className="stack">
-              <div className="row">
-                <span className="muted">Marketing multiple</span>
-                <span className="num"><CountUp value={multiple} format={(x) => `${x.toFixed(1)}×`} /></span>
-              </div>
-              <div className="row">
-                <span className="muted">Premium as % of payout</span>
-                <span className="num">{(b?.premium ?? indicative?.premium) ? pct((b?.premium ?? indicative.premium) / payout) : "—"}</span>
-              </div>
-              {b && (
-                <div className="row">
-                  <span className="muted">Price source</span>
-                  <span className="num">{b.bookSource === "ws-depth" ? "Gemini depth (live)" : "Gemini top of book"}</span>
-                </div>
-              )}
-              {quote ? (
-                <>
-                  <button className="btn primary big" onClick={seal} disabled={!!busy || secsLeft === 0}>
-                    {busy ?? (secsLeft === 0 ? "Quote expired" : "Seal the promise")}
-                  </button>
-                  <div className="row">
-                    <span className="countdown meta"><Ring left={secsLeft} total={Math.max(1, Number(quote.quote.expiry) - quoteAt)} />Signed quote, {secsLeft}s left</span>
-                    <button className="btn ghost" onClick={getQuote} disabled={!!busy}>Re-quote</button>
-                  </div>
-                </>
-              ) : (
-                <button className="btn primary big" onClick={getQuote} disabled={!!busy || !contract || tooLikely || !(payout > 0) || ph === "done" || !pricerConfigured()}>
-                  {busy ?? (!account ? "Connect wallet to quote" : ph === "live" ? "Get live in-game quote" : "Get signed quote")}
-                </button>
-              )}
-              {!pricerConfigured() && <p className="note">Pricer offline. Showing an estimate.</p>}
-              {err && <p className="err" role="alert">{err}</p>}
-            </div>
+            <button className="btn primary big" onClick={getQuote} disabled={!!busy || !contract || !(payout > 0) || ph === "done" || !pricerConfigured()}>
+              {busy ? `${busy}…` : !account ? "Connect to quote" : ph === "live" ? "Quote live" : "Get quote"}
+            </button>
           )}
         </div>
-      </aside>
-    </div>
+      </div>
+      {err && <p className="err composer-err" role="alert">{err}</p>}
+
+      <button className="linkish composer-more" onClick={() => setDetails((v) => !v)} aria-expanded={details}>
+        {details ? "Hide details" : "How it’s priced"}
+      </button>
+      {details && (
+        <div className="composer-details">
+          <div className="row"><span className="muted">Gemini price</span><span className="num">{cents(b?.pExec ?? indicative?.p)} per contract</span></div>
+          <div className="row"><span className="muted">Hedge cost</span><span className="num">{usd(b?.hedgeCost ?? indicative?.hedge)}</span></div>
+          <div className="row"><span className="muted">Buffer and capacity</span><span className="num">{usd(b ? b.buffer + b.utilizationSurcharge : indicative ? indicative.buffer + indicative.surcharge : null)}</span></div>
+          <div className="row"><span className="muted">Capital charge</span><span className="num">{usd(b?.capitalCharge ?? indicative?.capital)}</span></div>
+          <label className="row"><span className="muted">Name on the promise</span>
+            <input className="inline-input" placeholder="Your bar" value={merchant} onChange={(e) => setMerchant(e.target.value.slice(0, 40))} />
+          </label>
+          {!pricerConfigured() && <p className="faint">Pricer offline. This is an estimate.</p>}
+        </div>
+      )}
+
+      {picking && (
+        <Picker events={events} now={now} onClose={() => setPicking(false)}
+          onPick={(t, s) => { setEventTicker(t); setSymbol(s); setPicking(false); }} />
+      )}
+    </section>
   );
 }

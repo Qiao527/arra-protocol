@@ -136,7 +136,7 @@ export function createSealScene(canvas, { reducedMotion = false } = {}) {
     const lock = smooth(0.25, 0.55, p);
     const pay = smooth(0.62, 0.9, p);
     // arches slide together as the promise locks
-    const gap = (1 - lock) * 0.9;
+    const gap = (1 - lock) * 0.55;
     left.position.x = -gap;
     right.position.x = gap;
     keystone.position.y = 1.5 + (1 - lock) * 1.1;

@@ -52,6 +52,7 @@ test("prices.buy.{yes,no} fallback when bestBid/bestAsk are absent, depth capped
   assert.equal(book.asks[0].price, 0.12);
   assert.ok(Math.abs(book.bids[0].price - 0.11) < 1e-9);
   assert.ok(Number.isFinite(book.asks[0].qty), "top of book must never be infinitely deep");
+  assert.ok(book.asks[1].price > book.asks[0].price, "deeper levels cost more (modeled slippage)");
 });
 
 test("outcome order is canonical: independent of API response order", () => {
@@ -84,4 +85,59 @@ test("multi-outcome events: YES only; binary events: YES=0, NO=1", () => {
 test("more than 16 mutually exclusive outcomes is refused", () => {
   const ev = { ticker: "F", sportsMarket: { type: "futures" }, contracts: Array.from({ length: 17 }, (_, i) => c(`GEMI-F-${String(i).padStart(2, "0")}`)) };
   assert.throws(() => outcomeIndex(ev, "GEMI-F-00", "YES"), /16/);
+});
+
+// ---------------------------------------------------------------- real moneyline (NFL)
+const ml = JSON.parse(fs.readFileSync(new URL("./fixtures/gemini-events-moneyline.json", import.meta.url), "utf8"));
+const game = ml.data[0];
+const { listActiveEvents } = await import("../src/gemini.js");
+const { salesWindow } = await import("../src/pricer.js");
+
+test("real NFL moneyline: coverable, open, live prices", () => {
+  assert.equal(game.sportsMarket.type, "moneyline");
+  assert.equal(isMutuallyExclusive(game), true);
+  for (const k of game.contracts) assert.equal(k.marketState, "open");
+  const ari = game.contracts.find((k) => k.instrumentSymbol.endsWith("-ARI"));
+  assert.ok(Number(ari.prices.bestAsk) > 0 && Number(ari.prices.bestAsk) < 0.5, "underdog priced as a long shot");
+});
+
+test("underdog cover: book walk adds modeled slippage beyond top-of-book depth", () => {
+  const ari = game.contracts.find((k) => k.instrumentSymbol.endsWith("-ARI"));
+  const ask = Number(ari.prices.bestAsk);
+  const book = getBook(game, ari);
+  const small = executablePrice(book, "YES", 500);
+  const large = executablePrice(book, "YES", 5000);
+  assert.ok(Math.abs(small.avgPrice - ask) < 1e-9);
+  assert.ok(large.avgPrice > ask, "a $5k cover must cost more per contract than a $500 one");
+  assert.equal(large.filled, 5000);
+});
+
+test("listing flattens child period markets (2nd-half winner) with parentTicker", async () => {
+  const orig = globalThis.fetch;
+  globalThis.fetch = async (url) => ({
+    ok: true,
+    text: async () => JSON.stringify(String(url).includes("moneyline") ? ml : { data: [], pagination: { total: 0 } }),
+  });
+  try {
+    const events = await listActiveEvents();
+    const half = events.find((e) => e.ticker.endsWith("-2HM"));
+    assert.ok(half, "2nd-half market listed");
+    assert.equal(half.parentTicker, game.ticker);
+    assert.equal(half.contracts.length, 3, "includes the tie contract");
+    assert.equal(isMutuallyExclusive(half), true);
+    assert.equal(events.filter((e) => e.ticker === game.ticker).length, 1);
+  } finally {
+    globalThis.fetch = orig;
+  }
+});
+
+test("sales window: pre-game closes at kickoff; in-game is short-lived", () => {
+  const start = Math.floor(Date.parse(game.startTime) / 1000);
+  const pre = salesWindow(game, start - 3600);
+  assert.equal(pre.mode, "pre-game");
+  assert.equal(pre.salesClose, start);
+  assert.ok(pre.expiry <= start);
+  const live = salesWindow(game, start + 1800);
+  assert.equal(live.mode, "in-game");
+  assert.ok(live.salesClose - (start + 1800) <= 60);
 });

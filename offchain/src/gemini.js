@@ -70,10 +70,19 @@ export async function listActiveEvents({ category = "sports", types = ["moneylin
   const pages = await Promise.all(
     (types.length ? types : [null]).map((t) => getJson(t ? `${base}&sports_market_type=${encodeURIComponent(t)}` : base))
   );
+  // Game markets nest period markets (quarters, halves) as child events[]. Flatten them so
+  // e.g. the 2nd-half winner market is quotable for in-game ("halftime comeback") cover.
   const seen = new Set();
-  return pages
-    .flatMap((d) => (Array.isArray(d) ? d : d.data ?? d.events ?? []))
-    .filter((e) => !seen.has(e.ticker) && seen.add(e.ticker));
+  const out = [];
+  const add = (e, parentTicker = null) => {
+    if (!e?.ticker || seen.has(e.ticker)) return;
+    seen.add(e.ticker);
+    const { events: children, ...rest } = e;
+    out.push(parentTicker ? { ...rest, parentTicker } : rest);
+    for (const c of children ?? []) add(c, e.ticker);
+  };
+  for (const d of pages) for (const e of Array.isArray(d) ? d : d.data ?? d.events ?? []) add(e);
+  return out;
 }
 
 /** Event plus the exact response text (the settler hashes the raw bytes as evidence). */
@@ -126,19 +135,25 @@ export function getBook(event, contract) {
       source: "orderbook",
     };
   }
-  // No depth in the response: use top of book, capped at TOP_OF_BOOK_DEPTH contracts so an
-  // unknown book is never treated as infinitely deep. Gemini's prices object carries
-  // bestBid / bestAsk and buy.{yes,no} (cost to buy each side); empty objects when no quotes.
+  // No depth in the response (Gemini's list/get endpoints usually omit it): build a
+  // conservative ladder from top of book. Level i is priced i ticks worse and holds
+  // TOP_OF_BOOK_DEPTH contracts, so large covers pay modeled slippage instead of being
+  // priced at the best ask. Gemini's prices object carries bestBid / bestAsk and
+  // buy.{yes,no} (cost to buy each side); both are empty objects when nobody is quoting.
   const p = contract.prices ?? {};
   const ask = firstFinite(p.bestAsk, p.buy?.yes);
   const bid = firstFinite(p.bestBid, Number.isFinite(num(p.buy?.no)) ? 1 - num(p.buy.no) : NaN);
+  const tick = firstFinite(contract.priceIncrement, 0.01);
   const depth = config.topOfBookDepth;
-  return {
-    asks: Number.isFinite(ask) ? [{ price: ask, qty: depth }] : [],
-    bids: Number.isFinite(bid) ? [{ price: bid, qty: depth }] : [],
-    source: "top-of-book",
-  };
+  const ladder = (start, dir) =>
+    Number.isFinite(start)
+      ? Array.from({ length: config.slippageLevels }, (_, i) => ({ price: round4(start + dir * i * tick), qty: depth }))
+          .filter((l) => l.price > 0 && l.price < 1)
+      : [];
+  return { asks: ladder(ask, +1), bids: ladder(bid, -1), source: "top-of-book+slippage" };
 }
+
+const round4 = (x) => Math.round(x * 1e4) / 1e4;
 
 function firstFinite(...xs) {
   for (const x of xs) if (Number.isFinite(num(x))) return num(x);

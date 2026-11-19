@@ -12,13 +12,28 @@ import { computePremium, riskAfterTrade, toUsdcUnits } from "./pricing.js";
 import { operatorAccount, eventIdFor, quoteTypes, domain, readEventBooks } from "./chain.js";
 import { remember } from "./registry.js";
 
-/** Sales close when the game starts. Prefer an explicit start field; fall back to expiry. */
+/** Scheduled start of the event (seconds). Prefer explicit start fields; fall back to expiry. */
 export function eventStartOf(event) {
   const t =
-    event.startTime ?? event.startDate ?? event.eventStartTime ?? event.closeTime ?? event.expiry;
+    event.startTime ?? event.startDate ?? event.eventStartTime ?? event.closeTime ?? event.expiryDate ?? event.expiry;
   const sec = Math.floor(new Date(t).getTime() / 1000);
   if (!Number.isFinite(sec)) throw new Error(`Event ${event.ticker} has no usable start/expiry time`);
   return sec;
+}
+
+/**
+ * Sales window for a quote.
+ *   Pre-game: sales close at kickoff; the quote lives QUOTE_TTL_SEC.
+ *   In-game:  only while Gemini still lists the contract as open (it halts trading when the
+ *             outcome is decided). Sales close and quote expiry are both IN_GAME_TTL_SEC out,
+ *             because live prices move with every play.
+ */
+export function salesWindow(event, now = Math.floor(Date.now() / 1000)) {
+  const start = eventStartOf(event);
+  if (now < start) return { mode: "pre-game", salesClose: start, expiry: Math.min(start, now + config.quoteTtlSec) };
+  if (!config.allowInGame) throw new Error("Sales closed: the event has started");
+  const close = now + config.inGameTtlSec;
+  return { mode: "in-game", salesClose: close, expiry: close };
 }
 
 export async function buildQuote({ eventTicker, instrumentSymbol, side = "YES", payoutUsdc, buyer }) {
@@ -63,16 +78,15 @@ export async function buildQuote({ eventTicker, instrumentSymbol, side = "YES", 
   });
 
   const now = Math.floor(Date.now() / 1000);
-  const eventStart = eventStartOf(event);
-  if (now >= eventStart) throw new Error("Sales closed: the event has started");
+  const win = salesWindow(event, now);
 
   const quote = {
     eventId,
     outcome,
     payout: toUsdcUnits(L),
     premium: toUsdcUnits(breakdown.premium),
-    expiry: BigInt(now + config.quoteTtlSec),
-    eventStart: BigInt(eventStart),
+    expiry: BigInt(win.expiry),
+    eventStart: BigInt(win.salesClose),
     buyer: buyerAddr,
     nonce: BigInt("0x" + crypto.randomBytes(16).toString("hex")),
   };
@@ -91,7 +105,7 @@ export async function buildQuote({ eventTicker, instrumentSymbol, side = "YES", 
     signature,
     breakdown: { ...breakdown, pExec: Number(fill.avgPrice.toFixed(4)), levelsUsed: fill.levelsUsed, bookSource: book.source },
     vaultAfter: { lockedOnEvent: risk.lockedAfter, insuredVolume: risk.insuredVolume, worstCase: risk.worstAfter, cap: risk.cap },
-    market: { eventTicker: event.ticker, title: event.title, contract: contract.label, instrumentSymbol, side, outcome },
+    market: { eventTicker: event.ticker, title: event.title, contract: contract.label, instrumentSymbol, side, outcome, mode: win.mode, startTime: eventStartOf(event) },
   };
 }
 

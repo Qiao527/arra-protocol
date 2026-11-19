@@ -96,7 +96,9 @@ As one event fills up, each extra dollar of cover costs more (`k·u²`). The vau
 
 ### Which Gemini markets Arra covers
 
-Only markets whose outcomes are **mutually exclusive**, because netting depends on it: game winners (`sports_market_type=moneyline`) and championship futures (`futures`), plus any single-contract YES/NO market. Player props are refused ("2+ assists" and "4+ assists" can both resolve YES). Outcome `i` is the `i`-th contract sorted by `instrumentSymbol`, so the pricer, hedger, settler and the public verify page all derive the same mapping from the same Gemini event. Contracts must be `marketState: open` (not `post_only`) so the hedge can actually execute.
+Only markets whose outcomes are **mutually exclusive**, because netting depends on it: game winners (`sports_market_type=moneyline`) and championship futures (`futures`), plus any single-contract YES/NO market. Player props are refused ("2+ assists" and "4+ assists" can both resolve YES). Outcome `i` is the `i`-th contract sorted by `instrumentSymbol`, so the pricer, hedger, settler and the public verify page all derive the same mapping from the same Gemini event. Contracts must be `marketState: open` (not `post_only`) so the hedge can actually execute. Game markets nest period markets (quarters, halves, each with a tie contract); the pricer lists them too, so live "halftime comeback" cover prices off Gemini's real 2nd-half winner market.
+
+**Pricing without published depth.** Gemini's event endpoints return top of book (`bestBid`, `bestAsk`, `buy.{yes,no}`) but usually no depth. The pricer then models a ladder: each level is one tick worse and holds `TOP_OF_BOOK_DEPTH` contracts (default 1,000), so a $5k cover pays slippage instead of the best ask. **In-game quotes** are allowed only while Gemini keeps the contract open, and live for `IN_GAME_TTL_SEC` (default 20 s).
 
 ### Risk assumptions
 
@@ -104,7 +106,7 @@ Only markets whose outcomes are **mutually exclusive**, because netting depends 
 - **Hedge reconciliation.** Winning hedges pay out at Gemini (offchain USD). The vault pays the merchant from onchain USDC first and records a `hedgeReceivable`; production sweeps proceeds back to Arc USDC via Circle Mint / CCTP (`returnHedgeProceeds`) before LP withdrawals unlock.
 - **Settlement source.** Arra inherits Gemini's CFTC-regulated settlement, not token voting.
 - **Regulation.** Testnet prototype, no real-money cover. Production would distribute through a licensed insurer or MGA, with Gemini as the regulated hedge venue.
-- **Void or cancelled events** are not handled in the MVP.
+- **Void, cancelled or tied events** are not handled in the MVP. A full-game NFL moneyline has no tie contract, so a tie would leave the event unsettled until a guardian void path ships; period markets include an explicit tie contract and are unaffected.
 
 Full math, the favorite–longshot discussion, regulatory context and references: [`docs/ECONOMICS.md`](docs/ECONOMICS.md).
 
@@ -134,7 +136,7 @@ docs/ECONOMICS.md                   pricing math, reconciliation, regulation, re
 ```bash
 git clone --recurse-submodules https://github.com/Qiao527/arra-protocol && cd arra-protocol
 forge test                                         # 37 contract tests
-(cd offchain && npm ci && npm test)                # 9 Gemini adapter tests (real API fixture)
+(cd offchain && npm ci && npm test)                # 13 Gemini adapter tests (real API fixtures)
 ./script/e2e-anvil.sh                              # full local flow, no keys needed
 ```
 
@@ -172,7 +174,7 @@ The hedger decodes each log, checks unhedged exposure on that outcome, places a 
 forge test
   ArraVault.t.sol             30 passed  (quotes, netting, championship, caps, solvency, quorum, fast path, veto, in-game sales, LP locks, fuzz)
   ArraVault.invariant.t.sol    6 passed  (256 runs × 32 calls: full collateral, cap at sale, locked == max_i L_i, LP locks, hedge bounds)
-npm test (offchain)            9 passed  (real Gemini response: shape, empty books, settled resolutionSide; props refused; canonical outcome order)
+npm test (offchain)            13 passed (real Gemini responses: shape, empty books, settled resolutionSide; props refused; canonical outcome order)
 ./script/e2e-anvil.sh          E2E OK    (single game via 2-of-3 + dispute window; 4-city championship via 3-of-3 instant)
 ```
 

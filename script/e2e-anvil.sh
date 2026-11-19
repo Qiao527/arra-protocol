@@ -33,5 +33,5 @@ cd offchain
 RPC_URL="$RPC" CHAIN_ID=31337 VAULT_ADDRESS="$VAULT" USDC_ADDRESS="$USDC" \
   OPERATOR_PRIVATE_KEY="$OPERATOR" SETTLER_PRIVATE_KEYS="$S1,$S2,$S3" \
   LP_PK="$LP" BAR_PKS="$BARS" MOCK_GEMINI=true DRY_RUN=true \
-  REGISTRY_PATH="$(mktemp -d)/registry.json" \
+  REGISTRY_PATH="$(mktemp -d)/registry.json" EVIDENCE_DIR="$(mktemp -d)" WS_DEPTH=false \
   node scripts/e2e-local.js

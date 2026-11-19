@@ -14,6 +14,12 @@ export const config = {
   settlerPks: env("SETTLER_PRIVATE_KEYS", "").split(",").map((x) => x.trim()).filter(Boolean),
   port: Number(env("PORT", "8787")),
 
+  // Hosted pricer API
+  allowedOrigins: env("ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:5173").split(",").map((x) => x.trim()).filter(Boolean),
+  rateLimitPerMin: Number(env("RATE_LIMIT_PER_MIN", "60")), // per client IP, all routes
+  trustProxy: Number(env("TRUST_PROXY", "0")), // hops of reverse proxy to trust for the client IP (1 on Render / Fly)
+  maxPayoutUsdc: Number(env("MAX_PAYOUT_USDC", "50000")),
+
   // Pricing (see README "Economic design")
   hedgeBufferBps: Number(env("HEDGE_BUFFER_BPS", "500")), // b = 5%
   capitalChargeBps: Number(env("CAPITAL_CHARGE_BPS", "200")), // r = 2%
@@ -27,6 +33,7 @@ export const config = {
   geminiKey: env("GEMINI_API_KEY"),
   geminiSecret: env("GEMINI_API_SECRET"),
   mockGemini: env("MOCK_GEMINI", "false") === "true",
+  wsDepth: env("WS_DEPTH", "true") === "true", // real depth from wss://ws.gemini.com (else modeled ladder)
 
   // Hedger
   allowInGame: env("ALLOW_IN_GAME", "true") === "true", // live cover while Gemini keeps the market open

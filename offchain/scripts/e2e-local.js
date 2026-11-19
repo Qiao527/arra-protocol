@@ -69,8 +69,24 @@ console.log(`B5. Hedger: ${hb.map((h) => `${h.qty} ${h.instrumentSymbol} @ <= ${
 const bostonBefore = await bal(bars[3].account.address);
 const champEvent = await getEvent("DEMO-CHAMP");
 const bcIndex = outcomeIndex(champEvent, "GEMI-DEMO-CHAMP-BC", "YES");
-await vote("DEMO-CHAMP", bcIndex, JSON.stringify({ demo: "BC wins it all" }));
+// Evidence in Gemini's settled shape (synthetic result: the mock market never settles).
+const settledChamp = {
+  ...champEvent,
+  status: "settled",
+  contracts: champEvent.contracts.map(({ mockBook, ...c }) => ({
+    ...c, status: "settled", marketState: "closed", resolutionSide: c.instrumentSymbol === "GEMI-DEMO-CHAMP-BC" ? "yes" : "no",
+  })),
+};
+const champBytes = new TextEncoder().encode(JSON.stringify({ data: settledChamp }));
+await vote("DEMO-CHAMP", bcIndex, champBytes);
 await finalizeAndPay("DEMO-CHAMP");
+// Anyone can check the attestation: stored bytes -> onchain evidenceHash -> winning outcome.
+const { verifyEvidence, loadEvidence } = await import("../src/verify.js");
+const ce = await read("events", [champ]);
+const stored = loadEvidence({ dir: process.env.EVIDENCE_DIR, eventTicker: "DEMO-CHAMP", evidenceHash: ce[6] });
+const vr = stored && verifyEvidence({ bytes: stored, onchain: { state: "Settled", evidenceHash: ce[6], winningOutcome: Number(ce[1]) } });
+if (!vr?.pass) fail(`settlement verification: ${JSON.stringify(vr?.checks)}`);
+console.log(`V1. Verifier: stored evidence hashes to the onchain evidenceHash and implies outcome ${vr.impliedOutcome} -> PASS`);
 const bostonGot = (await bal(bars[3].account.address)) - bostonBefore;
 console.log(`S1. Championship settled by 3-of-3 vote instantly. Boston bar received ${fmt(bostonGot)} USDC`);
 if (bostonGot !== 5_000_000_000n) fail("championship payout mismatch");

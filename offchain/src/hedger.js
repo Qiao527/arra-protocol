@@ -8,7 +8,7 @@ import crypto from "node:crypto";
 import express from "express";
 import { decodeEventLog } from "viem";
 import { config } from "./config.js";
-import { getEvent, findContract, getBook, executablePrice, placeSandboxOrder, hedgeTarget } from "./gemini.js";
+import { getEvent, findContract, getBook, executablePrice, placeSandboxOrder, hedgeTarget, ensureDepth } from "./gemini.js";
 import { publicClient, operatorWallet, vaultAbi, readEventBooks } from "./chain.js";
 import { readRegistry } from "./registry.js";
 
@@ -64,6 +64,7 @@ async function hedgeNow(eventId) {
     if (excess <= 0) continue;
 
     const { instrumentSymbol, side } = hedgeTarget(ev, i);
+    await ensureDepth(instrumentSymbol);
     const fill = executablePrice(getBook(ev, findContract(ev, instrumentSymbol)), side, excess);
     const limit = Math.min(0.99, Number(fill.worstPrice.toFixed(2)));
     console.log(`hedge ${instrumentSymbol} ${side}: ${excess} contracts @ <= ${limit} (outcome ${i}, unhedged ${unhedged})`);

@@ -2,6 +2,7 @@
 // Docs: https://developer.gemini.com/products/prediction-markets
 import crypto from "node:crypto";
 import { config } from "./config.js";
+import { createDepthStream } from "./depth.js";
 
 const MOCK_EVENT = {
   ticker: "DEMO-UNDERDOG",
@@ -92,15 +93,23 @@ export async function listActiveEvents({
   return out;
 }
 
-/** Event plus the exact response text (the settler hashes the raw bytes as evidence). */
+/**
+ * Event plus the exact response bytes. The settler hashes `bytes` as evidence; text() would
+ * decode (and drop a BOM), so the hash would not be over what Gemini actually sent.
+ */
 export async function getEventRaw(ticker) {
   if (config.mockGemini) {
     if (!MOCKS[ticker]) throw new Error(`Unknown mock event ${ticker}`);
-    return { event: MOCKS[ticker], raw: JSON.stringify(MOCKS[ticker]) };
+    const raw = JSON.stringify(MOCKS[ticker]);
+    return { event: MOCKS[ticker], raw, bytes: new TextEncoder().encode(raw) };
   }
-  const raw = await getText(`${config.geminiBase}/v1/prediction-markets/events/${encodeURIComponent(ticker)}`);
+  const url = `${config.geminiBase}/v1/prediction-markets/events/${encodeURIComponent(ticker)}`;
+  const res = await fetch(url, { headers: { accept: "application/json" } });
+  const bytes = new Uint8Array(await res.arrayBuffer());
+  if (!res.ok) throw new Error(`Gemini ${res.status} for ${url}`);
+  const raw = new TextDecoder().decode(bytes).replace(/^\uFEFF/, "");
   const parsed = JSON.parse(raw);
-  return { event: parsed.data && !Array.isArray(parsed.data) ? parsed.data : parsed, raw };
+  return { event: parsed.data && !Array.isArray(parsed.data) ? parsed.data : parsed, raw, bytes };
 }
 
 export async function getEvent(ticker) {
@@ -121,16 +130,44 @@ function level(l) {
   return { price: num(l.price ?? l.p), qty: num(l.quantity ?? l.size ?? l.qty ?? l.amount) };
 }
 
+// Live depth lookup (symbol -> fresh YES-space book or null). Services that run the
+// WebSocket stream register it with useDepth(stream.getDepthBook); see depth.js.
+let liveDepth = () => null;
+export const useDepth = (fn) => (liveDepth = fn ?? (() => null));
+
+let depthStream = null;
 /**
- * Return the YES-space book {asks, bids} for a contract.
- * Uses event.contractOrderbooks when the API includes it; otherwise falls back
- * to top of book from contract.prices (one level, conservatively padded).
+ * Make sure real depth for `instrumentSymbol` is streaming, and wait (briefly) for its first
+ * snapshot. No-op with MOCK_GEMINI or WS_DEPTH=false. getBook then reports "ws-depth".
  */
-export function getBook(event, contract) {
+export async function ensureDepth(instrumentSymbol, timeoutMs = 1_500) {
+  if (config.mockGemini || !config.wsDepth || !globalThis.WebSocket) return false;
+  if (!depthStream) {
+    depthStream = createDepthStream();
+    useDepth(depthStream.getDepthBook);
+  }
+  return depthStream.watch(instrumentSymbol, timeoutMs);
+}
+/** Close the depth socket (scripts call this so the process can exit). */
+export function stopDepth() {
+  depthStream?.close();
+  depthStream = null;
+  useDepth(null);
+}
+
+/**
+ * Return the YES-space book {asks, bids, source} for a contract, best source first:
+ *   "ws-depth"              real depth from Gemini's WebSocket, when fresh (< 5 s)
+ *   "orderbook"             event.contractOrderbooks, if the REST API ever includes it
+ *   "top-of-book+slippage"  modeled ladder from bestAsk / bestBid (REST has no depth)
+ */
+export function getBook(event, contract, depthBook = liveDepth) {
   const mock = contract.mockBook ?? event.mockBook;
   if (mock) {
     return { asks: mock.asks.map(level), bids: mock.bids.map(level), source: "mock" };
   }
+  const live = depthBook?.(contract.instrumentSymbol);
+  if (live) return live;
   const books = event.contractOrderbooks;
   const raw =
     (books && (books[contract.instrumentSymbol] ?? books[contract.ticker])) ||

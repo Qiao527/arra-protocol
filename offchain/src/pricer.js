@@ -7,7 +7,7 @@ import cors from "cors";
 import crypto from "node:crypto";
 import { getAddress } from "viem";
 import { config } from "./config.js";
-import { listActiveEvents, getEvent, findContract, getBook, executablePrice, outcomeIndex, orderedContracts, isMutuallyExclusive } from "./gemini.js";
+import { listActiveEvents, getEvent, findContract, getBook, executablePrice, outcomeIndex, orderedContracts, isMutuallyExclusive, ensureDepth } from "./gemini.js";
 import { computePremium, riskAfterTrade, toUsdcUnits, premiumUnits } from "./pricing.js";
 import { operatorAccount, eventIdFor, quoteTypes, domain, readEventBooks } from "./chain.js";
 import { remember } from "./registry.js";
@@ -54,19 +54,38 @@ export function salesWindow(event, now = Math.floor(Date.now() / 1000)) {
   return { mode: "in-game", salesClose: close, expiry: close };
 }
 
-export async function buildQuote({ eventTicker, instrumentSymbol, side = "YES", payoutUsdc, buyer }) {
-  if (!["YES", "NO"].includes(side)) throw new Error("side must be YES or NO");
-  const L = Number(payoutUsdc);
-  if (!(L > 0)) throw new Error("payoutUsdc must be > 0");
-  const buyerAddr = getAddress(buyer);
+class ClientError extends Error {
+  status = 400;
+}
+const TICKER = /^[A-Z0-9][A-Z0-9-]{0,99}$/;
+
+/** Validate and normalize a POST /quote body. Throws ClientError (400) on bad input. */
+export function validateQuoteRequest(body = {}) {
+  const { eventTicker, instrumentSymbol, side = "YES", payoutUsdc, buyer } = body ?? {};
+  if (typeof eventTicker !== "string" || !TICKER.test(eventTicker)) throw new ClientError("eventTicker: expected a Gemini event ticker");
+  if (typeof instrumentSymbol !== "string" || !TICKER.test(instrumentSymbol)) throw new ClientError("instrumentSymbol: expected a Gemini instrumentSymbol");
+  if (!["YES", "NO"].includes(side)) throw new ClientError("side must be YES or NO");
+  const L = typeof payoutUsdc === "number" ? payoutUsdc : /^\d+(\.\d{1,6})?$/.test(String(payoutUsdc)) ? Number(payoutUsdc) : NaN;
+  if (!(L > 0) || L > config.maxPayoutUsdc) throw new ClientError(`payoutUsdc must be > 0 and <= ${config.maxPayoutUsdc}`);
+  if (typeof buyer !== "string" || !/^0x[0-9a-fA-F]{40}$/.test(buyer)) throw new ClientError("buyer: expected a 0x address");
+  return { eventTicker, instrumentSymbol, side, payoutUsdc: L, buyer: getAddress(buyer.toLowerCase()) };
+}
+
+export async function buildQuote(req) {
+  const { eventTicker, instrumentSymbol, side, payoutUsdc, buyer } = validateQuoteRequest(req);
+  const L = payoutUsdc;
+  const buyerAddr = buyer;
 
   const event = await getEvent(eventTicker);
   const contract = findContract(event, instrumentSymbol);
   if (contract.marketState && contract.marketState !== "open") throw new Error("Market is closed");
 
+  await ensureDepth(contract.instrumentSymbol); // real depth when the stream is up, modeled otherwise
   const book = getBook(event, contract);
   const fill = executablePrice(book, side, L); // 1 contract pays $1, so L contracts cover L USDC
-  if (!(fill.filled >= L)) throw new Error(`Not enough Gemini depth to hedge ${L} contracts (only ${fill.filled})`);
+  if (!(fill.filled >= L)) {
+    throw new Error(`Not enough Gemini depth to hedge ${L} contracts (only ${Math.floor(fill.filled)} on the ${book.source} book)`);
+  }
   if (fill.avgPrice > config.maxProbability) {
     throw new Error(
       `Market prices this at ${(fill.avgPrice * 100).toFixed(1)}%: cover on a likely outcome is poor value. Pick a long shot.`
@@ -127,10 +146,40 @@ export async function buildQuote({ eventTicker, instrumentSymbol, side = "YES", 
   };
 }
 
-export function app() {
+/** Fixed-window per-IP limiter (in memory: one instance per process is enough for the MVP). */
+function rateLimiter({ windowMs, max }) {
+  const hits = new Map();
+  return (req, res, next) => {
+    const now = Date.now();
+    const k = req.ip;
+    let h = hits.get(k);
+    if (!h || now >= h.reset) {
+      h = { n: 0, reset: now + windowMs };
+      hits.set(k, h);
+      if (hits.size > 50_000) for (const [ip, v] of hits) if (now >= v.reset) hits.delete(ip);
+    }
+    if (++h.n > max) {
+      res.set("Retry-After", String(Math.ceil((h.reset - now) / 1000)));
+      return res.status(429).json({ error: "Too many requests" });
+    }
+    next();
+  };
+}
+
+/** Status for an error thrown while quoting: bad input 400, Gemini / RPC trouble 502. */
+const statusOf = (err) => err.status ?? (/^Gemini \d+|HTTP request failed|fetch failed|ECONN|timeout/i.test(err.message) ? 502 : 400);
+const publicMessage = (err) => (statusOf(err) === 502 ? "Upstream unavailable (Gemini or Arc RPC); try again" : err.message.split("\n")[0]);
+
+export function app({
+  allowedOrigins = config.allowedOrigins,
+  rateLimit = { windowMs: 60_000, max: config.rateLimitPerMin },
+} = {}) {
   const a = express();
-  a.use(cors());
-  a.use(express.json());
+  a.disable("x-powered-by");
+  a.set("trust proxy", config.trustProxy);
+  a.use(cors({ origin: allowedOrigins, methods: ["GET", "POST"], allowedHeaders: ["content-type"], maxAge: 600 }));
+  a.use(rateLimiter(rateLimit));
+  a.use(express.json({ limit: "10kb" }));
 
   a.get("/health", (_req, res) => res.json({ ok: true, mock: config.mockGemini, operator: operatorAccount().address }));
 
@@ -158,7 +207,8 @@ export function app() {
         }))
       );
     } catch (err) {
-      res.status(502).json({ error: err.message });
+      console.error(`/events: ${err.message}`);
+      res.status(502).json({ error: "Upstream unavailable (Gemini); try again" });
     }
   });
 
@@ -166,9 +216,13 @@ export function app() {
     try {
       res.json(await buildQuote(req.body));
     } catch (err) {
-      res.status(400).json({ error: err.message });
+      if (statusOf(err) === 502) console.error(`/quote: ${err.message}`);
+      res.status(statusOf(err)).json({ error: publicMessage(err) });
     }
   });
+
+  // Body too large / malformed JSON
+  a.use((err, _req, res, _next) => res.status(err.status ?? 500).json({ error: err.status === 413 ? "Request too large" : "Bad request" }));
 
   return a;
 }

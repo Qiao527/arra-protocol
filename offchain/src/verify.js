@@ -1,0 +1,51 @@
+// Proof-of-Promise verifier: anyone can check what the settlers attested.
+//   evidenceHash (onchain) == keccak256(raw Gemini response bytes the settlers voted on)
+//   winningOutcome (onchain) == the outcome those bytes imply, in the canonical outcome order
+// Gemini responses change over time (prices, timestamps, volume), so a re-fetch rarely hashes
+// to the attested value. Settlers therefore store the exact bytes at vote time (evidence/).
+import fs from "node:fs";
+import path from "node:path";
+import { keccak256 } from "viem";
+import { settledOutcome } from "./settler.js";
+
+export const DEFAULT_EVIDENCE_DIR = new URL("../evidence/", import.meta.url).pathname;
+
+const safe = (ticker) => String(ticker).replace(/[^A-Za-z0-9._-]/g, "_");
+
+/** Parse a Gemini event response (bare event or { data: event }). */
+export function parseEvent(bytes) {
+  const parsed = JSON.parse(new TextDecoder().decode(bytes).replace(/^﻿/, ""));
+  return parsed?.data && !Array.isArray(parsed.data) ? parsed.data : parsed;
+}
+
+export function verifyEvidence({ bytes, onchain }) {
+  const checks = [];
+  const hash = keccak256(bytes);
+  checks.push({ name: "event settled onchain", ok: onchain.state === "Settled", detail: onchain.state });
+  checks.push({ name: "evidence hash", ok: hash === onchain.evidenceHash, detail: `bytes ${hash} vs onchain ${onchain.evidenceHash}` });
+  let implied = null;
+  try {
+    implied = settledOutcome(parseEvent(bytes));
+  } catch (err) {
+    checks.push({ name: "evidence parses", ok: false, detail: err.message });
+  }
+  checks.push({
+    name: "winning outcome",
+    ok: implied !== null && implied === Number(onchain.winningOutcome),
+    detail: `evidence implies ${implied ?? "no result"}, onchain ${onchain.winningOutcome}`,
+  });
+  return { pass: checks.every((c) => c.ok), checks, impliedOutcome: implied, hash };
+}
+
+export function saveEvidence({ dir = DEFAULT_EVIDENCE_DIR, eventTicker, bytes }) {
+  const d = path.join(dir, safe(eventTicker));
+  fs.mkdirSync(d, { recursive: true });
+  const file = path.join(d, `${keccak256(bytes)}.json`);
+  fs.writeFileSync(file, bytes);
+  return file;
+}
+
+export function loadEvidence({ dir = DEFAULT_EVIDENCE_DIR, eventTicker, evidenceHash }) {
+  const file = path.join(dir, safe(eventTicker), `${String(evidenceHash).toLowerCase()}.json`);
+  return fs.existsSync(file) ? new Uint8Array(fs.readFileSync(file)) : null;
+}

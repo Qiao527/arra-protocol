@@ -70,7 +70,11 @@ const parseOutcome = (o) => (o === "YES" ? 0 : o === "NO" ? 1 : o === "VOID" ? V
 export async function vote(eventTicker, outcomeArg, evidence) {
   const eventId = eventIdFor(eventTicker);
   const outcome = checkVoteOutcome(parseOutcome(outcomeArg));
-  const evidenceHash = keccak256(toBytes(evidence));
+  const bytes = typeof evidence === "string" ? toBytes(evidence) : evidence; // exact bytes when given
+  const evidenceHash = keccak256(bytes);
+  // Keep the attested bytes: a later re-fetch from Gemini will not hash the same.
+  const { saveEvidence } = await import("./verify.js");
+  console.log(`evidence stored: ${saveEvidence({ dir: process.env.EVIDENCE_DIR, eventTicker, bytes })}`);
   const threshold = Number(await publicClient.readContract({ ...vault, functionName: "settlerThreshold" }));
 
   for (const w of settlerWallets()) {
@@ -146,10 +150,10 @@ async function watch() {
           continue;
         }
         if (st.state !== "Open") continue;
-        const { event, raw } = await getEventRaw(info.eventTicker);
+        const { event, bytes } = await getEventRaw(info.eventTicker);
         const outcome = settledOutcome(event);
         if (outcome !== null) {
-          await vote(info.eventTicker, outcome, raw); // evidence = keccak256 of the exact Gemini response bytes
+          await vote(info.eventTicker, outcome, bytes); // evidence = keccak256 of the exact Gemini response bytes
           await finalizeAndPay(info.eventTicker);
         }
       } catch (err) {

@@ -1,5 +1,5 @@
-/* Hallmark · theme: custom · posture: restrained · hero: custom · shape: app screen · material: pale grey ground, silver sculpture, paper promise documents, black ink · type: Instrument Serif (the promise), Inter (interface), JetBrains Mono (numbers) · 4px scale */
-@import url("https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter+Tight:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap");
+/* Hallmark · theme: custom · posture: restrained · hero: custom · shape: app screen · material: pale grey ground, silver coin, paper promise documents, black ink · type: Geist (all text), Geist Mono (numbers) · 4px scale */
+@import url("https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&display=swap");
 
 :root {
   /* light, cool, monochrome: pale grey ground, graphite type, black as the only accent */
@@ -38,9 +38,9 @@
   --band-muted: #a3a5a4;
   --band-line: #2a2b2b;
   --radius: 14px;
-  --serif: "Instrument Serif", "Times New Roman", serif;
-  --sans: "Inter Tight", "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --serif: "Geist", system-ui, sans-serif;
+  --sans: "Geist", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
   color-scheme: light;
 }
 
@@ -74,8 +74,8 @@ button { font: inherit; color: inherit; }
   padding: 28px 0; margin-bottom: 40px; position: relative; z-index: 5;
 }
 .brand { display: flex; align-items: center; gap: 12px; text-decoration: none; }
-.brand-name { font-family: var(--sans); font-size: 22px; line-height: 1; letter-spacing: -0.03em; }
-.brand-name em { font-family: var(--serif); font-style: italic; font-weight: 400; letter-spacing: 0; }
+.brand-name { font-family: var(--sans); font-size: 22px; line-height: 1; letter-spacing: -0.02em; }
+.brand-name em { font-style: normal; font-weight: 300; font-weight: 400; letter-spacing: 0; }
 .nav { display: flex; gap: 4px; }
 .nav a {
   text-decoration: none; color: var(--text); padding: 8px 12px; font-size: 14px; text-transform: uppercase; letter-spacing: 0;
@@ -124,12 +124,12 @@ button { font: inherit; color: inherit; }
 .stack > * + * { margin-top: 12px; }
 
 h1.display {
-  font-family: var(--sans); font-weight: 400; font-size: clamp(40px, 5vw, 64px); line-height: 1.02;
-  letter-spacing: -0.045em; margin: 0 0 20px; text-wrap: balance;
+  font-family: var(--sans); font-weight: 500; font-size: clamp(40px, 5vw, 64px); line-height: 1.02;
+  letter-spacing: -0.025em; margin: 0 0 20px; text-wrap: balance;
 }
-h1.display em, h2.section em, .hero3d-title em { font-family: var(--serif); font-style: italic; font-weight: 400; letter-spacing: -0.01em; }
+h1.display em, h2.section em, .hero3d-title em { font-style: normal; font-weight: 300; font-weight: 400; letter-spacing: -0.01em; }
 .lede { font-size: 17px; color: var(--muted); max-width: 52ch; margin: 0 0 28px; }
-h2.section { font-family: var(--sans); font-weight: 400; font-size: 34px; letter-spacing: -0.04em; margin: 0 0 8px; text-wrap: balance; }
+h2.section { font-family: var(--sans); font-weight: 400; font-size: 34px; letter-spacing: -0.025em; margin: 0 0 8px; text-wrap: balance; }
 
 /* ---------- market picker ---------- */
 .tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
@@ -182,8 +182,8 @@ label.field { display: block; font-size: 13px; color: var(--muted); margin-botto
   border-radius: 0 0 4px 4px;
 }
 .promise .who { font-size: 12.5px; color: var(--paper-muted); }
-.promise .vow { font-family: var(--sans); letter-spacing: -0.035em; font-size: clamp(28px, 3.2vw, 38px); line-height: 1.08; margin: 12px 0 20px; text-wrap: balance; }
-.promise .vow em { font-family: var(--serif); font-style: italic; letter-spacing: 0; }
+.promise .vow { font-family: var(--sans); letter-spacing: -0.02em; font-size: clamp(28px, 3.2vw, 38px); line-height: 1.08; margin: 12px 0 20px; text-wrap: balance; }
+.promise .vow em { font-style: normal; font-weight: 300; letter-spacing: 0; }
 .promise .lines { border-top: 1px solid var(--paper-rule); }
 .promise .line { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px dashed var(--paper-rule); font-size: 14px; }
 .promise .line span:first-child { color: var(--paper-muted); }
@@ -311,7 +311,7 @@ footer.foot { margin-top: 72px; padding-top: 20px; border-top: 1px solid var(--l
 .hero3d-canvas.on { opacity: 1; }
 .hero3d-copy { position: relative; text-align: center; padding: 38vh 24px 0; max-width: 1000px; pointer-events: none; }
 .hero3d-title {
-  font-family: var(--sans); font-weight: 400; font-size: clamp(44px, 6.4vw, 92px); line-height: 0.98; letter-spacing: -0.05em;
+  font-family: var(--sans); font-weight: 500; font-size: clamp(44px, 6.4vw, 92px); line-height: 0.98; letter-spacing: -0.025em;
   margin: 0 0 24px; text-wrap: balance; color: var(--text); animation: enter .7s cubic-bezier(.2, .8, .2, 1) both;
 }
 .hero3d-p { font-size: 18px; line-height: 1.5; color: var(--muted); margin: 0 auto; max-width: 34rem; letter-spacing: -0.01em; animation: enter .7s .1s cubic-bezier(.2, .8, .2, 1) both; }
@@ -326,11 +326,11 @@ footer.foot { margin-top: 72px; padding-top: 20px; border-top: 1px solid var(--l
 /* ---------- black band ---------- */
 .band { width: 100%; background: var(--band); color: var(--band-text); padding: 120px 0; margin-top: 0; margin-bottom: 96px; }
 .band-inner { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
-.band h2 { font-family: var(--sans); font-weight: 400; font-size: clamp(36px, 4.4vw, 60px); letter-spacing: -0.045em; line-height: 1.02; margin: 0 0 72px; max-width: 18ch; text-wrap: balance; }
-.band h2 em { font-family: var(--serif); font-style: italic; letter-spacing: 0; }
+.band h2 { font-family: var(--sans); font-weight: 500; font-size: clamp(36px, 4.4vw, 60px); letter-spacing: -0.025em; line-height: 1.02; margin: 0 0 72px; max-width: 18ch; text-wrap: balance; }
+.band h2 em { font-style: normal; font-weight: 300; letter-spacing: 0; }
 .band .how { margin-top: 0; }
 .band .how .n { color: var(--band-muted); }
-.band .how h4 { font-size: 22px; font-weight: 400; letter-spacing: -0.03em; }
+.band .how h4 { font-size: 22px; font-weight: 400; letter-spacing: -0.02em; }
 .band .how p { color: var(--band-muted); font-size: 15px; }
 
 /* ---------- editorial layout for the promise flow ---------- */
@@ -339,7 +339,7 @@ footer.foot { margin-top: 72px; padding-top: 20px; border-top: 1px solid var(--l
 .grid-2 > section > .panel, .grid-2 > section > .panel + .panel {
   background: none; border: 0; border-top: 1px solid var(--line); border-radius: 0; box-shadow: none; padding: 32px 0; margin: 0;
 }
-.grid-2 > section > .panel h3 { font-size: 22px; font-weight: 400; letter-spacing: -0.03em; display: flex; align-items: baseline; gap: 16px; }
+.grid-2 > section > .panel h3 { font-size: 22px; font-weight: 400; letter-spacing: -0.02em; display: flex; align-items: baseline; gap: 16px; }
 .step-n { font-size: 12px; color: var(--muted); font-weight: 400; letter-spacing: 0; }
 .grid-2 > aside > .panel { background: none; border: 0; box-shadow: none; padding: 24px 0 0; }
 h1.display { font-size: clamp(48px, 6.4vw, 96px); line-height: 0.95; margin-bottom: 24px; }
@@ -349,7 +349,7 @@ h1.display { font-size: clamp(48px, 6.4vw, 96px); line-height: 0.95; margin-bott
 .band { padding: 160px 0; }
 .band h2 { font-size: clamp(44px, 6vw, 96px); line-height: 0.95; margin-bottom: 96px; max-width: 14ch; }
 .figures { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 48px; border-top: 1px solid var(--band-line); padding-top: 40px; }
-.figures .fig { font-size: clamp(44px, 5vw, 72px); letter-spacing: -0.04em; line-height: 1; margin-bottom: 16px; }
+.figures .fig { font-size: clamp(44px, 5vw, 72px); letter-spacing: -0.025em; line-height: 1; margin-bottom: 16px; }
 .figures p { color: var(--band-muted); margin: 0; max-width: 28ch; font-size: 15px; }
 .figures > :nth-child(2) { transition-delay: .12s; }
 .figures > :nth-child(3) { transition-delay: .24s; }
@@ -358,8 +358,8 @@ h1.display { font-size: clamp(48px, 6.4vw, 96px); line-height: 0.95; margin-bott
 /* ---------- composer: the promise is one sentence ---------- */
 .composer { max-width: 1040px; margin: 0 auto; text-align: center; padding: 40px 0 40px; }
 .composer-kicker { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); margin: 0 0 40px; text-transform: uppercase; }
-.composer-line { font-family: var(--sans); font-weight: 400; font-size: clamp(40px, 6vw, 88px); line-height: 1.08; letter-spacing: -0.045em; margin: 0 0 24px; text-wrap: balance; }
-.composer-line em { font-family: var(--serif); font-style: italic; letter-spacing: 0; }
+.composer-line { font-family: var(--sans); font-weight: 500; font-size: clamp(40px, 6vw, 88px); line-height: 1.08; letter-spacing: -0.025em; margin: 0 0 24px; text-wrap: balance; }
+.composer-line em { font-style: normal; font-weight: 300; letter-spacing: 0; }
 .token {
   font: inherit; letter-spacing: inherit; color: inherit; background: none; border: 0; padding: 0 0.06em; cursor: pointer;
   border-bottom: 2px solid var(--text); line-height: 1; transition: opacity .2s, border-color .2s;
@@ -377,7 +377,7 @@ h1.display { font-size: clamp(48px, 6.4vw, 96px); line-height: 0.95; margin-bott
 .linkish.on { color: var(--muted); }
 .composer-price { display: flex; align-items: center; justify-content: space-between; gap: 32px; max-width: 720px; margin: 0 auto; padding: 32px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); text-align: left; flex-wrap: wrap; }
 .price-label { font-size: 13px; color: var(--muted); text-transform: uppercase; }
-.price-value { font-family: var(--sans); font-size: 56px; letter-spacing: -0.045em; line-height: 1.05; font-variant-numeric: tabular-nums; }
+.price-value { font-family: var(--sans); font-size: 56px; letter-spacing: -0.025em; line-height: 1.05; font-variant-numeric: tabular-nums; }
 .price-sub { font-size: 14px; color: var(--muted); }
 .composer-cta { display: flex; align-items: center; gap: 16px; }
 .composer-err { margin-top: 16px; }
@@ -404,3 +404,27 @@ h1.display { font-size: clamp(48px, 6.4vw, 96px); line-height: 0.95; margin-bott
 .sheet-team:hover { background: var(--text); color: var(--on-seal); border-color: var(--text); }
 .sheet-team:hover .faint { color: var(--on-seal); }
 @media (max-width: 640px) { .sheet-row { grid-template-columns: 1fr; } .sheet-teams { justify-content: flex-start; } .composer-price { justify-content: center; text-align: center; } }
+
+/* ---------- live ticker ---------- */
+.ticker { display: flex; align-items: center; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); height: 48px; overflow: hidden; background: var(--ink); }
+.ticker-badge { flex: none; display: inline-flex; align-items: center; gap: 8px; padding: 0 20px; height: 100%; border-right: 1px solid var(--line); font-size: 12px; text-transform: uppercase; color: var(--text); }
+.ticker-viewport { position: relative; flex: 1; overflow: hidden; height: 100%; display: flex; align-items: center; }
+.ticker-viewport::before, .ticker-viewport::after { content: ""; position: absolute; top: 0; bottom: 0; width: 64px; z-index: 1; pointer-events: none; }
+.ticker-viewport::before { left: 0; background: linear-gradient(to right, var(--ink), transparent); }
+.ticker-viewport::after { right: 0; background: linear-gradient(to left, var(--ink), transparent); }
+.ticker-track { display: flex; width: max-content; will-change: transform; animation: ticker var(--ticker-duration, 90s) linear infinite; }
+.ticker:hover .ticker-track { animation-play-state: paused; }
+@keyframes ticker { to { transform: translateX(-50%); } }
+.ticker-item { display: inline-flex; align-items: baseline; gap: 8px; padding: 0 28px; border-right: 1px solid var(--line-soft); font-size: 14px; white-space: nowrap; }
+.ticker-team { color: var(--text); letter-spacing: -0.01em; }
+.ticker-ctx { color: var(--muted); font-size: 12px; }
+.ticker-price { color: var(--text); font-size: 13px; }
+
+/* ---------- desk: 1px stat grid, depth bars ---------- */
+.stats { gap: 0; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; background: var(--line); grid-gap: 1px; }
+.stat { border: 0; border-radius: 0; background: var(--ink-2); padding: 24px; }
+.stat .k { font-size: 12px; text-transform: uppercase; }
+.stat .v { font-family: var(--sans); font-size: 32px; letter-spacing: -0.025em; font-variant-numeric: tabular-nums; }
+.bar .track { background: transparent; border-bottom: 1px solid var(--line-soft); border-radius: 0; height: 12px; }
+.bar .fill.depth { border-radius: 0; background: linear-gradient(to right, color-mix(in oklch, var(--text) 8%, transparent), color-mix(in oklch, var(--text) 70%, transparent)); }
+.bar .fill.depth.hedge { background: linear-gradient(to right, color-mix(in oklch, var(--ok) 10%, transparent), color-mix(in oklch, var(--ok) 80%, transparent)); }

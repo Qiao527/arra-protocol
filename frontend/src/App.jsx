@@ -3,6 +3,7 @@ import PromisePage from "./pages/PromisePage.jsx";
 import VerifyPage from "./pages/VerifyPage.jsx";
 import DeskPage from "./pages/DeskPage.jsx";
 import Hero from "./components/Hero.jsx";
+import Ticker from "./components/Ticker.jsx";
 import { connect, hasWallet } from "./lib/wallet.js";
 import { VAULT, addrUrl } from "./lib/config.js";
 import { short } from "./lib/format.js";
@@ -69,6 +70,7 @@ export default function App() {
     </div>
 
       {route.page === "promise" && <Hero />}
+      {route.page === "promise" && <Ticker />}
     <div className="shell">
       <main id="make" style={route.page === "promise" ? { paddingTop: 96 } : undefined}>
         {route.page === "promise" && <PromisePage account={account} onConnect={onConnect} />}

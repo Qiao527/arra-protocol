@@ -1,0 +1,29 @@
+# Arra
+
+> Merchant game-day promises ("if our team wins, it's on us") backed by USDC locked on Arc, priced from Gemini Prediction Markets, verifiable by anyone. Testnet prototype; no real money.
+
+## How it works
+- A merchant picks a long shot on a Gemini sports market and a payout.
+- The pricer walks Gemini's order book and signs a 60-second EIP-712 quote.
+- The merchant calls buyCover on the ArraVault contract on Arc; the payout is locked in USDC.
+- Mutually exclusive outcomes net: the vault locks the largest payout per event, not the sum.
+- Settlers vote Gemini's result (2-of-3, unanimous settles instantly); winners are paid from the vault.
+
+## Contract
+- Network: Arc Testnet, chain ID 5042002, RPC https://rpc.testnet.arc.network
+- ArraVault: see https://github.com/Qiao527/arra-protocol/blob/main/deployments/arc-testnet.json
+- Explorer: https://explorer.testnet.arc.io
+
+## Pricer API
+- GET /health
+- GET /events: coverable Gemini markets (game winners, period winners, championships) with outcomes in canonical order
+- POST /quote {eventTicker, instrumentSymbol, side, payoutUsdc, buyer}: signed quote plus price breakdown
+- Base URL: https://arra-pricer.onrender.com
+
+## Pages
+- Make a promise: /#/
+- Proof of a promise: /#/p/{policyId}?t={geminiEventTicker}
+- Risk desk: /#/desk
+
+## Source
+- https://github.com/Qiao527/arra-protocol

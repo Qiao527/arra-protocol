@@ -121,8 +121,8 @@ export default function DeskPage({ account, onConnect }) {
                           <div className="bar" key={i}>
                             <span className="muted" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{label(r.eventId, i)}</span>
                             <span className="track">
-                              <span className="fill" style={{ width: `${(l / max) * 100}%` }} />
-                              <span className="fill hedge" style={{ width: `${(r.hedged[i] / max) * 100}%` }} />
+                              <span className="fill depth" style={{ width: `${(l / max) * 100}%` }} />
+                              <span className="fill depth hedge" style={{ width: `${(r.hedged[i] / max) * 100}%` }} />
                             </span>
                             <span className="num r" style={{ textAlign: "right" }}>{usd(l)}</span>
                           </div>

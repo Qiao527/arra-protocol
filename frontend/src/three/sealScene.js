@@ -12,11 +12,7 @@ const smooth = (a, b, x) => {
 };
 
 /** Struck-coin face as a bump map: raised rim, beaded ring, concentric field lines, ARRA and a value line. */
-function faceTexture() {
-  const S = 1024;
-  const c = document.createElement("canvas");
-  c.width = c.height = S;
-  const g = c.getContext("2d");
+function drawFace(g, S) {
   g.fillStyle = "#808080";
   g.fillRect(0, 0, S, S);
   const cx = S / 2;
@@ -31,19 +27,33 @@ function faceTexture() {
   for (let r = 60; r < 400; r += 18) { g.beginPath(); g.arc(cx, cx, r, 0, Math.PI * 2); g.stroke(); }
   g.fillStyle = "#f2f2f2";
   g.textAlign = "center"; g.textBaseline = "middle";
-  g.font = "400 230px 'Inter Tight', Helvetica, Arial, sans-serif";
+  g.font = "500 220px Geist, Helvetica, Arial, sans-serif";
   g.fillText("ARRA", cx, cx - 20);
-  g.font = "500 54px 'JetBrains Mono', ui-monospace, monospace";
+  g.font = "500 54px 'Geist Mono', ui-monospace, monospace";
   g.fillText("1 USDC   ARC", cx, cx + 150);
   g.lineWidth = 6; g.strokeStyle = "#f2f2f2";
   g.beginPath(); g.moveTo(cx - 170, cx + 95); g.lineTo(cx + 170, cx + 95); g.stroke();
-  // soften so the bump reads as struck metal, not noise
+}
+
+/** Struck-coin face as a bump map: raised rim, beaded ring, lathe lines, ARRA and a value line. */
+function faceTexture() {
+  const S = 1024;
+  const c = document.createElement("canvas");
+  c.width = c.height = S;
   const soft = document.createElement("canvas");
   soft.width = soft.height = S;
-  const sg = soft.getContext("2d");
-  sg.filter = "blur(2px)";
-  sg.drawImage(c, 0, 0);
   const t = new THREE.CanvasTexture(soft);
+  const paint = () => {
+    const g = c.getContext("2d");
+    g.clearRect(0, 0, S, S);
+    drawFace(g, S);
+    const sg = soft.getContext("2d");
+    sg.filter = "blur(2px)";
+    sg.drawImage(c, 0, 0);
+    t.needsUpdate = true;
+  };
+  paint();
+  document.fonts?.load("500 220px Geist").then(paint).catch(() => {});
   t.anisotropy = 8;
   t.center.set(0.5, 0.5);
   t.rotation = Math.PI / 2; // cylinder caps map u/v rotated; turn the legend upright
@@ -111,6 +121,7 @@ export function createSealScene(canvas, { reducedMotion = false } = {}) {
   let narrow = false;
   let spin = 0;
   let shown = 0;
+  let restAngle = null;
   let last = 0;
 
   function resize() {
@@ -132,14 +143,19 @@ export function createSealScene(canvas, { reducedMotion = false } = {}) {
     const pay = smooth(0.62, 0.92, p);
     // a slow, weighty turn: edge-on and tilted while unsealed, squaring to the camera as it
     // locks. Idle drift is a few degrees over many seconds, never a spin.
-    spin += dt * (reducedMotion ? 0 : 0.00012);
-    const idle = reducedMotion ? 0 : Math.sin(spin) * 0.08;
-    const tiltX = 0.95 * (1 - lock) + 0.12 + pointer.y * 0.05;
-    const yaw = -1.1 * (1 - lock) - 0.28 * lock + idle + pointer.x * 0.08;
-    group.rotation.x += (tiltX - group.rotation.x) * 0.04;
-    group.rotation.y += (yaw - group.rotation.y) * 0.04;
-    group.rotation.z = 0.12 * (1 - lock);
-    group.position.y = (narrow ? 1.3 : 0.85) + (reducedMotion ? 0 : Math.sin(spin * 1.7) * 0.04);
+    // always moving: a slow, even turn (one revolution about every 16 s) while the promise is
+    // open; as it locks, the turn eases to rest face-on, with only a faint drift left.
+    spin += dt * (reducedMotion ? 0 : 0.00039 * (1 - lock));
+    // latch the resting angle (the next face-on turn) when locking starts, so it never jumps a revolution
+    if (lock <= 0.001) restAngle = null;
+    else if (restAngle === null) restAngle = Math.ceil((spin + 0.25) / (Math.PI * 2)) * Math.PI * 2 - 0.25;
+    const drift = reducedMotion ? 0 : Math.sin(t * 0.00035) * 0.06;
+    const yaw = (restAngle === null ? spin : spin * (1 - lock) + restAngle * lock) + drift * lock + pointer.x * 0.06;
+    group.rotation.y += (yaw - group.rotation.y) * 0.08;
+    const tiltX = 0.18 * (1 - lock) + 0.08 + pointer.y * 0.04;
+    group.rotation.x += (tiltX - group.rotation.x) * 0.06;
+    group.rotation.z = 0;
+    group.position.y = (narrow ? 1.3 : 0.85) + (reducedMotion ? 0 : Math.sin(t * 0.0006) * 0.05);
     // paid: a band of light sweeps across the face, then holds soft
     sweep.intensity = pay > 0 && pay < 1 ? 160 * Math.sin(pay * Math.PI) : pay >= 1 ? 25 : 0;
     sweep.position.x = -6 + pay * 12;

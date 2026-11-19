@@ -29,6 +29,7 @@
   --paper-grain: rgba(0, 0, 0, 0.035);
   --paper-rule: rgba(27, 26, 23, 0.15);
   --qr-ground: #fffdf9;
+  --grain-opacity: 0.07;
   --warn: #e6b450;
   --radius: 14px;
   --serif: "Instrument Serif", "Times New Roman", serif;
@@ -283,4 +284,30 @@ footer.foot { margin-top: 72px; padding-top: 20px; border-top: 1px solid var(--l
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+
+/* ---------- 3D hero ---------- */
+.hero3d { position: relative; height: 300vh; width: 100vw; margin-left: calc(50% - 50vw); margin-top: -40px; margin-bottom: 48px; }
+.hero3d-sticky { position: sticky; top: 0; height: 100vh; overflow: hidden; display: grid; align-items: center; }
+.hero3d-canvas { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; transition: opacity 1.2s ease; }
+.hero3d-canvas.on { opacity: 1; }
+.hero3d-grain {
+  position: absolute; inset: -50%; pointer-events: none; opacity: var(--grain-opacity);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation: grain 1.2s steps(4) infinite;
+}
+@keyframes grain { 0% { transform: translate(0, 0); } 25% { transform: translate(-4%, 2%); } 50% { transform: translate(3%, -3%); } 75% { transform: translate(-2%, 4%); } }
+.hero3d-copy { position: relative; max-width: 1180px; width: 100%; margin: 0 auto; padding: 0 24px; pointer-events: none; }
+.hero3d-copy > * { max-width: 30rem; }
+.hero3d-kicker { color: var(--seal); font-size: 13px; margin: 0 0 12px; }
+.hero3d-title { font-family: var(--serif); font-weight: 400; font-size: clamp(44px, 6vw, 84px); line-height: 1; margin: 0 0 20px; text-wrap: balance; animation: enter .6s cubic-bezier(.2, .8, .2, 1) both; }
+.hero3d-p { font-size: 17px; color: var(--muted); margin: 0 0 28px; animation: enter .6s .08s cubic-bezier(.2, .8, .2, 1) both; }
+.hero3d-progress { display: flex; gap: 8px; }
+.hero3d-progress span { width: 32px; height: 2px; background: var(--line); transition: background .4s; }
+.hero3d-progress span.on { background: var(--seal); }
+.hero3d-cta { margin-top: 28px; pointer-events: auto; animation: enter .5s both; }
+.hero3d-scroll { position: absolute; left: 50%; bottom: 28px; transform: translateX(-50%); font-size: 12px; color: var(--faint); transition: opacity .4s; }
+@media (max-width: 700px) {
+  .hero3d-sticky { align-items: end; padding-bottom: 72px; }
+  .hero3d-title { font-size: 44px; }
 }

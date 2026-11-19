@@ -3,6 +3,7 @@ import Logo from "./components/Logo.jsx";
 import PromisePage from "./pages/PromisePage.jsx";
 import VerifyPage from "./pages/VerifyPage.jsx";
 import DeskPage from "./pages/DeskPage.jsx";
+import Hero from "./components/Hero.jsx";
 import { connect, hasWallet } from "./lib/wallet.js";
 import { VAULT, addrUrl } from "./lib/config.js";
 import { short } from "./lib/format.js";
@@ -66,7 +67,8 @@ export default function App() {
       </header>
       {walletErr && <p className="err" role="alert">{walletErr}</p>}
 
-      <main>
+      {route.page === "promise" && <Hero />}
+      <main id="make">
         {route.page === "promise" && <PromisePage account={account} onConnect={onConnect} />}
         {route.page === "verify" && <VerifyPage policyId={route.policyId} params={route.params} account={account} />}
         {route.page === "desk" && <DeskPage account={account} onConnect={onConnect} />}

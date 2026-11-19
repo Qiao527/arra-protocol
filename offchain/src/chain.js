@@ -25,6 +25,20 @@ export const publicClient = createPublicClient({
   ...(c.contracts?.multicall3 ? { batch: { multicall: true } } : {}),
 });
 
+/**
+ * getContractEvents over any block range. Arc's public RPC refuses eth_getLogs over more than
+ * 10,000 blocks, and the scan from FROM_BLOCK grows by ~100k blocks a day.
+ */
+export async function getLogsChunked(client, params, { fromBlock, toBlock, step = 10_000n }) {
+  const end = toBlock ?? (await client.getBlockNumber());
+  const logs = [];
+  for (let a = BigInt(fromBlock); a <= end; a += step) {
+    const b = a + step - 1n < end ? a + step - 1n : end;
+    logs.push(...(await client.getContractEvents({ ...params, fromBlock: a, toBlock: b })));
+  }
+  return logs;
+}
+
 export function operatorAccount() {
   if (!config.operatorPk) throw new Error("OPERATOR_PRIVATE_KEY not set");
   return privateKeyToAccount(config.operatorPk);

@@ -9,7 +9,7 @@ import express from "express";
 import { decodeEventLog } from "viem";
 import { config } from "./config.js";
 import { getEvent, findContract, getBook, executablePrice, placeSandboxOrder, hedgeTarget, ensureDepth, sandboxSymbolFor, sandboxBestAsk } from "./gemini.js";
-import { publicClient, operatorWallet, vaultAbi, readEventBooks } from "./chain.js";
+import { publicClient, operatorWallet, vaultAbi, readEventBooks, getLogsChunked } from "./chain.js";
 import { readRegistry } from "./registry.js";
 
 const vault = { address: config.vault, abi: vaultAbi };
@@ -162,7 +162,7 @@ async function poll() {
   for (;;) {
     const toBlock = await publicClient.getBlockNumber();
     if (toBlock >= fromBlock) {
-      const logs = await publicClient.getContractEvents({ ...vault, eventName: "CoverPurchased", fromBlock, toBlock });
+      const logs = await getLogsChunked(publicClient, { ...vault, eventName: "CoverPurchased" }, { fromBlock, toBlock });
       for (const log of logs) {
         try {
           await hedgeIfNeeded(log.args.eventId);

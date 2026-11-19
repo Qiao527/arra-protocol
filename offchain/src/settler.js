@@ -13,7 +13,7 @@
 import { keccak256, toBytes } from "viem";
 import { config } from "./config.js";
 import { getEventRaw, orderedContracts, outcomeSymbols, MAX_OUTCOMES } from "./gemini.js";
-import { publicClient, settlerWallets, operatorWallet, vaultAbi, eventIdFor } from "./chain.js";
+import { publicClient, settlerWallets, operatorWallet, vaultAbi, eventIdFor, getLogsChunked } from "./chain.js";
 import { readRegistry } from "./registry.js";
 
 const vault = { address: config.vault, abi: vaultAbi };
@@ -125,13 +125,9 @@ export async function finalizeAndPay(eventTicker) {
   const done = await eventState(eventId);
   if (done.state !== "Settled") throw new Error(`event is ${done.state}, not Settled`);
 
-  const logs = await publicClient.getContractEvents({
-    ...vault,
-    eventName: "CoverPurchased",
-    args: { eventId },
-    fromBlock: BigInt(process.env.FROM_BLOCK ?? 0),
-  });
+  const logs = await getLogsChunked(publicClient, { ...vault, eventName: "CoverPurchased", args: { eventId } }, { fromBlock: BigInt(process.env.FROM_BLOCK ?? 0) });
   const w = operatorWallet();
+  let paid = 0;
   for (const log of logs) {
     // Void: every holder gets their premium back. Otherwise only the winning outcome is paid.
     if (done.winning !== VOID_OUTCOME && Number(log.args.outcome) !== done.winning) continue;
@@ -142,7 +138,9 @@ export async function finalizeAndPay(eventTicker) {
     await publicClient.waitForTransactionReceipt({ hash: tx });
     const amount = done.winning === VOID_OUTCOME ? p[4] : p[3]; // premium refund vs payout
     console.log(`${done.winning === VOID_OUTCOME ? "refunded" : "paid"} policy #${id}: ${Number(amount) / 1e6} USDC -> ${p[0]}  tx ${tx}`);
+    paid++;
   }
+  return paid;
 }
 
 /** Demo / manual: full settlement with a synthetic evidence string. */
@@ -156,6 +154,10 @@ export async function settle(eventTicker, outcome, evidence) {
  * One pass over every event we sold cover on: finalize Proposed ones whose window has passed,
  * and vote any Open event whose Gemini market has settled. Returns { acted, errors }.
  */
+// Settled events whose winners have all been paid (checked once per process). A payout that failed
+// after the vote, e.g. an RPC error, is retried on the next pass instead of being skipped for good.
+const paidOut = new Set();
+
 export async function settleOnce({ onAction = () => {} } = {}) {
   const acted = [];
   const errors = [];
@@ -168,6 +170,17 @@ export async function settleOnce({ onAction = () => {} } = {}) {
         onAction(`${info.eventTicker}: finalized and paid`);
         continue;
       }
+      if (st.state === "Settled") {
+        if (!paidOut.has(eventId)) {
+          const n = await finalizeAndPay(info.eventTicker);
+          paidOut.add(eventId);
+          if (n) {
+            acted.push(info.eventTicker);
+            onAction(`${info.eventTicker}: paid ${n} outstanding cover${n > 1 ? "s" : ""}`);
+          }
+        }
+        continue;
+      }
       if (st.state !== "Open") continue;
       const { event, bytes } = await getEventRaw(info.eventTicker);
       const outcome = settledOutcome(event, info.outcomes);
@@ -176,6 +189,7 @@ export async function settleOnce({ onAction = () => {} } = {}) {
         saveOutcomes({ dir: process.env.EVIDENCE_DIR, eventTicker: info.eventTicker, outcomes: info.outcomes });
         await vote(info.eventTicker, outcome, bytes); // evidence = keccak256 of the exact Gemini response bytes
         await finalizeAndPay(info.eventTicker);
+        paidOut.add(eventId);
         acted.push(info.eventTicker);
         onAction(`${info.eventTicker}: Gemini settled -> outcome ${outcome === VOID_OUTCOME ? "VOID" : outcome}, voted and paid`);
       }

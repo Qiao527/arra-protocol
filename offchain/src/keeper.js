@@ -67,7 +67,7 @@ export function keeperRoutes(a, { evidenceDir, store, status, registry = readReg
 // ---------------------------------------------------------------------------- runtime
 
 async function main() {
-  const { publicClient, vaultAbi } = await import("./chain.js");
+  const { publicClient, vaultAbi, getLogsChunked } = await import("./chain.js");
   const { settleOnce } = await import("./settler.js");
   const { hedgeIfNeeded } = await import("./hedger.js");
   const { listActiveEvents } = await import("./gemini.js");
@@ -101,7 +101,7 @@ async function main() {
     state.store.lastError = e.message;
   }
   try {
-    const logs = await publicClient.getContractEvents({ address: config.vault, abi: vaultAbi, eventName: "CoverPurchased", fromBlock: BigInt(process.env.FROM_BLOCK ?? 0) });
+    const logs = await getLogsChunked(publicClient, { address: config.vault, abi: vaultAbi, eventName: "CoverPurchased" }, { fromBlock: BigInt(process.env.FROM_BLOCK ?? 0) });
     const missing = [...new Set(logs.map((l) => l.args.eventId))].filter((id) => !readRegistry()[id]);
     if (missing.length) {
       const found = resolveTickers(missing, await listActiveEvents({ maxPages: 20 }));

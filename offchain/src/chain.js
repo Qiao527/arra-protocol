@@ -16,7 +16,14 @@ function loadAbi() {
 }
 export const vaultAbi = loadAbi();
 
-export const publicClient = createPublicClient({ chain: chain(), transport: http(config.rpcUrl) });
+// Batch reads through Multicall3 where the chain has it (Arc testnet does): a quote reads ~2n+4
+// values, and as separate calls a 30-team event tripped the public RPC's request limit.
+const c = chain();
+export const publicClient = createPublicClient({
+  chain: c,
+  transport: http(config.rpcUrl),
+  ...(c.contracts?.multicall3 ? { batch: { multicall: true } } : {}),
+});
 
 export function operatorAccount() {
   if (!config.operatorPk) throw new Error("OPERATOR_PRIVATE_KEY not set");

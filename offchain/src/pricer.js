@@ -167,7 +167,8 @@ function rateLimiter({ windowMs, max }) {
 }
 
 /** Status for an error thrown while quoting: bad input 400, Gemini / RPC trouble 502. */
-const statusOf = (err) => err.status ?? (/^Gemini \d+|HTTP request failed|fetch failed|ECONN|timeout/i.test(err.message) ? 502 : 400);
+export const statusOf = (err) =>
+  err.status ?? (/^Gemini \d+|HTTP request failed|fetch failed|ECONN|timeout|exceeds defined limit|rate limit|\b429\b/i.test(err.message) ? 502 : 400);
 const publicMessage = (err) => (statusOf(err) === 502 ? "Upstream unavailable (Gemini or Arc RPC); try again" : err.message.split("\n")[0]);
 
 export function app({

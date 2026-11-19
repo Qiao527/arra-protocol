@@ -82,3 +82,10 @@ test("upstream failures are 502, not 400, and never echo internals", async () =>
     assert.ok(!/at .*\.js:\d+/.test(JSON.stringify(body)), "no stack traces");
   });
 });
+
+test("RPC limits are upstream failures (502), not the client's fault (400)", async () => {
+  const { statusOf } = await import("../src/pricer.js");
+  assert.equal(statusOf(new Error("Request exceeds defined limit.")), 502);
+  assert.equal(statusOf(new Error("HTTP request failed. Status: 429")), 502);
+  assert.equal(statusOf(new Error("payoutUsdc must be > 0")), 400);
+});

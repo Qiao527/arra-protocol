@@ -11,10 +11,11 @@ Track: **DeFi & Onchain Applications** · Chain award: **Best use of Arc** · Bo
 | | |
 | --- | --- |
 | Network | Arc Testnet (chain ID 5042002) |
-| `ArraVault` | [`0x3CC34beE579B6caD4Ab3c13582138c263812831C`](https://explorer.testnet.arc.io/address/0x3CC34beE579B6caD4Ab3c13582138c263812831C) (source verified) |
+| `ArraVault` | [`0x8fA63E69a91101156a2ebda4bAD78B518Ceee334`](https://explorer.testnet.arc.io/address/0x8fA63E69a91101156a2ebda4bAD78B518Ceee334) (source verified). Replaces `0x3CC3…831C` after the [review](docs/REVIEW.md). |
 | LP share token | `Arra LP` (`arLP`), ERC-4626 |
 | Settlement | 2-of-3 settlers, 60 s dispute window, unanimous vote settles instantly |
 | Live smoke test | deposit → signed quote → buyCover → recordHedge → 3/3 votes → claim. Tx hashes in [`deployments/arc-testnet.json`](deployments/arc-testnet.json) |
+| Real Gemini hedge | Gemini sandbox order `145853902323008335`, 5/5 filled, recorded onchain with that id ([details](#gemini-sandbox-hedge-on-arc-testnet)) |
 | USDC (ERC-20 interface) | `0x3600000000000000000000000000000000000000` |
 | Explorer | https://explorer.testnet.arc.io |
 
@@ -92,13 +93,16 @@ As one event fills up, each extra dollar of cover costs more (`k·u²`). The vau
 | Sales close | Each signed quote carries its own sales close: kickoff for pre-game cover, or minutes ahead for in-game ("halftime comeback") cover. |
 | Settlement quorum | Unanimous = instant; threshold = dispute window + guardian veto; votes carry Gemini payload hashes. |
 | LP withdrawals | Only capital not backing open covers; frozen while hedge proceeds sit at Gemini. |
-| NAV integrity | `totalAssets = USDC + hedgeReceivable − pendingClaims`, so no one enters or exits at a fake discount mid-settlement. |
+| NAV integrity | `totalAssets = USDC + hedgeReceivable − pendingClaims − proposedLoss`. Once a result is proposed, its net loss is already in the share price, so nobody can exit at the old price during the dispute window. |
+| Void / tie | Settlers can vote `VOID_OUTCOME` (255), or the guardian calls `voidEvent`. Collateral is released and every holder claims their exact premium back. Collateral per event is `max(max_i L_i, Σ premiums)`, so refunds are always backed. |
 
 ### Which Gemini markets Arra covers
 
 Only markets whose outcomes are **mutually exclusive**, because netting depends on it: game and period winners (`sports_market_type=moneyline`), championships (Gemini tags these `eventTags: futures` with a single-winner title such as "Pro Basketball Champion"), and any single-contract YES/NO market. Player props are refused ("2+ assists" and "4+ assists" can both resolve YES). Outcome `i` is the `i`-th contract sorted by `instrumentSymbol`, so the pricer, hedger, settler and the public verify page all derive the same mapping from the same Gemini event. Contracts must be `marketState: open` (not `post_only`) so the hedge can actually execute. Game markets nest period markets (quarters, halves, each with a tie contract); the pricer lists them too, so live "halftime comeback" cover prices off Gemini's real 2nd-half winner market.
 
-**Pricing without published depth.** Gemini's event endpoints return top of book (`bestBid`, `bestAsk`, `buy.{yes,no}`) but usually no depth. The pricer then models a ladder: each level is one tick worse and holds `TOP_OF_BOOK_DEPTH` contracts (default 1,000), so a $5k cover pays slippage instead of the best ask. **In-game quotes** are allowed only while Gemini keeps the contract open, and live for `IN_GAME_TTL_SEC` (default 20 s).
+**Real order-book depth.** Gemini's REST endpoints carry only top of book, so the pricer and hedger stream depth from `wss://ws.gemini.com?snapshot=-1` (`{instrumentSymbol}@depth`, see [`offchain/src/depth.js`](offchain/src/depth.js)). The quote walks that book while the stream is alive and reports `bookSource: "ws-depth"`. If the stream is down it falls back to a modeled ladder (`top-of-book+slippage`). Real books are thin: on Nov 19 the Boston NBA-title YES book held 526 contracts of asks where the old ladder assumed 10,000, so a cover the book can't fill is now refused instead of underpriced. Only `bestAsk`/`bestBid` count as executable. `buy`/`sell` are display prices that fall back to the other side of the book.
+
+**In-game quotes** live for `IN_GAME_TTL_SEC` (20 s) and are sold only within a per-sport limit after the scheduled start (basketball 2 h, football 3 h). Gemini leaves finished games `open` with `isLive: true` until it settles them, once for 103 hours in our live data, so the market state can't be trusted to close sales.
 
 ### Risk assumptions
 
@@ -106,7 +110,8 @@ Only markets whose outcomes are **mutually exclusive**, because netting depends 
 - **Hedge reconciliation.** Winning hedges pay out at Gemini (offchain USD). The vault pays the merchant from onchain USDC first and records a `hedgeReceivable`; production sweeps proceeds back to Arc USDC via Circle Mint / CCTP (`returnHedgeProceeds`) before LP withdrawals unlock.
 - **Settlement source.** Arra inherits Gemini's CFTC-regulated settlement, not token voting.
 - **Regulation.** Testnet prototype, no real-money cover. Production would distribute through a licensed insurer or MGA, with Gemini as the regulated hedge venue.
-- **Void, cancelled or tied events** are not handled in the MVP. A full-game NFL moneyline has no tie contract, so a tie would leave the event unsettled until a guardian void path ships; period markets include an explicit tie contract and are unaffected.
+- **Void, cancelled or tied events.** A full-game NFL moneyline has no tie contract. If every contract resolves NO, the settler votes VOID and holders get their premiums back. More than one YES is contradictory, so the settler doesn't vote and a human has to look.
+- **Who can do what.** The trust table for owner, operator and settlers is in [`docs/SECURITY.md`](docs/SECURITY.md).
 
 Full math, the favorite–longshot discussion, regulatory context and references: [`docs/ECONOMICS.md`](docs/ECONOMICS.md).
 
@@ -115,18 +120,27 @@ Full math, the favorite–longshot discussion, regulatory context and references
 ```
 src/ArraVault.sol                   vault, quotes, netting, caps, settlement (Solidity 0.8.26, OpenZeppelin v5.1)
 src/mocks/MockUSDC.sol              local testing only
-test/ArraVault.t.sol                33 unit + fuzz tests
-test/ArraVault.invariant.t.sol      7 invariants over random action sequences
+test/ArraVault.t.sol                44 unit + fuzz tests
+test/ArraVault.invariant.t.sol      8 invariants over random action sequences
 script/Deploy.s.sol                 Arc / local deploy
-script/e2e-anvil.sh                 one-command local end-to-end run
+script/e2e-anvil.sh                 one-command local end-to-end run (mock Gemini)
+script/e2e-live-gemini.sh           same flow on REAL Gemini markets and live depth (no keys)
 offchain/src/pricer.js              HTTP quote server (Gemini depth → EIP-712 signed quote)
 offchain/src/hedger.js              QuickNode Streams webhook (or --poll): Gemini hedge + recordHedge
-offchain/src/settler.js             votes Gemini results, finalizes, pushes payouts
+offchain/src/settler.js             votes Gemini results (or VOID), stores the attested bytes, finalizes, pays
+offchain/src/depth.js               live order books from Gemini's WebSocket depth stream
+offchain/src/verify.js              evidence check: bytes -> onchain evidenceHash -> winning outcome
+offchain/scripts/verify-settlement.js  public verifier, no keys: node scripts/verify-settlement.js <eventTicker>
+offchain/scripts/testnet-hedge.js   Arc testnet run with a real Gemini sandbox hedge
+offchain/evidence/                  Gemini bytes the settlers attested, one file per evidenceHash
+offchain/Dockerfile, render.yaml    hosted pricer API
 offchain/quicknode/stream-filter.js QuickNode Streams filter for CoverPurchased on Arc
 offchain/scripts/e2e-local.js       full flow: single game + 4-city championship
 offchain/scripts/testnet-smoke.js   live run against the Arc deployment
-offchain/test/                      Gemini adapter tests + real API fixture
+offchain/test/                      adapter, depth, sandbox, verifier and API tests on real captures
 docs/ECONOMICS.md                   pricing math, reconciliation, regulation, references
+docs/SECURITY.md                    roles, trust assumptions, threat model
+docs/REVIEW.md                      independent review: findings, evidence, fixes
 ```
 
 ## Run it
@@ -135,9 +149,10 @@ docs/ECONOMICS.md                   pricing math, reconciliation, regulation, re
 
 ```bash
 git clone --recurse-submodules https://github.com/Qiao527/arra-protocol && cd arra-protocol
-forge test                                         # 41 contract tests
-(cd offchain && npm ci && npm test)                # 16 Gemini adapter tests (real API fixtures)
+forge test                                         # 46 contract tests (incl. 8 invariants)
+(cd offchain && npm ci && npm test)                # 59 offchain tests on real Gemini captures
 ./script/e2e-anvil.sh                              # full local flow, no keys needed
+./script/e2e-live-gemini.sh                        # same, on live Gemini markets (needs network)
 ```
 
 Deploy to Arc testnet:
@@ -164,18 +179,49 @@ npm run settler     # watch mode; demo: npm run settle -- <EVENT-TICKER> <outcom
 | Network | Arc Testnet (5042002) |
 | Dataset | Logs |
 | Filter | [`offchain/quicknode/stream-filter.js`](offchain/quicknode/stream-filter.js): keeps only `ArraVault` `CoverPurchased` logs (topic0 `0x55605d8a…ffe8`) |
-| Destination | Webhook → `POST https://<hedger-host>/quicknode` (optional header `x-arra-secret`) |
+| Destination | Webhook → `POST https://<hedger-host>/quicknode` with header `x-arra-secret: $QUICKNODE_WEBHOOK_SECRET` (required: without it the hedger answers 503) |
 
-The hedger decodes each log, checks unhedged exposure on that outcome, places a Gemini order if it crosses the threshold, and calls `recordHedge` with the Gemini order ID.
+The hedger decodes each log, checks unhedged exposure on that outcome, places a Gemini order if it crosses the threshold, and calls `recordHedge` with the quantity Gemini actually filled and the Gemini order ID. Redelivered logs are ignored and hedges for one event never run in parallel, so a retry can't place a second order.
+
+## Gemini sandbox hedge on Arc testnet
+
+`offchain/scripts/testnet-hedge.js` runs the whole loop against the deployed vault with a real Gemini order. The sandbox has different markets than production (on Nov 19 it had only crypto and commodity hourlies, no sports), so the hedge goes to a sandbox stand-in contract set by `SANDBOX_SYMBOL_MAP`. The game hadn't been played, so the result is synthetic, and the evidence file says so.
+
+| Step | Value |
+| --- | --- |
+| Cover | $5 on Philadelphia, `NHL-2611200000-PHI-OTT-M`, premium $2.41, p = 0.38 off live WebSocket depth |
+| Gemini order | sandbox `145853902323008335` on stand-in `GEMI-BTC2611192200-HI62250`, IOC, 5/5 filled at 0.59 |
+| buyCover | [`0x21ba06ce…b483b`](https://explorer.testnet.arc.io/tx/0x21ba06cedeea26c863f15d14258d15c69fd135af7c66ab007eb4ccb4d41b483b) |
+| recordHedge (5 USDC, order id onchain) | [`0xda5da046…6323`](https://explorer.testnet.arc.io/tx/0xda5da04681c425218278dda03717912fb529c5fd861e9ba19f6f0d16df106323) |
+| votes 1–3 (instant settle) | [`0x131a86ff…ce92`](https://explorer.testnet.arc.io/tx/0x131a86ff794947483d947d591a06c2c351415063c86930309da2b5db355ace92), [`0x3fa49cb8…a735`](https://explorer.testnet.arc.io/tx/0x3fa49cb8b05609583824f0bbec293176ac77631180f3f9a69e04d7df9b722da3), [`0xb965aa83…c2fa`](https://explorer.testnet.arc.io/tx/0xb965aa83fdb6d4ff5ee5e9932e39f453e2a5f60ee67450f2acbe02ee65f3c2fa) |
+| claim (5 USDC to the merchant) | [`0xb2936da0…f359`](https://explorer.testnet.arc.io/tx/0xb2936da0958017683ef44182c3b2bfaf4b2713c1cb8a95b45c0313a5bfaef359) |
+| sweep hedge proceeds | [`0x0d8530ff…f862`](https://explorer.testnet.arc.io/tx/0x0d8530ff9f90636ff75df75ac42aeea330ea8af1dd2f7a47237d500d382af862) |
+
+Three things only showed up once real orders went through: the request nonce must be a number of seconds, `orderId` is a JSON number above 2^53 that `JSON.parse` silently rounds, and the fill is reported in `filledQuantity`. The captured responses are in [`offchain/test/fixtures/gemini-sandbox-orders.json`](offchain/test/fixtures/gemini-sandbox-orders.json).
+
+## Verify a settlement
+
+Anyone can check what the settlers attested, without keys:
+
+```bash
+cd offchain && node scripts/verify-settlement.js NHL-2611200000-PHI-OTT-M --offline
+```
+
+It reads the onchain `evidenceHash` and winning outcome, hashes the bytes stored in `offchain/evidence/` when the vote was cast, and recomputes the winner from them in canonical order. Without `--offline` it also re-fetches Gemini and requires Gemini's live result to agree. A re-fetch almost never hashes to the attested value, because prices, volume and timestamps change, which is why the exact bytes are stored at vote time. Run on the testnet settlement above, the offline check passes and the live check fails, since Gemini hasn't settled a game that hasn't been played. That's the result it should give.
+
+## Hosted pricer API
+
+`GET /health`, `GET /events`, `POST /quote`. Deploy with [`render.yaml`](render.yaml) (or `offchain/Dockerfile` anywhere). The operator key and allowed frontend origins are host secrets (`OPERATOR_PRIVATE_KEY`, `ALLOWED_ORIGINS`), never in the repo or image. CORS only allows the configured origins, each client IP gets 60 requests a minute, `/quote` rejects malformed input before it touches Gemini or the RPC, bodies over 10 kB are refused, and upstream failures return 502 without internals. The services read the vault ABI from `offchain/abi/ArraVault.json` when there is no Foundry build. CI checks it matches `forge build` (`npm run abi` refreshes it).
 
 ## Tests
 
 ```
 forge test
-  ArraVault.t.sol             33 passed  (quotes, netting, 128-team championships, O(1) gas, caps, solvency, quorum, fast path, veto, in-game sales, LP locks, fuzz)
-  ArraVault.invariant.t.sol    7 passed  (256 runs × 32 calls: full collateral, cap at sale, locked == max_i L_i, incremental worst case == rescan, LP locks, hedge bounds)
-npm test (offchain)            16 passed (real Gemini responses: props, NFL moneyline, NBA champion: shape, empty books, settled resolutionSide; props refused; canonical outcome order)
-./script/e2e-anvil.sh          E2E OK    (single game via 2-of-3 + dispute window; 4-city championship via 3-of-3 instant)
+  ArraVault.t.sol             44 passed  (quotes, netting, 128-team championships, O(1) gas, caps, solvency, quorum, fast path, veto, void, NAV during disputes, inflation attack, LP locks, fuzz)
+  ArraVault.invariant.t.sol    8 passed  (256 runs × 32 calls incl. propose / veto / void: full collateral, cap at sale, locked == worst case incl. void, proposedLoss == rescan, LP locks, hedge bounds)
+npm test (offchain)            59 passed (real Gemini captures: REST events, stale in-game markets, WebSocket depth, sandbox orders; settler, hedger webhook, verifier, API)
+./script/e2e-anvil.sh          E2E OK    (single game via 2-of-3 + dispute window; 4-city championship via 3-of-3 instant; verifier PASS)
+./script/e2e-live-gemini.sh    E2E LIVE OK (real moneyline + 94-team championship off live depth; settles outcome 21; verifier PASS)
 ```
 
 ## What's next

@@ -101,16 +101,39 @@ contract Handler is Test {
         vault.recordHedge(id, outcome, amt, "inv");
     }
 
-    function settle(uint256 evSeed, uint8 winner) external {
+    /// 2-of-3 votes: Proposed, dispute window opens. winner 255 = void.
+    function propose(uint256 evSeed, uint8 winner) external {
         bytes32 id = eventIds[evSeed % eventIds.length];
         (ArraVault.EventState st,,,,,,,) = vault.events(id);
         if (st != ArraVault.EventState.Open) return;
+        uint8 w = winner % 5 == 4 ? 255 : winner % 4;
         vm.prank(s1);
-        vault.voteResult(id, winner % 4, keccak256("evidence"));
+        vault.voteResult(id, w, keccak256("evidence"));
         vm.prank(s2);
-        vault.voteResult(id, winner % 4, keccak256("evidence"));
+        vault.voteResult(id, w, keccak256("evidence"));
+    }
+
+    function finalize(uint256 evSeed) external {
+        bytes32 id = eventIds[evSeed % eventIds.length];
+        (ArraVault.EventState st,,,,,,,) = vault.events(id);
+        if (st != ArraVault.EventState.Proposed) return;
         vm.warp(block.timestamp + vault.disputeWindow());
         vault.finalize(id);
+        settlements++;
+    }
+
+    function veto(uint256 evSeed) external {
+        bytes32 id = eventIds[evSeed % eventIds.length];
+        (ArraVault.EventState st,,, uint64 proposedAt,,,,) = vault.events(id);
+        if (st != ArraVault.EventState.Proposed || block.timestamp >= proposedAt + vault.disputeWindow()) return;
+        vault.vetoResult(id); // handler is the guardian
+    }
+
+    function voidEvent(uint256 evSeed) external {
+        bytes32 id = eventIds[evSeed % eventIds.length];
+        (ArraVault.EventState st,,,,,,,) = vault.events(id);
+        if (st != ArraVault.EventState.Open && st != ArraVault.EventState.Proposed) return;
+        vault.voidEvent(id);
         settlements++;
     }
 
@@ -119,7 +142,7 @@ contract Handler is Test {
         for (uint256 i; i < n; i++) {
             (, bytes32 id, uint8 outcome,,, bool claimed) = vault.policies(i);
             (ArraVault.EventState st, uint8 win,,,,,,) = vault.events(id);
-            if (st == ArraVault.EventState.Settled && !claimed && outcome == win) vault.claim(i);
+            if (st == ArraVault.EventState.Settled && !claimed && (outcome == win || win == 255)) vault.claim(i);
         }
     }
 
@@ -147,6 +170,7 @@ contract ArraVaultInvariantTest is Test {
         settlers[2] = vm.addr(0x53);
         vault = new ArraVault(IERC20(address(usdc)), vm.addr(OPERATOR_PK), settlers, 2, 30 minutes, 1_000);
         handler = new Handler(vault, usdc, OPERATOR_PK);
+        vault.transferOwnership(address(handler)); // handler plays the guardian (veto / void)
 
         // seed liquidity
         usdc.mint(address(this), 50_000e6);
@@ -197,13 +221,14 @@ contract ArraVaultInvariantTest is Test {
         }
     }
 
+    /// Locked collateral is the worst case over every outcome, including void (refund all premiums).
     function invariant_LockedIsWorstCaseOutcome() public view {
         uint256 sum;
         for (uint256 i; i < 3; i++) {
             bytes32 id = handler.eventIds(i);
             (ArraVault.EventState st,,,,,,,) = vault.events(id);
             if (st == ArraVault.EventState.Open || st == ArraVault.EventState.Proposed) {
-                uint256 m;
+                uint256 m = vault.premiumsOf(id); // the void outcome refunds every premium
                 for (uint8 o; o < 4; o++) {
                     uint256 l = vault.liability(id, o);
                     if (l > m) m = l;
@@ -212,6 +237,18 @@ contract ArraVaultInvariantTest is Test {
             }
         }
         assertEq(vault.totalLocked(), sum);
+    }
+
+    /// proposedLoss is exactly the net loss of every Proposed event's result (void = all premiums).
+    function invariant_ProposedLossMatchesRescan() public view {
+        uint256 sum;
+        for (uint256 i; i < 3; i++) {
+            bytes32 id = handler.eventIds(i);
+            (ArraVault.EventState st, uint8 w,,,,,,) = vault.events(id);
+            if (st != ArraVault.EventState.Proposed) continue;
+            sum += w == 255 ? vault.premiumsOf(id) : vault.liability(id, w) - vault.hedged(id, w);
+        }
+        assertEq(vault.proposedLoss(), sum);
     }
 
     /// Hedges never exceed what was sold.

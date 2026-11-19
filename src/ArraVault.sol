@@ -68,7 +68,7 @@ contract ArraVault is ERC4626, EIP712, Ownable {
         uint32 round;           // bumps on veto, invalidating old votes
         uint8 numOutcomes;      // highest outcome index sold + 1
         bytes32 evidenceHash;   // keccak256 of the raw Gemini settlement payload
-        uint256 locked;         // collateral locked = max_i liability[i]
+        uint256 locked;         // collateral locked = max(max_i liability[i], premiums refunded if void)
     }
 
     bytes32 public constant QUOTE_TYPEHASH = keccak256(
@@ -77,6 +77,7 @@ contract ArraVault is ERC4626, EIP712, Ownable {
 
     uint256 public constant BPS = 10_000;
     uint8 public constant MAX_OUTCOMES = 128; // a 94-team college championship fits
+    uint8 public constant VOID_OUTCOME = type(uint8).max; // no contract won (tie, cancellation): refund premiums
 
     // ------------------------------------------------------------------
     // Storage
@@ -92,11 +93,13 @@ contract ArraVault is ERC4626, EIP712, Ownable {
     uint256 public totalLocked;     // sum over unsettled events of max_i L_i
     uint256 public pendingClaims;   // payouts owed to winners not yet claimed
     uint256 public hedgeReceivable; // hedge proceeds sitting at Gemini, not yet swept back
+    uint256 public proposedLoss;    // sum over Proposed events of (L_w - H_w): booked into NAV during the dispute window
 
     mapping(bytes32 => EventInfo) public events;
     mapping(bytes32 => mapping(uint8 => uint256)) public liability; // eventId => outcome => payouts sold
     mapping(bytes32 => mapping(uint8 => uint256)) public hedged;    // eventId => outcome => payout hedged on Gemini
     mapping(bytes32 => uint256) internal _worstUnhedged;              // eventId => max_i (L_i - H_i), kept incrementally
+    mapping(bytes32 => uint256) public premiumsOf;                    // eventId => premiums taken (refunded if void)
     mapping(bytes32 => mapping(uint32 => mapping(address => bool))) public hasVoted;
     mapping(bytes32 => mapping(uint32 => mapping(uint8 => uint8))) public voteCount;
     mapping(uint256 => bool) public nonceUsed;
@@ -121,8 +124,11 @@ contract ArraVault is ERC4626, EIP712, Ownable {
     event ResultVetoed(bytes32 indexed eventId, uint32 newRound);
     event EventSettled(bytes32 indexed eventId, uint8 winningOutcome, uint256 owed, bytes32 evidenceHash);
     event CoverPaid(uint256 indexed policyId, address indexed holder, uint256 payout);
+    event EventVoided(bytes32 indexed eventId, uint256 refunds);
+    event PremiumRefunded(uint256 indexed policyId, address indexed holder, uint256 premium);
     event HedgeReceivableSet(uint256 amount);
     event HedgeProceedsReturned(address indexed from, uint256 amount);
+    event HedgeReceivableWrittenOff(uint256 amount);
     event OperatorUpdated(address operator);
     event SettlerUpdated(address settler, bool allowed);
     event SettlementParamsUpdated(uint8 threshold, uint64 disputeWindow);
@@ -257,12 +263,16 @@ contract ArraVault is ERC4626, EIP712, Ownable {
         IERC20(asset()).safeTransferFrom(msg.sender, address(this), q.premium);
 
         // Update outcome liability and the netted collateral requirement. A sale only raises
-        // L_o, so both maxima update in O(1): max_i L_i and max_i (L_i - H_i) can only grow to
-        // the new value at o. Gas does not depend on how many outcomes the event has.
+        // L_o and the premium total, so every maximum updates in O(1): max_i L_i and
+        // max_i (L_i - H_i) can only grow to the new value at o. Gas does not depend on how
+        // many outcomes the event has. The void case (refund every premium) is one more
+        // "outcome" whose cost is the premium total, so collateral covers it too.
         if (q.outcome >= e.numOutcomes) e.numOutcomes = q.outcome + 1;
         uint256 l = liability[q.eventId][q.outcome] + q.payout;
         liability[q.eventId][q.outcome] = l;
-        uint256 newLocked = l > e.locked ? l : e.locked;
+        uint256 prem = premiumsOf[q.eventId] + q.premium;
+        premiumsOf[q.eventId] = prem;
+        uint256 newLocked = Math.max(Math.max(l, prem), e.locked);
         totalLocked = totalLocked + newLocked - e.locked;
         e.locked = newLocked;
         uint256 u = l - hedged[q.eventId][q.outcome];
@@ -315,8 +325,10 @@ contract ArraVault is ERC4626, EIP712, Ownable {
 
     /// @notice A settler votes Gemini's result. `evidenceHash` = keccak256 of the raw Gemini
     ///         settlement response, so anyone can re-fetch it and check what was attested.
+    ///         `outcome` = VOID_OUTCOME when no contract won (a tie with no draw contract, a
+    ///         cancelled game): every holder then gets their premium back instead of a payout.
     function voteResult(bytes32 eventId, uint8 outcome, bytes32 evidenceHash) external onlySettler {
-        if (outcome >= MAX_OUTCOMES) revert BadOutcome();
+        if (outcome >= MAX_OUTCOMES && outcome != VOID_OUTCOME) revert BadOutcome();
         EventInfo storage e = events[eventId];
         // Votes keep counting while Proposed, so a late unanimous vote can fast-path settle.
         if (e.state != EventState.Open && e.state != EventState.Proposed) revert EventNotOpen();
@@ -337,6 +349,9 @@ contract ArraVault is ERC4626, EIP712, Ownable {
             e.winningOutcome = outcome;
             e.proposedAt = uint64(block.timestamp);
             e.evidenceHash = evidenceHash;
+            // The result is public from here on: book its net loss into NAV now, so no LP can
+            // exit at the pre-loss price during the dispute window.
+            proposedLoss += _netLoss(eventId, outcome);
             emit ResultProposed(eventId, outcome, evidenceHash, uint64(block.timestamp) + disputeWindow);
         }
     }
@@ -346,10 +361,26 @@ contract ArraVault is ERC4626, EIP712, Ownable {
         EventInfo storage e = events[eventId];
         if (e.state != EventState.Proposed) revert NotProposed();
         if (block.timestamp >= uint256(e.proposedAt) + disputeWindow) revert DisputeWindowClosed();
+        proposedLoss -= _netLoss(eventId, e.winningOutcome);
         e.state = EventState.Open;
         e.round += 1;
         e.evidenceHash = bytes32(0);
         emit ResultVetoed(eventId, e.round);
+    }
+
+    /// @notice Guardian voids an event that cannot settle on a winner (tie with no draw contract,
+    ///         cancellation, Gemini voids the market). Releases collateral; holders claim their
+    ///         exact premium back. Works while Open or Proposed, never after Settled.
+    function voidEvent(bytes32 eventId) external onlyOwner {
+        EventInfo storage e = events[eventId];
+        if (e.state == EventState.Proposed) {
+            proposedLoss -= _netLoss(eventId, e.winningOutcome);
+            e.state = EventState.Open;
+        }
+        if (e.state != EventState.Open) revert EventNotOpen();
+        e.winningOutcome = VOID_OUTCOME;
+        e.evidenceHash = bytes32(0);
+        _settle(eventId, e);
     }
 
     /// @notice After the dispute window, anyone can finalize. Releases collateral and books winners' claims.
@@ -361,18 +392,21 @@ contract ArraVault is ERC4626, EIP712, Ownable {
     }
 
     function _settle(bytes32 eventId, EventInfo storage e) internal {
+        uint8 w = e.winningOutcome;
+        bool isVoid = w == VOID_OUTCOME;
+        uint256 owed = isVoid ? premiumsOf[eventId] : liability[eventId][w];
+        uint256 hedgeWin = isVoid ? 0 : hedged[eventId][w]; // a voided hedge is refunded at the venue, not paid out
+        if (e.state == EventState.Proposed) proposedLoss -= owed - hedgeWin; // now booked for real below
         e.state = EventState.Settled;
 
-        uint8 w = e.winningOutcome;
-        uint256 owed = liability[eventId][w];
         totalLocked -= e.locked;
         pendingClaims += owed;
 
-        uint256 hedgeWin = hedged[eventId][w];
         if (hedgeWin > 0) {
             hedgeReceivable += hedgeWin;
             emit HedgeReceivableSet(hedgeReceivable);
         }
+        if (isVoid) emit EventVoided(eventId, owed);
         emit EventSettled(eventId, w, owed, e.evidenceHash);
     }
 
@@ -383,8 +417,14 @@ contract ArraVault is ERC4626, EIP712, Ownable {
         EventInfo storage e = events[p.eventId];
         if (e.state != EventState.Settled) revert NotSettled();
         if (p.claimed) revert AlreadyClaimed();
-        if (p.outcome != e.winningOutcome) revert NotWinner();
         p.claimed = true;
+        if (e.winningOutcome == VOID_OUTCOME) {
+            pendingClaims -= p.premium;
+            IERC20(asset()).safeTransfer(p.holder, p.premium);
+            emit PremiumRefunded(policyId, p.holder, p.premium);
+            return;
+        }
+        if (p.outcome != e.winningOutcome) revert NotWinner();
         pendingClaims -= p.payout;
         IERC20(asset()).safeTransfer(p.holder, p.payout);
         emit CoverPaid(policyId, p.holder, p.payout);
@@ -396,6 +436,16 @@ contract ArraVault is ERC4626, EIP712, Ownable {
         IERC20(asset()).safeTransferFrom(msg.sender, address(this), amount);
         hedgeReceivable = amount >= hedgeReceivable ? 0 : hedgeReceivable - amount;
         emit HedgeProceedsReturned(msg.sender, amount);
+    }
+
+    /// @notice Guardian writes off hedge proceeds that will never arrive (e.g. a hedge filled
+    ///         for less than was recorded, or funds lost at the venue). NAV drops by `amount`,
+    ///         and LPs stop being frozen once nothing is left offchain.
+    function writeOffHedgeReceivable(uint256 amount) external onlyOwner {
+        if (amount == 0 || amount > hedgeReceivable) revert BadParams();
+        hedgeReceivable -= amount;
+        emit HedgeReceivableWrittenOff(amount);
+        emit HedgeReceivableSet(hedgeReceivable);
     }
 
     // ------------------------------------------------------------------
@@ -439,10 +489,12 @@ contract ArraVault is ERC4626, EIP712, Ownable {
     // ERC-4626 overrides
     // ------------------------------------------------------------------
 
-    /// @dev NAV = USDC held + hedge proceeds owed back from Gemini - claims owed to winners.
+    /// @dev NAV = USDC held + hedge proceeds owed back from Gemini - claims owed to winners
+    ///      - net losses of results already proposed (public, inside their dispute window).
     function totalAssets() public view override returns (uint256) {
         uint256 gross = _usdcBalance() + hedgeReceivable;
-        return gross > pendingClaims ? gross - pendingClaims : 0;
+        uint256 owed = pendingClaims + proposedLoss;
+        return gross > owed ? gross - owed : 0;
     }
 
     /// @dev LPs can only take out capital that is not backing open covers,
@@ -455,7 +507,12 @@ contract ArraVault is ERC4626, EIP712, Ownable {
     }
 
     function maxRedeem(address owner_) public view override returns (uint256) {
-        return _convertToShares(maxWithdraw(owner_), Math.Rounding.Floor);
+        if (hedgeReceivable > 0) return 0;
+        uint256 own = balanceOf(owner_);
+        uint256 free = freeAssets();
+        // Not limited by free capital: the whole balance can go (no rounding dust left behind).
+        if (_convertToAssets(own, Math.Rounding.Floor) <= free) return own;
+        return _convertToShares(free, Math.Rounding.Floor);
     }
 
     function maxDeposit(address) public view override returns (uint256) {
@@ -477,6 +534,13 @@ contract ArraVault is ERC4626, EIP712, Ownable {
             uint256 u = liability[eventId][i] - hedged[eventId][i];
             if (u > m) m = u;
         }
+    }
+
+    /// @dev What settling `eventId` on `outcome` costs NAV: payouts owed minus hedge proceeds due,
+    ///      or every premium for a void.
+    function _netLoss(bytes32 eventId, uint8 outcome) internal view returns (uint256) {
+        if (outcome == VOID_OUTCOME) return premiumsOf[eventId];
+        return liability[eventId][outcome] - hedged[eventId][outcome];
     }
 
     function _usdcBalance() internal view returns (uint256) {

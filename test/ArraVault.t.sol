@@ -170,7 +170,9 @@ contract ArraVaultTest is Test {
             _buy(champ, cityBar, team, 5_000 * USDC, 700 * USDC);
         }
         assertEq(vault.insuredVolume(champ), 40_000 * USDC);
-        assertEq(vault.totalLocked(), 5_000 * USDC);
+        // Worst case is one payout (5,000) or, if the event is voided, all 8 premiums back
+        // (5,600). Either way a fraction of the 40,000 promised.
+        assertEq(vault.totalLocked(), 5_600 * USDC);
         assertEq(vault.worstUnhedged(champ), 5_000 * USDC);
 
         // Team 5 wins: only that city's bar is paid; the vault keeps all 8 premiums.
@@ -502,6 +504,222 @@ contract ArraVaultTest is Test {
         vm.prank(bar);
         vm.expectRevert(ArraVault.NotOperator.selector);
         vault.recordHedge(EVT, 0, 500 * USDC, "x");
+    }
+
+    // ---------------------------------------------------------------- review findings
+
+    address lp2 = makeAddr("lp2");
+
+    function _secondLp() internal {
+        usdc.mint(lp2, 50_000 * USDC);
+        vm.startPrank(lp2);
+        usdc.approve(address(vault), type(uint256).max);
+        vault.deposit(50_000 * USDC, lp2);
+        vm.stopPrank();
+    }
+
+    /// REVIEW H-1: once a losing result is Proposed, everyone can see the loss coming for the
+    /// whole dispute window. NAV must already reflect it, or an LP who exits during the window
+    /// pushes their share of the loss onto the LPs who stay.
+    function test_Review_ProposedLossIsInNav_NoExitAtStalePrice() public {
+        _secondLp();
+        _buy(bar, 0, 5_000 * USDC, 500 * USDC); // 100,500 assets, two equal LPs
+        vm.warp(eventStart + 3 hours);
+        vm.prank(s1);
+        vault.voteResult(EVT, 0, EVIDENCE);
+        vm.prank(s2);
+        vault.voteResult(EVT, 0, EVIDENCE); // Proposed: the vault will owe 5,000
+
+        // Fair exit price shares the 5,000 loss equally: (100,500 - 5,000) / 2.
+        uint256 shares2 = vault.balanceOf(lp2);
+        assertApproxEqAbs(vault.previewRedeem(shares2), 47_750 * USDC, 10);
+        uint256 maxShares = vault.maxRedeem(lp2);
+        assertEq(maxShares, shares2); // free capital covers the whole exit
+        vm.prank(lp2);
+        uint256 out = vault.redeem(maxShares, lp2, lp2);
+
+        vm.warp(block.timestamp + WINDOW);
+        vault.finalize(EVT);
+        vault.claim(0);
+
+        // The LP who stayed ends with the same value the leaver took out.
+        assertApproxEqAbs(vault.previewRedeem(vault.balanceOf(lp)), out, 10);
+    }
+
+    /// A veto puts the pending loss back: NAV returns to its pre-proposal value.
+    function test_Review_VetoRestoresNav() public {
+        _buy(bar, 0, 5_000 * USDC, 500 * USDC);
+        uint256 navBefore = vault.totalAssets();
+        vm.prank(s1);
+        vault.voteResult(EVT, 0, EVIDENCE);
+        vm.prank(s2);
+        vault.voteResult(EVT, 0, EVIDENCE);
+        assertEq(vault.totalAssets(), navBefore - 5_000 * USDC);
+        vault.vetoResult(EVT);
+        assertEq(vault.totalAssets(), navBefore);
+    }
+
+    /// The pending loss is net of the winning outcome's Gemini hedge, matching what settlement books.
+    function test_Review_ProposedLossNetOfHedge() public {
+        _buy(bar, 0, 5_000 * USDC, 500 * USDC);
+        vm.prank(operator);
+        vault.recordHedge(EVT, 0, 3_000 * USDC, "o-1");
+        uint256 navBefore = vault.totalAssets();
+        vm.prank(s1);
+        vault.voteResult(EVT, 0, EVIDENCE);
+        vm.prank(s2);
+        vault.voteResult(EVT, 0, EVIDENCE);
+        uint256 navProposed = vault.totalAssets();
+        assertEq(navProposed, navBefore - 2_000 * USDC);
+        vm.warp(block.timestamp + WINDOW);
+        vault.finalize(EVT);
+        assertEq(vault.totalAssets(), navProposed); // settlement books exactly what was pending
+        assertEq(vault.proposedLoss(), 0);
+    }
+
+    /// REVIEW M-1: hedge proceeds that never fully come back (partial IOC fill, Gemini loss)
+    /// froze every LP forever. The guardian can write the shortfall off; NAV drops by it.
+    function test_Review_GuardianWritesOffUnrecoverableHedge() public {
+        _buy(bar, 0, 5_000 * USDC, 718 * USDC);
+        vm.prank(operator);
+        vault.recordHedge(EVT, 0, 3_000 * USDC, "partially-filled");
+        vm.warp(eventStart + 3 hours);
+        _settle(EVT, 0);
+        vault.claim(0);
+
+        usdc.mint(address(this), 1_000 * USDC); // only 1,000 of 3,000 ever arrives
+        usdc.approve(address(vault), 1_000 * USDC);
+        vault.returnHedgeProceeds(1_000 * USDC);
+        assertEq(vault.maxWithdraw(lp), 0); // still frozen
+
+        uint256 navBefore = vault.totalAssets();
+        vm.prank(bar);
+        vm.expectRevert();
+        vault.writeOffHedgeReceivable(2_000 * USDC);
+        vm.expectRevert(ArraVault.BadParams.selector);
+        vault.writeOffHedgeReceivable(2_001 * USDC);
+
+        vault.writeOffHedgeReceivable(2_000 * USDC);
+        assertEq(vault.hedgeReceivable(), 0);
+        assertEq(vault.totalAssets(), navBefore - 2_000 * USDC);
+        assertGt(vault.maxWithdraw(lp), 0);
+    }
+
+    // ---------------------------------------------------------------- void / tie
+
+    uint8 constant VOID = 255;
+
+    /// A tie on a full-game moneyline (no draw contract): every contract resolves NO.
+    /// Quorum votes VOID -> collateral released, every holder gets their exact premium back.
+    function test_Void_QuorumRefundsExactPremiums() public {
+        uint256 a = _buy(bar, 0, 5_000 * USDC, 718 * USDC);
+        uint256 b = _buy(cafe, 1, 2_000 * USDC, 1_100 * USDC);
+        uint256 navBefore = vault.totalAssets();
+        vm.warp(eventStart + 3 hours);
+        _settle(EVT, VOID);
+
+        assertEq(uint8(_state(EVT)), uint8(ArraVault.EventState.Settled));
+        assertEq(vault.totalLocked(), 0);
+        assertEq(vault.pendingClaims(), 1_818 * USDC);
+        assertEq(vault.totalAssets(), navBefore - 1_818 * USDC); // premiums are no longer earned
+
+        uint256 barBefore = usdc.balanceOf(bar);
+        uint256 cafeBefore = usdc.balanceOf(cafe);
+        vault.claim(a);
+        vault.claim(b);
+        assertEq(usdc.balanceOf(bar) - barBefore, 718 * USDC); // premium, not payout
+        assertEq(usdc.balanceOf(cafe) - cafeBefore, 1_100 * USDC);
+        assertEq(vault.pendingClaims(), 0);
+        vm.expectRevert(ArraVault.AlreadyClaimed.selector);
+        vault.claim(a);
+    }
+
+    /// Guardian can void an Open event directly (e.g. game cancelled, no Gemini result coming).
+    function test_Void_GuardianVoidsOpenEvent() public {
+        uint256 a = _buy(bar, 0, 5_000 * USDC, 718 * USDC);
+        vm.prank(bar);
+        vm.expectRevert();
+        vault.voidEvent(EVT);
+        vault.voidEvent(EVT);
+        (, uint8 w,,,,,,) = vault.events(EVT);
+        assertEq(w, VOID);
+        assertEq(vault.totalLocked(), 0);
+        uint256 before = usdc.balanceOf(bar);
+        vault.claim(a);
+        assertEq(usdc.balanceOf(bar) - before, 718 * USDC);
+    }
+
+    /// Voiding a Proposed event drops the proposed loss and books the refunds instead.
+    function test_Void_GuardianVoidsProposedEvent() public {
+        _buy(bar, 0, 5_000 * USDC, 718 * USDC);
+        uint256 navBefore = vault.totalAssets();
+        vm.prank(s1);
+        vault.voteResult(EVT, 0, EVIDENCE);
+        vm.prank(s2);
+        vault.voteResult(EVT, 0, EVIDENCE);
+        vault.voidEvent(EVT);
+        assertEq(vault.proposedLoss(), 0);
+        assertEq(vault.pendingClaims(), 718 * USDC);
+        assertEq(vault.totalAssets(), navBefore - 718 * USDC);
+    }
+
+    function test_Void_RevertWhen_AlreadySettled() public {
+        _buy(bar, 0, 5_000 * USDC, 718 * USDC);
+        _settle(EVT, 0);
+        vm.expectRevert(ArraVault.EventNotOpen.selector);
+        vault.voidEvent(EVT);
+        vm.expectRevert(ArraVault.EventNotOpen.selector);
+        vault.voidEvent(EVT2); // never sold
+    }
+
+    /// No payout on void: hedge on the "winning" side earns nothing onchain (Gemini refunds offchain).
+    function test_Void_NoPayoutNoHedgeCredit() public {
+        _buy(bar, 0, 5_000 * USDC, 718 * USDC);
+        vm.prank(operator);
+        vault.recordHedge(EVT, 0, 3_000 * USDC, "o-1");
+        _settle(EVT, VOID);
+        assertEq(vault.hedgeReceivable(), 0);
+        assertEq(vault.pendingClaims(), 718 * USDC);
+    }
+
+    /// Refunds can exceed the worst single payout (many covers across a championship), and
+    /// premiums are withdrawable free capital. Collateral must cover the void case too.
+    function test_Void_RefundsAlwaysCollateralized() public {
+        vault.setEventCapBps(10_000);
+        for (uint8 i; i < 8; i++) {
+            _buy(EVT, i % 2 == 0 ? bar : cafe, i, 1_000 * USDC, 400 * USDC); // 3,200 premiums > 1,000 max payout
+        }
+        assertEq(vault.totalLocked(), 3_200 * USDC);
+        uint256 max = vault.maxWithdraw(lp);
+        vm.prank(lp);
+        vault.withdraw(max, lp, lp); // LP takes every free dollar
+        _settle(EVT, VOID);
+        for (uint256 i; i < 8; i++) vault.claim(i); // every refund still pays
+        assertEq(vault.pendingClaims(), 0);
+    }
+
+    /// Check (no fix needed): the 6-decimal virtual offset makes a first-depositor
+    /// donation attack cost the attacker ~1e6x what it takes from the victim.
+    function test_Review_InflationAttackUnprofitable() public {
+        ArraVault fresh = new ArraVault(IERC20(address(usdc)), operator, new address[](1), 1, WINDOW, 1_000);
+        address attacker = makeAddr("attacker");
+        address victim = makeAddr("victim");
+        usdc.mint(attacker, 10_001 * USDC);
+        usdc.mint(victim, 10_000 * USDC);
+        vm.startPrank(attacker);
+        usdc.approve(address(fresh), type(uint256).max);
+        fresh.deposit(1, attacker);
+        usdc.transfer(address(fresh), 10_000 * USDC); // donation
+        vm.stopPrank();
+        vm.startPrank(victim);
+        usdc.approve(address(fresh), type(uint256).max);
+        uint256 shares = fresh.deposit(10_000 * USDC, victim);
+        vm.stopPrank();
+        assertGt(shares, 0);
+        // Victim loses less than 0.01 USDC; the attacker gets back only about half of the
+        // donation (the 1e6 virtual shares absorb the rest), so the attack is a pure loss.
+        assertGe(fresh.previewRedeem(shares), 10_000 * USDC - 10_000);
+        assertLt(fresh.previewRedeem(fresh.balanceOf(attacker)), 5_001 * USDC);
     }
 
     // ---------------------------------------------------------------- fuzz

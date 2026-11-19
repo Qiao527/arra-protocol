@@ -132,6 +132,7 @@ offchain/src/depth.js               live order books from Gemini's WebSocket dep
 offchain/src/verify.js              evidence check: bytes -> onchain evidenceHash -> winning outcome
 offchain/scripts/verify-settlement.js  public verifier, no keys: node scripts/verify-settlement.js <eventTicker>
 offchain/scripts/testnet-hedge.js   Arc testnet run with a real Gemini sandbox hedge
+offchain/scripts/seed-championship.js  demo data: 4 bars x $5 on the NBA title market via the live pricer ($20 insured, $5 locked)
 offchain/evidence/                  Gemini bytes the settlers attested, one file per evidenceHash
 offchain/Dockerfile, render.yaml    hosted pricer API
 offchain/quicknode/stream-filter.js QuickNode Streams filter for CoverPurchased on Arc

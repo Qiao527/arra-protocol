@@ -50,7 +50,7 @@ export default function App() {
 
   return (
     <>
-    <div className="shell shell-top">
+    <div className={`shell shell-top ${route.page === "promise" ? "over" : ""}`}>
       <header className="top">
         <a className="brand" href="#/" aria-label="Arra home"><span className="brand-name">Arra</span></a>
         <nav className="nav" aria-label="Main">
@@ -72,7 +72,7 @@ export default function App() {
       {route.page === "promise" && <Hero />}
       {route.page === "promise" && <Ticker />}
     <div className="shell">
-      <main id="make" style={route.page === "promise" ? { paddingTop: 96 } : undefined}>
+      <main id="make" className={route.page === "promise" ? "on-promise" : undefined}>
         {route.page === "promise" && <PromisePage account={account} onConnect={onConnect} />}
         {route.page === "verify" && <VerifyPage policyId={route.policyId} params={route.params} account={account} />}
         {route.page === "desk" && <DeskPage account={account} onConnect={onConnect} />}
@@ -82,11 +82,31 @@ export default function App() {
       {route.page === "promise" && (
         <section className="band" aria-label="How it works">
           <div className="band-inner">
-          <h2 className="reveal">One lock backs <em>four cities.</em></h2>
-          <div className="figures">
-            <div className="reveal"><div className="fig">15%</div><p>Typical premium on a long shot, priced from Gemini’s order book.</p></div>
-            <div className="reveal"><div className="fig">4:1</div><p>Four bars promise four teams. Only one can win, so the vault locks one payout.</p></div>
-            <div className="reveal"><div className="fig">3/3</div><p>Settlers agree on Gemini’s result and the payout lands in seconds.</p></div>
+          <div className="band-grid">
+          <div>
+          <p className="statement reveal">
+            Four bars in four cities each promise their team wins the title. <span className="dim">Only one team can.</span> So
+            the vault locks <b>one payout</b>, not four, and the premium for a long shot stays near <b>15%</b>.
+          </p>
+          <a className="band-link" href="#/desk">See it on the risk desk</a>
+          </div>
+          <figure className="netting-fig reveal" aria-label="Four promises of $5, one lock of $5">
+            {[["New Orleans", "Pelicans"], ["Dallas", "Mavericks"], ["Indianapolis", "Pacers"], ["Cleveland", "Cavaliers"]].map(([city, team]) => (
+              <div className="nf-row" key={city}>
+                <span>{city}</span>
+                <span className="nf-team">{team} win the title</span>
+                <span className="nf-amt">$5</span>
+              </div>
+            ))}
+            <svg className="nf-join" viewBox="0 0 40 200" preserveAspectRatio="none" aria-hidden="true">
+              <path d="M0 25 C 24 25, 16 100, 40 100 M0 75 C 24 75, 20 100, 40 100 M0 125 C 24 125, 20 100, 40 100 M0 175 C 24 175, 16 100, 40 100" />
+            </svg>
+            <div className="nf-lock">
+              <span className="nf-k">Vault locks</span>
+              <span className="nf-v">$5</span>
+              <span className="nf-k">NBA champion, Gemini</span>
+            </div>
+          </figure>
           </div>
           </div>
         </section>

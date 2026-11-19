@@ -147,8 +147,7 @@ export default function PromisePage({ account, onConnect }) {
     const link = verifyLink(done.policyId, { ticker: done.ticker, label: done.label, merchant });
     return (
       <section className="composer done">
-        <p className="composer-kicker">Sealed on Arc</p>
-        <div className="done-doc">
+                <div className="done-doc">
           <PromiseDoc merchant={merchant} team={done.label} eventTitle={event?.title} payout={payout} policyId={done.policyId} status="locked" verifyUrl={link}
             lines={[["Payout locked", usd(payout)], ["Premium paid", usd(done.premium)]]} />
         </div>
@@ -163,12 +162,7 @@ export default function PromisePage({ account, onConnect }) {
   const amount = payout.toLocaleString("en-US");
   return (
     <section className="composer">
-      <p className="composer-kicker reveal">
-        <span className={`dot ${data?.live ? "live" : "warn"}`} />
-        {data ? (data.live ? "Live prices from Gemini" : "Gemini prices, captured Nov 19") : "Loading markets"}
-      </p>
-
-      <h1 className="composer-line reveal">
+      <h1 className="composer-line">
         If{" "}
         <button className="token" onClick={() => setPicking(true)} aria-label="Change team">{contract?.label ?? "your team"}</button>{" "}
         {event && isChampionship(event) ? <>wins {shortTitle(event)},</> : onHalf ? <>wins the 2nd half,</> : <>wins,</>} it’s <em>on us.</em>
@@ -185,8 +179,8 @@ export default function PromisePage({ account, onConnect }) {
         .
       </h1>
 
-      <div className="composer-meta reveal">
-        <span>{event ? (isChampionship(event) ? "Season-long" : `${parent?.title}, ${when(parent?.startTime)}`) : ""}</span>
+      <div className="composer-meta">
+        <span className="meta"><span className={`dot ${data?.live ? "live" : "warn"}`} />{event ? (isChampionship(event) ? "Season-long" : `${parent?.title}, ${when(parent?.startTime)}`) : "Loading markets"}</span>
         {half && (
           <button className={`linkish ${onHalf ? "on" : ""}`} onClick={toggleHalf}>
             {onHalf ? "Back to full game" : "Halftime comeback"}
@@ -194,7 +188,7 @@ export default function PromisePage({ account, onConnect }) {
         )}
       </div>
 
-      <div className="composer-price reveal">
+      <div className="composer-price">
         <div>
           <div className="price-label">{b ? "Premium, signed" : "Premium"}</div>
           <div className="price-value"><CountUp value={premium} format={(x) => usd(x)} /></div>

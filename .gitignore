@@ -9,3 +9,4 @@ offchain/.env
 # local
 .DS_Store
 *.log
+.impeccable/

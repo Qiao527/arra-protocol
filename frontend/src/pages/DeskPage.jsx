@@ -30,6 +30,7 @@ export default function DeskPage({ account, onConnect }) {
   const [amt, setAmt] = useState("10");
   const [busy, setBusy] = useState(null);
   const [msg, setMsg] = useState(null);
+  const [showSettled, setShowSettled] = useState(false);
 
   async function load() {
     const v = await readVault();
@@ -105,7 +106,7 @@ export default function DeskPage({ account, onConnect }) {
             {!rows && <div className="skeleton" style={{ height: 120 }} />}
             {rows?.length === 0 && <p className="muted">No promises yet.</p>}
             <div className="stack">
-              {rows?.map((r) => {
+              {rows?.filter((r) => showSettled || r.state !== 3).map((r) => {
                 const max = Math.max(...r.liability, 1e-9);
                 const name = names[r.eventId]?.title ?? short(r.eventId, 6);
                 const settledLabel = r.state === 3 ? (r.winningOutcome === VOID_OUTCOME ? "Void" : `Won: ${label(r.eventId, r.winningOutcome)}`) : STATE[r.state];
@@ -136,6 +137,11 @@ export default function DeskPage({ account, onConnect }) {
                 );
               })}
             </div>
+            {rows?.some((r) => r.state === 3) && (
+              <button className="linkish settled-toggle" onClick={() => setShowSettled((v) => !v)}>
+                {showSettled ? "Hide settled games" : `Show settled games (${rows.filter((r) => r.state === 3).length})`}
+              </button>
+            )}
           </div>
 
           <div className="panel">

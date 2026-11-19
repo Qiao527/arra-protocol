@@ -101,6 +101,19 @@ export function createSealScene(canvas, { reducedMotion = false } = {}) {
     bumpMap: bump, bumpScale: 1.6, envMapIntensity: 1.15,
   });
   const coin = new THREE.Mesh(coinGeometry(), [edge, face, face]);
+
+  // soft contact shadow on an implied floor under the coin
+  const shadowTex = (() => {
+    const c = document.createElement("canvas");
+    c.width = 256; c.height = 256;
+    const g = c.getContext("2d");
+    const rg = g.createRadialGradient(128, 128, 2, 128, 128, 128);
+    rg.addColorStop(0, "rgba(20,22,22,0.42)"); rg.addColorStop(0.45, "rgba(20,22,22,0.14)"); rg.addColorStop(1, "rgba(20,22,22,0)");
+    g.fillStyle = rg; g.fillRect(0, 0, 256, 256);
+    return new THREE.CanvasTexture(c);
+  })();
+  const shadow = new THREE.Mesh(new THREE.PlaneGeometry(4.2, 1.05), new THREE.MeshBasicMaterial({ map: shadowTex, transparent: true, depthWrite: false }));
+  scene.add(shadow);
   coin.rotation.x = Math.PI / 2; // a face toward the camera when the group is at rest
   const group = new THREE.Group();
   group.add(coin);
@@ -155,11 +168,17 @@ export function createSealScene(canvas, { reducedMotion = false } = {}) {
     const tiltX = 0.18 * (1 - lock) + 0.08 + pointer.y * 0.04;
     group.rotation.x += (tiltX - group.rotation.x) * 0.06;
     group.rotation.z = 0;
-    group.position.y = (narrow ? 1.3 : 0.85) + (reducedMotion ? 0 : Math.sin(t * 0.0006) * 0.05);
+    const bob = reducedMotion ? 0 : Math.sin(t * 0.0006) * 0.06;
+    const size = narrow ? 0.62 : 0.74;
+    group.position.y = (narrow ? 1.35 : 1.05) + bob;
+    // the shadow stays on the floor and softens as the coin lifts
+    shadow.position.set(0, group.position.y - 1.6 * size - 0.32 - bob, -0.4);
+    shadow.scale.set(size * (1 - bob * 0.8), size * (1 - bob * 0.8), 1);
+    shadow.material.opacity = 0.9 - bob * 2;
     // paid: a band of light sweeps across the face, then holds soft
     sweep.intensity = pay > 0 && pay < 1 ? 160 * Math.sin(pay * Math.PI) : pay >= 1 ? 25 : 0;
     sweep.position.x = -6 + pay * 12;
-    group.scale.setScalar(1 + pay * 0.05);
+    group.scale.setScalar((narrow ? 0.62 : 0.74) * (1 + pay * 0.04));
     renderer.render(scene, camera);
     if (running && !reducedMotion) raf = requestAnimationFrame(frame);
   }
@@ -186,6 +205,7 @@ export function createSealScene(canvas, { reducedMotion = false } = {}) {
       ro.disconnect();
       window.removeEventListener("pointermove", onPointer);
       bump.dispose();
+      shadowTex.dispose();
       reed.dispose();
       renderer.dispose();
       pmrem.dispose();

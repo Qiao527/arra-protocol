@@ -3,10 +3,18 @@ import { createPublicClient, createWalletClient, http, keccak256, toBytes } from
 import { privateKeyToAccount } from "viem/accounts";
 import { config, chain } from "./config.js";
 
-const artifact = JSON.parse(
-  fs.readFileSync(new URL("../../out/ArraVault.sol/ArraVault.json", import.meta.url), "utf8")
-);
-export const vaultAbi = artifact.abi;
+// ABI: ARRA_ABI_PATH, else the Foundry build output, else the committed copy (abi/, refreshed with
+// `npm run abi` and checked against out/ in CI) so the services run on hosts without Foundry.
+function loadAbi() {
+  const candidates = [
+    process.env.ARRA_ABI_PATH,
+    new URL("../../out/ArraVault.sol/ArraVault.json", import.meta.url),
+    new URL("../abi/ArraVault.json", import.meta.url),
+  ].filter(Boolean);
+  for (const f of candidates) if (fs.existsSync(f)) return JSON.parse(fs.readFileSync(f, "utf8")).abi;
+  throw new Error("ArraVault ABI not found: run `forge build` or `npm run abi`");
+}
+export const vaultAbi = loadAbi();
 
 export const publicClient = createPublicClient({ chain: chain(), transport: http(config.rpcUrl) });
 

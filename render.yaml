@@ -1,0 +1,32 @@
+# Render Blueprint for the public pricer API (the frontend's quote backend).
+# New > Blueprint > this repo. Set the two `sync: false` values in the dashboard:
+#   OPERATOR_PRIVATE_KEY  testnet operator key (secret, never committed)
+#   ALLOWED_ORIGINS       the frontend origin(s), comma-separated
+services:
+  - type: web
+    name: arra-pricer
+    runtime: node
+    rootDir: offchain
+    buildCommand: npm ci --omit=dev
+    startCommand: node src/pricer.js
+    healthCheckPath: /health
+    plan: free
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: RPC_URL
+        value: https://rpc.testnet.arc.network
+      - key: CHAIN_ID
+        value: "5042002"
+      - key: VAULT_ADDRESS
+        value: "0x8fA63E69a91101156a2ebda4bAD78B518Ceee334"
+      - key: MOCK_GEMINI
+        value: "false"
+      - key: TRUST_PROXY
+        value: "1"
+      - key: RATE_LIMIT_PER_MIN
+        value: "60"
+      - key: OPERATOR_PRIVATE_KEY
+        sync: false
+      - key: ALLOWED_ORIGINS
+        sync: false

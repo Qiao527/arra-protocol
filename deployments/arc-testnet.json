@@ -2,7 +2,7 @@
   "network": "Arc Testnet",
   "chainId": 5042002,
   "explorer": "https://explorer.testnet.arc.io",
-  "arraVault": "0x3CC34beE579B6caD4Ab3c13582138c263812831C",
+  "arraVault": "0x8fA63E69a91101156a2ebda4bAD78B518Ceee334",
   "usdc": "0x3600000000000000000000000000000000000000",
   "operator": "0xd2674640ea12c9fC2320CEa38987Bf73D96c348c",
   "settlers": [
@@ -13,19 +13,27 @@
   "settlerThreshold": 2,
   "disputeWindowSec": 60,
   "smokeTest": {
-    "at": "2026-11-19T05:58:04.547Z",
+    "at": "2026-11-19T07:49:52.255Z",
     "eventTicker": "DEMO-UNDERDOG (mock Gemini book)",
     "policyId": 0,
     "txs": {
-      "approve": "0x0fd0703424533838e2dff6bb429cdcda8ebc716930f851a8c15c4da077a0a363",
-      "lpDeposit": "0x4bef35b8b6109f6fbb04285d8080e370882c45e229f4236c1a24a10cc0d8b219",
-      "buyCover": "0xa75b2d6542bae845dfd44d613b3b468d6d01664b675bb877b028513aac4f9c76",
-      "recordHedge": "0x87861a969b2985f1be798deebcb826c01ef21d3af184f69500dcd8e085e26d88",
-      "vote1": "0x16f3ff2e48341668212fb3a30258081acbd01f5e2a6be2ad738dca7080aa53df",
-      "vote2": "0xfeaeaf91f38dd326609ac1affb84ab9e7931174682244925a33313db2e5696ea",
-      "vote3": "0x6471007e81d472286dc2ca4d1fe52db19a0e607e2415dad28e0c82e377b1e91e",
-      "claim": "0xfb51e57a87b3ffa3ab02618a42fcdaa3b28e570c15fa6847516922ed9855b3ce",
-      "sweepHedge": "0xa927ad4ff37b5718fc188a8fb9ead569206c0e6da15cf3f2039943e4223599f8"
+      "approve": "0x552b27983789df358f931850805153721be4c50b98f1d967f42ed57de56c9a72",
+      "lpDeposit": "0xcd05dd7503bacf05a9d4c734b94d8f0d1b28832d5acf724b3429f7bb3769db88",
+      "buyCover": "0xa84eb3daaf5cd1e98133e0687b116ba0a5ffdddf1b56b1f51f2121157fd1adf0",
+      "recordHedge": "0x93f7e12686a4e1272ba634794efdfc463a0009c668a813b54b0c88582af51bcc",
+      "vote1": "0x3a02e800c981dd36b7b0cbe315094e1af056bce01a5fd83bc2891266b220b533",
+      "vote2": "0x7b60a689f79c3898fe4f1216221e7edfed1cb540f67a2767205ae9ce1bef3211",
+      "vote3": "0x2a2f49749a8623737a66f9dbeecea7a2a1539bcbdffb455d2bf931a12c1f2fdf",
+      "claim": "0x3dba84f5e36e0d11c8289552b1c4d783bb42a77adf14ef86d7a3bda00534f503",
+      "sweepHedge": "0xe53ae734a275a75602040c7e2dca058e8c417b2762be35e1784642d5cce7efe4"
     }
+  },
+  "deployTx": "0x84a1942a0765da173e8c0d02211e9e7c79509fe794b4baf0fa42bc0c336e64d6",
+  "sourceVerified": true,
+  "eventCapBps": 1000,
+  "previousVault": {
+    "address": "0x3CC34beE579B6caD4Ab3c13582138c263812831C",
+    "retired": "2026-11-19",
+    "lpFundsRecoveredTx": "0x57092299ca8a93b504e0876290455ea14c2b3913d2ef9a6277a335c58d61f235"
   }
 }

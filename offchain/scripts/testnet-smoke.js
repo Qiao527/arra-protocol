@@ -52,7 +52,14 @@ if (receivable > 0n) await send("sweepHedge", merchant, { ...vault, functionName
 console.log("LP withdrawable after sweep:", Number(await publicClient.readContract({ ...vault, functionName: "maxWithdraw", args: [merchant.account.address] })) / 1e6, "USDC");
 
 fs.mkdirSync("../deployments", { recursive: true });
+// Merge: keep fields other tools own (pricerUrl, deploy metadata) across smoke runs.
+let prev = {};
+try {
+  prev = JSON.parse(fs.readFileSync("../deployments/arc-testnet.json", "utf8"));
+} catch {}
+if (prev.arraVault && prev.arraVault.toLowerCase() !== String(config.vault).toLowerCase()) prev = { pricerUrl: prev.pricerUrl };
 fs.writeFileSync("../deployments/arc-testnet.json", JSON.stringify({
+  ...prev,
   network: "Arc Testnet", chainId: 5042002,
   explorer: "https://explorer.testnet.arc.io",
   arraVault: config.vault, usdc: USDC,

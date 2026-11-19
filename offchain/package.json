@@ -10,7 +10,9 @@
     "hedger": "node src/hedger.js",
     "settler": "node src/settler.js watch",
     "settle": "node src/settler.js settle",
-    "e2e": "node scripts/e2e-local.js"
+    "e2e": "node scripts/e2e-local.js",
+    "abi": "node -e \"const fs=require('fs');const a=JSON.parse(fs.readFileSync('../out/ArraVault.sol/ArraVault.json','utf8')).abi;fs.mkdirSync('abi',{recursive:true});fs.writeFileSync('abi/ArraVault.json',JSON.stringify({abi:a},null,1)+'\\\\n')\"",
+    "start": "node src/pricer.js"
   },
   "keywords": [],
   "author": "",
@@ -21,5 +23,8 @@
     "dotenv": "^18.0.10",
     "express": "^5.3.0",
     "viem": "^2.58.0"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }

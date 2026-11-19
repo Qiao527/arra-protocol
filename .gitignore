@@ -1,0 +1,11 @@
+out/
+cache/
+broadcast/
+.env
+offchain/node_modules/
+offchain/data/
+offchain/.env
+
+# local
+.DS_Store
+*.log

@@ -8,7 +8,7 @@ import crypto from "node:crypto";
 import { getAddress } from "viem";
 import { config } from "./config.js";
 import { listActiveEvents, getEvent, findContract, getBook, executablePrice, outcomeIndex, orderedContracts, isMutuallyExclusive } from "./gemini.js";
-import { computePremium, riskAfterTrade, toUsdcUnits } from "./pricing.js";
+import { computePremium, riskAfterTrade, toUsdcUnits, premiumUnits } from "./pricing.js";
 import { operatorAccount, eventIdFor, quoteTypes, domain, readEventBooks } from "./chain.js";
 import { remember } from "./registry.js";
 
@@ -84,7 +84,7 @@ export async function buildQuote({ eventTicker, instrumentSymbol, side = "YES", 
     eventId,
     outcome,
     payout: toUsdcUnits(L),
-    premium: toUsdcUnits(breakdown.premium),
+    premium: premiumUnits(breakdown),
     expiry: BigInt(win.expiry),
     eventStart: BigInt(win.salesClose),
     buyer: buyerAddr,
@@ -103,7 +103,7 @@ export async function buildQuote({ eventTicker, instrumentSymbol, side = "YES", 
   return {
     quote: Object.fromEntries(Object.entries(quote).map(([k, v]) => [k, typeof v === "bigint" ? v.toString() : v])),
     signature,
-    breakdown: { ...breakdown, pExec: Number(fill.avgPrice.toFixed(4)), levelsUsed: fill.levelsUsed, bookSource: book.source },
+    breakdown: { ...breakdown, premium: Number(premiumUnits(breakdown)) / 1e6, pExec: Number(fill.avgPrice.toFixed(4)), levelsUsed: fill.levelsUsed, bookSource: book.source },
     vaultAfter: { lockedOnEvent: risk.lockedAfter, insuredVolume: risk.insuredVolume, worstCase: risk.worstAfter, cap: risk.cap },
     market: { eventTicker: event.ticker, title: event.title, contract: contract.label, instrumentSymbol, side, outcome, mode: win.mode, startTime: eventStartOf(event) },
   };

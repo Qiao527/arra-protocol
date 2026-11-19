@@ -37,6 +37,7 @@ export function computePremium({
     utilizationSurcharge: round2(utilizationSurcharge),
     capitalCharge: round2(capitalCharge),
     premium: round2(premium),
+    premiumExact: premium, // unrounded; the quote charges ceil(premiumExact) in USDC units
     premiumPctOfPayout: round2((premium / payoutUsdc) * 100),
     marketingMultiple: round2(payoutUsdc / premium),
     utilization: round2(u),
@@ -71,3 +72,6 @@ const round2 = (x) => Math.round(x * 100) / 100;
 
 /** USDC has 6 decimals on Arc's ERC-20 interface. Round premium UP so the vault never undercharges. */
 export const toUsdcUnits = (x) => BigInt(Math.ceil(x * 1e6));
+
+/** Premium the quote charges, in USDC units: the exact premium rounded UP (never to the nearest cent). */
+export const premiumUnits = (breakdown) => toUsdcUnits(breakdown.premiumExact);

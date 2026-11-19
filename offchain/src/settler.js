@@ -6,13 +6,13 @@
 // opens a dispute window during which the guardian can veto. After it, anyone finalizes.
 //
 //   node src/settler.js watch                         poll Gemini for settled events we sold cover on
-//   node src/settler.js settle <eventTicker> <outcome>  demo: outcome = index, or YES/NO on single-contract events
+//   node src/settler.js settle <eventTicker> <outcome>  demo: outcome = index, YES/NO on single-contract events, or VOID
 //
 // In production each settler is an independent operator with its own key and its own Gemini
 // fetch; SETTLER_PRIVATE_KEYS holding several keys in one process is a demo convenience.
 import { keccak256, toBytes } from "viem";
 import { config } from "./config.js";
-import { getEventRaw, orderedContracts } from "./gemini.js";
+import { getEventRaw, orderedContracts, MAX_OUTCOMES } from "./gemini.js";
 import { publicClient, settlerWallets, operatorWallet, vaultAbi, eventIdFor } from "./chain.js";
 import { readRegistry } from "./registry.js";
 
@@ -20,14 +20,30 @@ const vault = { address: config.vault, abi: vaultAbi };
 const STATE = ["None", "Open", "Proposed", "Settled"];
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-/** Which outcome index won, from a settled Gemini event. null if not settled yet. */
+/** ArraVault.VOID_OUTCOME: no contract won (tie without a draw contract, cancellation). Premiums are refunded. */
+export const VOID_OUTCOME = 255;
+
+/**
+ * Which outcome index won, from a settled Gemini event. null if not settled yet or ambiguous.
+ *   - every contract must be settled (a partially settled event never settles)
+ *   - single-contract binary event: YES = 0, NO = 1
+ *   - multi-contract event: exactly one YES wins; no YES at all = VOID; more than one YES is
+ *     contradictory evidence, so no vote (a human must look)
+ */
 export function settledOutcome(event) {
   const contracts = orderedContracts(event); // same canonical order as the pricer
   const sides = contracts.map(contractSide);
-  if (sides.some((x) => x === null)) return null;
+  if (!sides.length || sides.some((x) => x === null)) return null;
   if (contracts.length === 1) return sides[0] === "YES" ? 0 : 1;
-  const i = sides.indexOf("YES");
-  return i >= 0 ? i : null;
+  const yes = sides.flatMap((s, i) => (s === "YES" ? [i] : []));
+  if (yes.length === 0) return VOID_OUTCOME;
+  return yes.length === 1 ? yes[0] : null;
+}
+
+/** Outcome indexes the vault accepts: 0..MAX_OUTCOMES-1, or VOID_OUTCOME. */
+export function checkVoteOutcome(o) {
+  if (Number.isInteger(o) && ((o >= 0 && o < MAX_OUTCOMES) || o === VOID_OUTCOME)) return o;
+  throw new Error(`bad outcome ${o}`);
 }
 
 /** Try to read a settled side (YES/NO) from a Gemini contract. Returns null if not settled. */
@@ -48,13 +64,12 @@ async function eventState(eventId) {
   return { state: STATE[Number(e[0])], winning: Number(e[1]), proposedAt: Number(e[3]), evidenceHash: e[6] };
 }
 
-const parseOutcome = (o) => (o === "YES" ? 0 : o === "NO" ? 1 : Number(o));
+const parseOutcome = (o) => (o === "YES" ? 0 : o === "NO" ? 1 : o === "VOID" ? VOID_OUTCOME : Number(o));
 
 /** Each configured settler votes. Unanimous -> settled instantly; threshold -> dispute window. */
 export async function vote(eventTicker, outcomeArg, evidence) {
   const eventId = eventIdFor(eventTicker);
-  const outcome = parseOutcome(outcomeArg);
-  if (!Number.isInteger(outcome) || outcome < 0 || outcome > 15) throw new Error("bad outcome");
+  const outcome = checkVoteOutcome(parseOutcome(outcomeArg));
   const evidenceHash = keccak256(toBytes(evidence));
   const threshold = Number(await publicClient.readContract({ ...vault, functionName: "settlerThreshold" }));
 
@@ -101,13 +116,15 @@ export async function finalizeAndPay(eventTicker) {
   });
   const w = operatorWallet();
   for (const log of logs) {
-    if (Number(log.args.outcome) !== done.winning) continue;
+    // Void: every holder gets their premium back. Otherwise only the winning outcome is paid.
+    if (done.winning !== VOID_OUTCOME && Number(log.args.outcome) !== done.winning) continue;
     const id = log.args.policyId;
     const p = await publicClient.readContract({ ...vault, functionName: "policies", args: [id] });
     if (p[5]) continue; // already claimed
     const tx = await w.writeContract({ ...vault, functionName: "claim", args: [id] });
     await publicClient.waitForTransactionReceipt({ hash: tx });
-    console.log(`paid policy #${id}: ${Number(p[3]) / 1e6} USDC -> ${p[0]}  tx ${tx}`);
+    const amount = done.winning === VOID_OUTCOME ? p[4] : p[3]; // premium refund vs payout
+    console.log(`${done.winning === VOID_OUTCOME ? "refunded" : "paid"} policy #${id}: ${Number(amount) / 1e6} USDC -> ${p[0]}  tx ${tx}`);
   }
 }
 

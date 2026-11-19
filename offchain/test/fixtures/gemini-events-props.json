@@ -1,0 +1,240 @@
+{
+  "_source": "GET https://api.gemini.com/v1/prediction-markets/events?status=active&category=sports&limit=5, captured 2026-11-18; trimmed to one event and four contracts",
+  "data": [
+    {
+      "id": "472855",
+      "title": "Charlotte vs Los Angeles L: Player Assists",
+      "slug": "charlotte-vs-los-angeles-l-player-assists",
+      "type": "categorical",
+      "category": "Sports",
+      "ticker": "NBA-2611180400-CHA-LAL-PPAST",
+      "status": "active",
+      "createdAt": "2026-11-17T05:55:09.905Z",
+      "contracts": [
+        {
+          "id": "472855-1185377",
+          "label": "Grayson Allen 2+ Assists",
+          "prices": {
+            "buy": {},
+            "sell": {}
+          },
+          "status": "active",
+          "createdAt": "2026-11-17T05:55:09.905Z",
+          "termsAndConditionsUrl": "https://assets.gemini.com/predictions/terms_and_conditions/Terms_and_Conditions_NBA_Player_Assists_Class_76239ffa-aa99-438c-8704-db71de2d2363.pdf",
+          "ticker": "GALLENO1",
+          "instrumentSymbol": "GEMI-NBA-2611180400-CHA-LAL-PPAST-GALLENO1",
+          "marketState": "post_only",
+          "color": "#1D1160",
+          "imageUrl": "https://assets.gemini.com/predictions/images/CHA_80ee586f-28bb-40e8-a81c-5739ddd1bdfd.png",
+          "expiryDate": "2026-11-19T16:00:00.000Z",
+          "effectiveDate": "2026-11-15T00:00:06.000Z",
+          "sortOrder": 12,
+          "teamId": "583ec97e-fb46-11e1-82cb-f4ce4684ea4c",
+          "strike": {
+            "type": "over",
+            "value": "1.5"
+          },
+          "isCombo": false,
+          "quantityIncrement": "0.01",
+          "quantityMinimum": "0.01",
+          "priceIncrement": "0.01",
+          "quoteAssetPrecision": 2,
+          "priceMinimum": "0.01",
+          "target": {
+            "type": "player",
+            "name": "Grayson Allen",
+            "externalIds": {
+              "sportradar": "ffa9a64f-d624-4033-bd23-59dcfd805175"
+            }
+          }
+        },
+        {
+          "id": "472855-1185378",
+          "label": "Grayson Allen 4+ Assists",
+          "prices": {
+            "buy": {},
+            "sell": {}
+          },
+          "status": "active",
+          "createdAt": "2026-11-17T05:55:09.905Z",
+          "termsAndConditionsUrl": "https://assets.gemini.com/predictions/terms_and_conditions/Terms_and_Conditions_NBA_Player_Assists_Class_76239ffa-aa99-438c-8704-db71de2d2363.pdf",
+          "ticker": "GALLENO3",
+          "instrumentSymbol": "GEMI-NBA-2611180400-CHA-LAL-PPAST-GALLENO3",
+          "marketState": "post_only",
+          "color": "#1D1160",
+          "imageUrl": "https://assets.gemini.com/predictions/images/CHA_80ee586f-28bb-40e8-a81c-5739ddd1bdfd.png",
+          "expiryDate": "2026-11-19T16:00:00.000Z",
+          "effectiveDate": "2026-11-15T00:00:06.000Z",
+          "sortOrder": 13,
+          "teamId": "583ec97e-fb46-11e1-82cb-f4ce4684ea4c",
+          "strike": {
+            "type": "over",
+            "value": "3.5"
+          },
+          "isCombo": false,
+          "quantityIncrement": "0.01",
+          "quantityMinimum": "0.01",
+          "priceIncrement": "0.01",
+          "quoteAssetPrecision": 2,
+          "priceMinimum": "0.01",
+          "target": {
+            "type": "player",
+            "name": "Grayson Allen",
+            "externalIds": {
+              "sportradar": "ffa9a64f-d624-4033-bd23-59dcfd805175"
+            }
+          }
+        },
+        {
+          "id": "472855-1185365",
+          "label": "Brandon Miller 2+ Assists",
+          "prices": {
+            "buy": {},
+            "sell": {}
+          },
+          "status": "settled",
+          "createdAt": "2026-11-17T05:55:09.905Z",
+          "termsAndConditionsUrl": "https://assets.gemini.com/predictions/terms_and_conditions/Terms_and_Conditions_NBA_Player_Assists_Class_76239ffa-aa99-438c-8704-db71de2d2363.pdf",
+          "ticker": "BMILLERO1",
+          "instrumentSymbol": "GEMI-NBA-2611180400-CHA-LAL-PPAST-BMILLERO1",
+          "marketState": "closed",
+          "color": "#1D1160",
+          "imageUrl": "https://assets.gemini.com/predictions/images/CHA_80ee586f-28bb-40e8-a81c-5739ddd1bdfd.png",
+          "expiryDate": "2026-11-19T16:00:00.000Z",
+          "resolutionSide": "yes",
+          "resolvedAt": "2026-11-18T07:48:04.560Z",
+          "effectiveDate": "2026-11-15T00:00:06.000Z",
+          "sortOrder": 0,
+          "teamId": "583ec97e-fb46-11e1-82cb-f4ce4684ea4c",
+          "strike": {
+            "type": "over",
+            "value": "1.5"
+          },
+          "isCombo": false,
+          "quantityIncrement": "0.01",
+          "quantityMinimum": "0.01",
+          "priceIncrement": "0.01",
+          "quoteAssetPrecision": 2,
+          "priceMinimum": "0.01",
+          "target": {
+            "type": "player",
+            "name": "Brandon Miller",
+            "externalIds": {
+              "sportradar": "775e4450-cdcd-43a1-b4cd-dc29fba48503"
+            }
+          }
+        },
+        {
+          "id": "472855-1185366",
+          "label": "Brandon Miller 4+ Assists",
+          "prices": {
+            "buy": {},
+            "sell": {}
+          },
+          "status": "settled",
+          "createdAt": "2026-11-17T05:55:09.905Z",
+          "termsAndConditionsUrl": "https://assets.gemini.com/predictions/terms_and_conditions/Terms_and_Conditions_NBA_Player_Assists_Class_76239ffa-aa99-438c-8704-db71de2d2363.pdf",
+          "ticker": "BMILLERO3",
+          "instrumentSymbol": "GEMI-NBA-2611180400-CHA-LAL-PPAST-BMILLERO3",
+          "marketState": "closed",
+          "color": "#1D1160",
+          "imageUrl": "https://assets.gemini.com/predictions/images/CHA_80ee586f-28bb-40e8-a81c-5739ddd1bdfd.png",
+          "expiryDate": "2026-11-19T16:00:00.000Z",
+          "resolutionSide": "yes",
+          "resolvedAt": "2026-11-18T07:48:04.771Z",
+          "effectiveDate": "2026-11-15T00:00:06.000Z",
+          "sortOrder": 1,
+          "teamId": "583ec97e-fb46-11e1-82cb-f4ce4684ea4c",
+          "strike": {
+            "type": "over",
+            "value": "3.5"
+          },
+          "isCombo": false,
+          "quantityIncrement": "0.01",
+          "quantityMinimum": "0.01",
+          "priceIncrement": "0.01",
+          "quoteAssetPrecision": 2,
+          "priceMinimum": "0.01",
+          "target": {
+            "type": "player",
+            "name": "Brandon Miller",
+            "externalIds": {
+              "sportradar": "775e4450-cdcd-43a1-b4cd-dc29fba48503"
+            }
+          }
+        }
+      ],
+      "effectiveDate": "2026-11-17T05:55:09.905Z",
+      "isLive": true,
+      "participants": [
+        {
+          "id": "478",
+          "name": "Los Angeles Lakers",
+          "abbreviation": "LAL",
+          "side": "home"
+        },
+        {
+          "id": "461",
+          "name": "Charlotte Hornets",
+          "abbreviation": "CHA",
+          "side": "away"
+        }
+      ],
+      "imageUrl": "https://assets.gemini.com/predictions/images/bb_f53a7e9b-c0fc-4a5c-a011-d0bf655f8263.avif",
+      "volume": "0",
+      "volume24h": "0",
+      "tags": [
+        "Pro Basketball"
+      ],
+      "expiryDate": "2026-11-19T16:00:00.000Z",
+      "startTime": "2026-11-18T04:00:00.000Z",
+      "termsLink": "https://assets.gemini.com/predictions/terms_and_conditions/Terms_and_Conditions_NBA_Player_Assists_Class_76239ffa-aa99-438c-8704-db71de2d2363.pdf",
+      "subcategory": {
+        "id": 14,
+        "slug": "sports_basketball_pro-basketball",
+        "name": "Pro Basketball",
+        "path": [
+          "Sports",
+          "Basketball",
+          "Pro Basketball"
+        ]
+      },
+      "socialImageUrl": "https://assets.gemini.com/predictions/images/Card_Carousel__40__b3388226-c9ca-43be-9611-88185341baf0.png",
+      "template": "sports-player-props",
+      "gameId": "40a9b530-5264-4d67-be28-71984eb5d1a4",
+      "sourceDetails": {
+        "agency": "sportradar-rest-api",
+        "index": "Basketball Player Props"
+      },
+      "volumeDelta24hPct": "0",
+      "sportsMarket": {
+        "sport": "basketball",
+        "type": "prop",
+        "subject": "player",
+        "scope": {
+          "type": "full_contest"
+        },
+        "metric": "assists",
+        "team": {
+          "symbol": "CHA",
+          "name": "Charlotte Hornets",
+          "externalIds": {
+            "sportradarId": "583ec97e-fb46-11e1-82cb-f4ce4684ea4c"
+          }
+        },
+        "player": {
+          "symbol": "GALLEN",
+          "name": "Grayson Allen",
+          "externalIds": {
+            "sportradarId": "ffa9a64f-d624-4033-bd23-59dcfd805175"
+          }
+        }
+      }
+    }
+  ],
+  "pagination": {
+    "limit": 5,
+    "offset": 0,
+    "total": 1003
+  }
+}

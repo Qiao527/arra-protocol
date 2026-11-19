@@ -4,7 +4,8 @@
   "description": "Arra pricer, hedger and settler services",
   "main": "index.js",
   "scripts": {
-    "test": "node scripts/e2e-local.js",
+    "test": "node --test \"test/**/*.test.js\"",
+    "e2e:anvil": "../script/e2e-anvil.sh",
     "pricer": "node src/pricer.js",
     "hedger": "node src/hedger.js",
     "settler": "node src/settler.js watch",

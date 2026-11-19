@@ -25,11 +25,13 @@ const MOCK_EVENT = {
   },
 };
 
-async function getJson(url) {
+async function getText(url) {
   const res = await fetch(url, { headers: { accept: "application/json" } });
+  const text = await res.text();
   if (!res.ok) throw new Error(`Gemini ${res.status} for ${url}`);
-  return res.json();
+  return text;
 }
+const getJson = async (url) => JSON.parse(await getText(url));
 
 // Championship: one contract per team, mutually exclusive. Long shots everywhere.
 const TEAMS = [
@@ -40,6 +42,7 @@ const MOCK_CHAMP = {
   ticker: "DEMO-CHAMP",
   title: "Demo: Who wins the college football championship?",
   status: "active",
+  sportsMarket: { sport: "american_football", type: "futures", subject: "team", scope: { type: "competition" } },
   expiry: new Date(Date.now() + 30 * 86400_000).toISOString(),
   contracts: TEAMS.map(([code, name, ask]) => ({
     ticker: `DEMO-CHAMP-${code}`,
@@ -56,20 +59,36 @@ const MOCK_CHAMP = {
 };
 const MOCKS = { [MOCK_EVENT.ticker]: MOCK_EVENT, [MOCK_CHAMP.ticker]: MOCK_CHAMP };
 
-export async function listActiveEvents({ category = "sports", limit = 50 } = {}) {
+/**
+ * Active events Arra can cover. By default only market types whose contracts are mutually
+ * exclusive: game winners (moneyline) and championship futures. Player props are excluded:
+ * "2+ assists" and "4+ assists" can both resolve YES, so they cannot be netted.
+ */
+export async function listActiveEvents({ category = "sports", types = ["moneyline", "futures"], limit = 50 } = {}) {
   if (config.mockGemini) return Object.values(MOCKS);
-  const data = await getJson(
-    `${config.geminiBase}/v1/prediction-markets/events?status=active&category=${category}&limit=${limit}`
+  const base = `${config.geminiBase}/v1/prediction-markets/events?status=active&category=${encodeURIComponent(category)}&limit=${limit}`;
+  const pages = await Promise.all(
+    (types.length ? types : [null]).map((t) => getJson(t ? `${base}&sports_market_type=${encodeURIComponent(t)}` : base))
   );
-  return Array.isArray(data) ? data : data.data ?? data.events ?? [];
+  const seen = new Set();
+  return pages
+    .flatMap((d) => (Array.isArray(d) ? d : d.data ?? d.events ?? []))
+    .filter((e) => !seen.has(e.ticker) && seen.add(e.ticker));
+}
+
+/** Event plus the exact response text (the settler hashes the raw bytes as evidence). */
+export async function getEventRaw(ticker) {
+  if (config.mockGemini) {
+    if (!MOCKS[ticker]) throw new Error(`Unknown mock event ${ticker}`);
+    return { event: MOCKS[ticker], raw: JSON.stringify(MOCKS[ticker]) };
+  }
+  const raw = await getText(`${config.geminiBase}/v1/prediction-markets/events/${encodeURIComponent(ticker)}`);
+  const parsed = JSON.parse(raw);
+  return { event: parsed.data && !Array.isArray(parsed.data) ? parsed.data : parsed, raw };
 }
 
 export async function getEvent(ticker) {
-  if (config.mockGemini) {
-    if (!MOCKS[ticker]) throw new Error(`Unknown mock event ${ticker}`);
-    return MOCKS[ticker];
-  }
-  return getJson(`${config.geminiBase}/v1/prediction-markets/events/${encodeURIComponent(ticker)}`);
+  return (await getEventRaw(ticker)).event;
 }
 
 export function findContract(event, instrumentSymbol) {
@@ -107,12 +126,23 @@ export function getBook(event, contract) {
       source: "orderbook",
     };
   }
+  // No depth in the response: use top of book, capped at TOP_OF_BOOK_DEPTH contracts so an
+  // unknown book is never treated as infinitely deep. Gemini's prices object carries
+  // bestBid / bestAsk and buy.{yes,no} (cost to buy each side); empty objects when no quotes.
   const p = contract.prices ?? {};
+  const ask = firstFinite(p.bestAsk, p.buy?.yes);
+  const bid = firstFinite(p.bestBid, Number.isFinite(num(p.buy?.no)) ? 1 - num(p.buy.no) : NaN);
+  const depth = config.topOfBookDepth;
   return {
-    asks: Number.isFinite(num(p.bestAsk)) ? [{ price: num(p.bestAsk), qty: Infinity }] : [],
-    bids: Number.isFinite(num(p.bestBid)) ? [{ price: num(p.bestBid), qty: Infinity }] : [],
+    asks: Number.isFinite(ask) ? [{ price: ask, qty: depth }] : [],
+    bids: Number.isFinite(bid) ? [{ price: bid, qty: depth }] : [],
     source: "top-of-book",
   };
+}
+
+function firstFinite(...xs) {
+  for (const x of xs) if (Number.isFinite(num(x))) return num(x);
+  return NaN;
 }
 
 /**
@@ -174,24 +204,50 @@ export async function placeSandboxOrder({ symbol, side = "buy", outcome = "yes",
   return JSON.parse(text);
 }
 
+// ---------------------------------------------------------------- outcome mapping
+
+const EXCLUSIVE_TYPES = new Set(["moneyline", "futures"]);
+
+/**
+ * True when at most one contract of the event can resolve YES, so the vault may lock
+ * max_i L_i instead of the sum. Single-contract events are binary (YES vs NO).
+ */
+export function isMutuallyExclusive(event) {
+  const n = (event.contracts ?? []).length;
+  if (n <= 1) return true;
+  return EXCLUSIVE_TYPES.has(event.sportsMarket?.type);
+}
+
+/**
+ * Contracts in canonical order: sorted by instrumentSymbol. Index i in this list is vault
+ * outcome i. Deterministic and independent of API response order, so the pricer, hedger,
+ * settler and the public verify page all derive the same mapping from the same event.
+ */
+export function orderedContracts(event) {
+  return [...(event.contracts ?? [])].sort((a, b) => (a.instrumentSymbol < b.instrumentSymbol ? -1 : 1));
+}
+
 /**
  * Map (event, contract, side) to the vault's mutually exclusive outcome index.
- *   - Multi-contract event (e.g. championship): outcome i = "contract i resolves YES". Only YES allowed.
- *   - Single-contract event (e.g. "will the underdog win"): 0 = YES, 1 = NO.
+ *   - Multi-contract event (moneyline / futures): outcome i = "contract i resolves YES". YES only.
+ *   - Single-contract event: 0 = YES, 1 = NO.
  */
 export function outcomeIndex(event, instrumentSymbol, side) {
-  const contracts = event.contracts ?? [];
+  const contracts = orderedContracts(event);
   const i = contracts.findIndex((c) => c.instrumentSymbol === instrumentSymbol);
   if (i < 0) throw new Error(`Contract ${instrumentSymbol} not in event ${event.ticker}`);
   if (contracts.length === 1) return side === "NO" ? 1 : 0;
+  if (!isMutuallyExclusive(event)) {
+    throw new Error("This market's outcomes are not mutually exclusive (e.g. player props); Arra covers game winners and championships");
+  }
   if (side !== "YES") throw new Error("On multi-outcome events, cover the team you are rooting for (YES)");
-  if (i >= 16) throw new Error("Vault supports up to 16 outcomes per event");
+  if (contracts.length > 16) throw new Error("Vault supports up to 16 outcomes per event");
   return i;
 }
 
 /** Inverse of outcomeIndex: which Gemini contract and side to buy to hedge outcome i. */
 export function hedgeTarget(event, outcome) {
-  const contracts = event.contracts ?? [];
+  const contracts = orderedContracts(event);
   if (contracts.length === 1) return { instrumentSymbol: contracts[0].instrumentSymbol, side: outcome === 1 ? "NO" : "YES" };
   return { instrumentSymbol: contracts[outcome].instrumentSymbol, side: "YES" };
 }

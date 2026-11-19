@@ -7,7 +7,7 @@ import cors from "cors";
 import crypto from "node:crypto";
 import { getAddress } from "viem";
 import { config } from "./config.js";
-import { listActiveEvents, getEvent, findContract, getBook, executablePrice, outcomeIndex } from "./gemini.js";
+import { listActiveEvents, getEvent, findContract, getBook, executablePrice, outcomeIndex, orderedContracts, isMutuallyExclusive } from "./gemini.js";
 import { computePremium, riskAfterTrade, toUsdcUnits } from "./pricing.js";
 import { operatorAccount, eventIdFor, quoteTypes, domain, readEventBooks } from "./chain.js";
 import { remember } from "./registry.js";
@@ -109,12 +109,19 @@ export function app() {
         events.map((e) => ({
           ticker: e.ticker,
           title: e.title,
-          expiry: e.expiry,
-          contracts: (e.contracts ?? []).map((c) => ({
+          startTime: e.startTime ?? null,
+          expiry: e.expiryDate ?? e.expiry ?? null,
+          sportsMarket: e.sportsMarket ?? null,
+          participants: e.participants ?? [],
+          coverable: isMutuallyExclusive(e),
+          contracts: orderedContracts(e).map((c, outcome) => ({
+            outcome,
             label: c.label,
             instrumentSymbol: c.instrumentSymbol,
             marketState: c.marketState,
             prices: c.prices,
+            color: c.color ?? null,
+            imageUrl: c.imageUrl ?? null,
           })),
         }))
       );

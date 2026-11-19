@@ -94,6 +94,10 @@ As one event fills up, each extra dollar of cover costs more (`k·u²`). The vau
 | LP withdrawals | Only capital not backing open covers; frozen while hedge proceeds sit at Gemini. |
 | NAV integrity | `totalAssets = USDC + hedgeReceivable − pendingClaims`, so no one enters or exits at a fake discount mid-settlement. |
 
+### Which Gemini markets Arra covers
+
+Only markets whose outcomes are **mutually exclusive**, because netting depends on it: game winners (`sports_market_type=moneyline`) and championship futures (`futures`), plus any single-contract YES/NO market. Player props are refused ("2+ assists" and "4+ assists" can both resolve YES). Outcome `i` is the `i`-th contract sorted by `instrumentSymbol`, so the pricer, hedger, settler and the public verify page all derive the same mapping from the same Gemini event. Contracts must be `marketState: open` (not `post_only`) so the hedge can actually execute.
+
 ### Risk assumptions
 
 - **Oracle trust.** Results need a settler quorum and carry a hash of the raw Gemini response; the guardian can veto during the dispute window. Quotes are signed by one operator key (pricing only, not settlement). Roadmap: a zkTLS proof that the payload came from api.gemini.com.
@@ -119,6 +123,7 @@ offchain/src/settler.js             votes Gemini results, finalizes, pushes payo
 offchain/quicknode/stream-filter.js QuickNode Streams filter for CoverPurchased on Arc
 offchain/scripts/e2e-local.js       full flow: single game + 4-city championship
 offchain/scripts/testnet-smoke.js   live run against the Arc deployment
+offchain/test/                      Gemini adapter tests + real API fixture
 docs/ECONOMICS.md                   pricing math, reconciliation, regulation, references
 ```
 
@@ -128,8 +133,9 @@ docs/ECONOMICS.md                   pricing math, reconciliation, regulation, re
 
 ```bash
 git clone --recurse-submodules https://github.com/Qiao527/arra-protocol && cd arra-protocol
-forge test                                    # 37 tests
-(cd offchain && npm ci) && ./script/e2e-anvil.sh   # full local flow, no keys needed
+forge test                                         # 37 contract tests
+(cd offchain && npm ci && npm test)                # 9 Gemini adapter tests (real API fixture)
+./script/e2e-anvil.sh                              # full local flow, no keys needed
 ```
 
 Deploy to Arc testnet:
@@ -166,6 +172,7 @@ The hedger decodes each log, checks unhedged exposure on that outcome, places a 
 forge test
   ArraVault.t.sol             30 passed  (quotes, netting, championship, caps, solvency, quorum, fast path, veto, in-game sales, LP locks, fuzz)
   ArraVault.invariant.t.sol    6 passed  (256 runs × 32 calls: full collateral, cap at sale, locked == max_i L_i, LP locks, hedge bounds)
+npm test (offchain)            9 passed  (real Gemini response: shape, empty books, settled resolutionSide; props refused; canonical outcome order)
 ./script/e2e-anvil.sh          E2E OK    (single game via 2-of-3 + dispute window; 4-city championship via 3-of-3 instant)
 ```
 

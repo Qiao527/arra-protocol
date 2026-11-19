@@ -10,6 +10,7 @@ import { publicClient, vaultAbi, eventIdFor } from "../src/chain.js";
 import { buildQuote } from "../src/pricer.js";
 import { hedgeIfNeeded } from "../src/hedger.js";
 import { vote, finalizeAndPay } from "../src/settler.js";
+import { getEvent, outcomeIndex } from "../src/gemini.js";
 
 const erc20 = parseAbi([
   "function approve(address,uint256) returns (bool)",
@@ -66,7 +67,9 @@ console.log(`B5. Hedger: ${hb.map((h) => `${h.qty} ${h.instrumentSymbol} @ <= ${
 
 // ---- Settle B instantly (unanimous), A via dispute window ---------------------------
 const bostonBefore = await bal(bars[3].account.address);
-await vote("DEMO-CHAMP", 7, JSON.stringify({ demo: "BC wins it all" })); // index 7 = Boston College
+const champEvent = await getEvent("DEMO-CHAMP");
+const bcIndex = outcomeIndex(champEvent, "GEMI-DEMO-CHAMP-BC", "YES");
+await vote("DEMO-CHAMP", bcIndex, JSON.stringify({ demo: "BC wins it all" }));
 await finalizeAndPay("DEMO-CHAMP");
 const bostonGot = (await bal(bars[3].account.address)) - bostonBefore;
 console.log(`S1. Championship settled by 3-of-3 vote instantly. Boston bar received ${fmt(bostonGot)} USDC`);

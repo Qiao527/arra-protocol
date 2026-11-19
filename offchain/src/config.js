@@ -29,6 +29,7 @@ export const config = {
   mockGemini: env("MOCK_GEMINI", "false") === "true",
 
   // Hedger
+  topOfBookDepth: Number(env("TOP_OF_BOOK_DEPTH", "1000")), // contracts assumed at best price when no depth is published
   hedgeThresholdUsdc: Number(env("HEDGE_THRESHOLD_USDC", "2000")),
   hedgerPort: Number(env("HEDGER_PORT", "8788")),
   quicknodeSecret: env("QUICKNODE_WEBHOOK_SECRET"), // optional shared secret header

@@ -12,7 +12,7 @@
 // fetch; SETTLER_PRIVATE_KEYS holding several keys in one process is a demo convenience.
 import { keccak256, toBytes } from "viem";
 import { config } from "./config.js";
-import { getEvent } from "./gemini.js";
+import { getEventRaw, orderedContracts } from "./gemini.js";
 import { publicClient, settlerWallets, operatorWallet, vaultAbi, eventIdFor } from "./chain.js";
 import { readRegistry } from "./registry.js";
 
@@ -22,7 +22,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /** Which outcome index won, from a settled Gemini event. null if not settled yet. */
 export function settledOutcome(event) {
-  const contracts = event.contracts ?? [];
+  const contracts = orderedContracts(event); // same canonical order as the pricer
   const sides = contracts.map(contractSide);
   if (sides.some((x) => x === null)) return null;
   if (contracts.length === 1) return sides[0] === "YES" ? 0 : 1;
@@ -129,10 +129,10 @@ async function watch() {
           continue;
         }
         if (st.state !== "Open") continue;
-        const raw = await getEvent(info.eventTicker);
-        const outcome = settledOutcome(raw);
+        const { event, raw } = await getEventRaw(info.eventTicker);
+        const outcome = settledOutcome(event);
         if (outcome !== null) {
-          await vote(info.eventTicker, outcome, JSON.stringify(raw)); // evidence = the raw Gemini response
+          await vote(info.eventTicker, outcome, raw); // evidence = keccak256 of the exact Gemini response bytes
           await finalizeAndPay(info.eventTicker);
         }
       } catch (err) {

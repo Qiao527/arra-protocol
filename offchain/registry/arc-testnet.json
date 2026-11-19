@@ -1,0 +1,62 @@
+{
+  "0x0636ff4e144255954bddac8c6740456864980f58f9a8092209eb58b9aca6b8c5": {
+    "eventTicker": "NFL-2611200115-IND-HOU-M",
+    "title": "Indianapolis vs Houston",
+    "outcomes": [
+      "GEMI-NFL-2611200115-IND-HOU-M-HOU",
+      "GEMI-NFL-2611200115-IND-HOU-M-IND"
+    ]
+  },
+  "0x490de9ed7b6a803dcf29319649f505b9665ee5672af0b1a3671d8d58b5629126": {
+    "eventTicker": "NHL-2611200000-PHI-OTT-M",
+    "title": "Philadelphia vs Ottawa",
+    "outcomes": [
+      "GEMI-NHL-2611200000-PHI-OTT-M-OTT",
+      "GEMI-NHL-2611200000-PHI-OTT-M-PHI"
+    ]
+  },
+  "0x882231f188422e825a5af977da16e784e14527e1f4753c0a843269ad23d5c039": {
+    "eventTicker": "NFL-2611221800-ARI-KC-M",
+    "title": "Arizona vs Kansas City",
+    "outcomes": [
+      "GEMI-NFL-2611221800-ARI-KC-M-ARI",
+      "GEMI-NFL-2611221800-ARI-KC-M-KC"
+    ]
+  },
+  "0xc5a830cc2fc8610f78ba3b34cd11ee76249dee069ef9741c9ae75c7eb8c712df": {
+    "eventTicker": "NBAF-2627CHAMP",
+    "title": "2027 Pro Basketball Champion",
+    "outcomes": [
+      "GEMI-NBAF-2627CHAMP-ATL",
+      "GEMI-NBAF-2627CHAMP-BKN",
+      "GEMI-NBAF-2627CHAMP-BOS",
+      "GEMI-NBAF-2627CHAMP-CHA",
+      "GEMI-NBAF-2627CHAMP-CHI",
+      "GEMI-NBAF-2627CHAMP-CLE",
+      "GEMI-NBAF-2627CHAMP-DAL",
+      "GEMI-NBAF-2627CHAMP-DEN",
+      "GEMI-NBAF-2627CHAMP-DET",
+      "GEMI-NBAF-2627CHAMP-GSW",
+      "GEMI-NBAF-2627CHAMP-HOU",
+      "GEMI-NBAF-2627CHAMP-IND",
+      "GEMI-NBAF-2627CHAMP-LAC",
+      "GEMI-NBAF-2627CHAMP-LAL",
+      "GEMI-NBAF-2627CHAMP-MEM",
+      "GEMI-NBAF-2627CHAMP-MIA",
+      "GEMI-NBAF-2627CHAMP-MIL",
+      "GEMI-NBAF-2627CHAMP-MIN",
+      "GEMI-NBAF-2627CHAMP-NOP",
+      "GEMI-NBAF-2627CHAMP-NYK",
+      "GEMI-NBAF-2627CHAMP-OKC",
+      "GEMI-NBAF-2627CHAMP-ORL",
+      "GEMI-NBAF-2627CHAMP-PHI",
+      "GEMI-NBAF-2627CHAMP-PHX",
+      "GEMI-NBAF-2627CHAMP-POR",
+      "GEMI-NBAF-2627CHAMP-SAC",
+      "GEMI-NBAF-2627CHAMP-SAS",
+      "GEMI-NBAF-2627CHAMP-TOR",
+      "GEMI-NBAF-2627CHAMP-UTA",
+      "GEMI-NBAF-2627CHAMP-WAS"
+    ]
+  }
+}

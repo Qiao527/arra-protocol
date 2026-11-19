@@ -76,5 +76,6 @@
       "reason": "first review fixes; superseded by void bound, dispute-time deposit freeze, settler epochs",
       "lpFundsRecoveredTx": "0x83c89aa61032e1c110bd94e22847dd30b6f544e1d96cb31d9ad7bc95104935fa"
     }
-  ]
+  ],
+  "pricerUrl": "https://arra-pricer.onrender.com"
 }

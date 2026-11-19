@@ -227,7 +227,7 @@ It reads the onchain `evidenceHash` and winning outcome, hashes the bytes stored
 
 ## Hosted pricer API
 
-`GET /health`, `GET /events`, `POST /quote`. Deploy with [`render.yaml`](render.yaml) (or `offchain/Dockerfile` anywhere). The operator key and allowed frontend origins are host secrets (`OPERATOR_PRIVATE_KEY`, `ALLOWED_ORIGINS`), never in the repo or image. CORS only allows the configured origins, each client IP gets 60 requests a minute, `/quote` rejects malformed input before it touches Gemini or the RPC, bodies over 10 kB are refused, and upstream failures return 502 without internals. The services read the vault ABI from `offchain/abi/ArraVault.json` when there is no Foundry build. CI checks it matches `forge build` (`npm run abi` refreshes it).
+Live at **https://arra-pricer.onrender.com** (Render free plan: the first request after 15 idle minutes takes ~30–60 s while it wakes). `GET /health`, `GET /events`, `POST /quote`. Deploy with [`render.yaml`](render.yaml) (or `offchain/Dockerfile` anywhere). The operator key and allowed frontend origins are host secrets (`OPERATOR_PRIVATE_KEY`, `ALLOWED_ORIGINS`), never in the repo or image. CORS only allows the configured origins, each client IP gets 60 requests a minute, `/quote` rejects malformed input before it touches Gemini or the RPC, bodies over 10 kB are refused, and upstream failures return 502 without internals. The services read the vault ABI from `offchain/abi/ArraVault.json` when there is no Foundry build. CI checks it matches `forge build` (`npm run abi` refreshes it).
 
 ## Tests
 

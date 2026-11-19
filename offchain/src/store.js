@@ -5,7 +5,12 @@
 // No token -> disabled: get() returns null, put() returns false (local-only mode).
 const API = "https://api.github.com";
 
-export function createStore({ token, repo, branch = "keeper-data", base = "main", fetchImpl = globalThis.fetch } = {}) {
+import { createHash } from "node:crypto";
+
+/** Git's blob id for some bytes: the sha GitHub reports for a file with exactly this content. */
+export const blobSha = (bytes) => createHash("sha1").update(Buffer.concat([Buffer.from(`blob ${bytes.length}\0`), Buffer.from(bytes)])).digest("hex");
+
+export function createStore({ token, repo, branch = "keeper-data", base = "main", fetchImpl = globalThis.fetch, retryDelayMs = 1000 } = {}) {
   const enabled = Boolean(token && repo);
   const headers = { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28", "User-Agent": "arra-keeper" };
   const gh = async (method, path, body) => {
@@ -15,6 +20,15 @@ export function createStore({ token, repo, branch = "keeper-data", base = "main"
   };
   const enc = (p) => p.split("/").map(encodeURIComponent).join("/");
   let branchReady = null;
+  // One request at a time: every write is a commit on the same branch, and two in flight race the
+  // branch ref (GitHub answers 409).
+  let queue = Promise.resolve();
+  const serial = (fn) => {
+    const run = queue.then(fn, fn);
+    queue = run.catch(() => {});
+    return run;
+  };
+  const pause = (ms) => new Promise((r) => setTimeout(r, ms));
 
   async function ensureBranch() {
     branchReady ??= (async () => {
@@ -39,17 +53,26 @@ export function createStore({ token, repo, branch = "keeper-data", base = "main"
 
   return {
     enabled,
-    async get(path) {
-      if (!enabled) return null;
-      await ensureBranch();
-      const f = await stat(path);
-      return f ? new Uint8Array(Buffer.from(f.content, "base64")) : null;
+    get(path) {
+      if (!enabled) return Promise.resolve(null);
+      return serial(async () => {
+        await ensureBranch();
+        const f = await stat(path);
+        return f ? new Uint8Array(Buffer.from(f.content, "base64")) : null;
+      });
     },
-    async put(path, bytes, message) {
-      if (!enabled) return false;
+    /** Write a file. Returns true when committed, "unchanged" when the branch already has these bytes. */
+    put(path, bytes, message) {
+      if (!enabled) return Promise.resolve(false);
+      return serial(() => putNow(path, bytes, message));
+    },
+  };
+
+  async function putNow(path, bytes, message) {
       await ensureBranch();
-      for (let attempt = 0; attempt < 2; attempt++) {
+      for (let attempt = 0; attempt < 4; attempt++) {
         const prev = await stat(path);
+        if (prev && prev.sha === blobSha(bytes)) return "unchanged";
         const r = await gh("PUT", `/contents/${enc(path)}`, {
           message,
           branch,
@@ -59,8 +82,8 @@ export function createStore({ token, repo, branch = "keeper-data", base = "main"
         });
         if (r.status === 200 || r.status === 201) return true;
         if (r.status !== 409) throw new Error(`store: PUT ${path} -> ${r.status} ${r.body?.message ?? ""}`);
+        await pause(retryDelayMs * (attempt + 1)); // the branch moved under us: re-read and retry
       }
       throw new Error(`store: PUT ${path} kept conflicting`);
-    },
-  };
+  }
 }

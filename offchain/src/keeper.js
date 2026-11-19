@@ -101,7 +101,10 @@ async function main() {
   // 2. Sync registry + evidence to the store when they change.
   let lastRegistry = "";
   const pushed = new Set();
-  async function sync() {
+  // Single flight: the settler loop and startup both sync; a second caller joins the running one.
+  let syncing = null;
+  const sync = () => (syncing ??= syncNow().finally(() => (syncing = null)));
+  async function syncNow() {
     if (!store.enabled) return;
     try {
       const reg = JSON.stringify(readRegistry(), null, 2);

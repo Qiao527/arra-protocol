@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { createHash } from "node:crypto";
 import { keccak256, toBytes } from "viem";
 import { generatePrivateKey } from "viem/accounts";
 
@@ -36,7 +37,9 @@ function fakeGitHub() {
       if (method === "GET") return files.has(p) ? json(200, { sha: files.get(p).sha, content: files.get(p).content, encoding: "base64" }) : json(404, { message: "Not Found" });
       const b = JSON.parse(opts.body);
       if (files.has(p) && b.sha !== files.get(p).sha) return json(409, { message: "sha mismatch" });
-      files.set(p, { sha: String(files.size + 1).repeat(40).slice(0, 40), content: b.content });
+      const raw = Buffer.from(b.content, "base64");
+      const sha = createHash("sha1").update(Buffer.concat([Buffer.from(`blob ${raw.length}\0`), raw])).digest("hex"); // git blob sha, as GitHub
+      files.set(p, { sha, content: b.content });
       return json(200, {});
     }
     return json(404, {});
@@ -121,4 +124,36 @@ test("GET /keeper reports loop health without leaking keys", async () => {
     assert.equal(JSON.parse(text).settler.eventsTracked, 3);
     assert.ok(!/[0-9a-f]{64}/i.test(text), "no 32-byte hex (keys) in status");
   });
+});
+
+test("store: identical bytes are not re-committed; concurrent puts are serialized; a 409 race is retried", async () => {
+  const gh = fakeGitHub();
+  let fail409 = 1;
+  const racy = async (url, opts = {}) => {
+    if ((opts.method ?? "GET") === "PUT" && fail409-- > 0) return new Response(JSON.stringify({ message: "is at x but expected y" }), { status: 409 });
+    return gh.fetch(url, opts);
+  };
+  const store = createStore({ token: "t", repo: "o/r", fetchImpl: racy, retryDelayMs: 1 });
+  const b = new TextEncoder().encode("same");
+  assert.equal(await store.put("a.json", b, "m"), true); // first PUT hits a 409, retried
+  const puts = () => gh.calls.filter((c) => c.method === "PUT").length;
+  const before = puts();
+  assert.equal(await store.put("a.json", b, "m"), "unchanged");
+  assert.equal(puts(), before, "no commit for identical content");
+  await Promise.all([store.put("x.json", new TextEncoder().encode("1"), "m"), store.put("y.json", new TextEncoder().encode("2"), "m")]);
+  let inFlight = 0;
+  let maxInFlight = 0;
+  const slow = async (url, opts = {}) => {
+    inFlight++;
+    maxInFlight = Math.max(maxInFlight, inFlight);
+    await new Promise((r) => setTimeout(r, 5));
+    try {
+      return await gh.fetch(url, opts);
+    } finally {
+      inFlight--;
+    }
+  };
+  const s2 = createStore({ token: "t", repo: "o/r", fetchImpl: slow });
+  await Promise.all([s2.put("p.json", new TextEncoder().encode("p"), "m"), s2.put("q.json", new TextEncoder().encode("q"), "m")]);
+  assert.equal(maxInFlight, 1, "one GitHub request at a time");
 });

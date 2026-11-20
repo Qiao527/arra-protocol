@@ -1,0 +1,100 @@
+{
+  "generatedAt": "2026-11-20T01:19:10.492Z",
+  "vault": "0x1D69e0fE014df1007aE66A68a5c9714a7E833d6f",
+  "chainId": 5042002,
+  "keeper": "https://arra-pricer.onrender.com",
+  "runUrl": "https://github.com/Qiao527/arra-protocol/actions/runs/44652691745",
+  "solvency": {
+    "usdcHeld": 54.508124,
+    "locked": 15,
+    "owed": 0,
+    "ok": true
+  },
+  "summary": {
+    "PASS": 0,
+    "FAIL": 0,
+    "SYNTHETIC": 1,
+    "UNCHECKED": 0,
+    "UNCONFIRMED": 0,
+    "PENDING": 3
+  },
+  "events": [
+    {
+      "eventId": "0x0636ff4e144255954bddac8c6740456864980f58f9a8092209eb58b9aca6b8c5",
+      "title": "Indianapolis vs Houston",
+      "eventTicker": "NFL-2611200115-IND-HOU-M",
+      "state": "Open",
+      "winningOutcome": 0,
+      "evidenceHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "verdict": "PENDING",
+      "evidence": null,
+      "live": null,
+      "synthetic": false,
+      "checks": [],
+      "insuredUsdc": 5,
+      "lockedUsdc": 5
+    },
+    {
+      "eventId": "0x490de9ed7b6a803dcf29319649f505b9665ee5672af0b1a3671d8d58b5629126",
+      "title": "Philadelphia vs Ottawa",
+      "eventTicker": "NHL-2611200000-PHI-OTT-M",
+      "state": "Settled",
+      "winningOutcome": 1,
+      "evidenceHash": "0x7af03862a33453596d87395c73d6c543bf01dfdfab989695bd829d2ee93fb964",
+      "verdict": "SYNTHETIC",
+      "evidence": "ok",
+      "live": "not-settled",
+      "synthetic": true,
+      "checks": [
+        {
+          "name": "event settled onchain",
+          "ok": true
+        },
+        {
+          "name": "evidence hash",
+          "ok": true
+        },
+        {
+          "name": "evidence is for this event",
+          "ok": true
+        },
+        {
+          "name": "winning outcome",
+          "ok": true
+        }
+      ],
+      "insuredUsdc": 5,
+      "lockedUsdc": 5
+    },
+    {
+      "eventId": "0x882231f188422e825a5af977da16e784e14527e1f4753c0a843269ad23d5c039",
+      "title": "Arizona vs Kansas City",
+      "eventTicker": "NFL-2611221800-ARI-KC-M",
+      "state": "Open",
+      "winningOutcome": 0,
+      "evidenceHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "verdict": "PENDING",
+      "evidence": null,
+      "live": null,
+      "synthetic": false,
+      "checks": [],
+      "insuredUsdc": 5,
+      "lockedUsdc": 5
+    },
+    {
+      "eventId": "0xc5a830cc2fc8610f78ba3b34cd11ee76249dee069ef9741c9ae75c7eb8c712df",
+      "title": "2027 Pro Basketball Champion",
+      "eventTicker": "NBAF-2627CHAMP",
+      "state": "Open",
+      "winningOutcome": 0,
+      "evidenceHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "verdict": "PENDING",
+      "evidence": null,
+      "live": null,
+      "synthetic": false,
+      "checks": [],
+      "insuredUsdc": 25,
+      "lockedUsdc": 5
+    }
+  ]
+}

@@ -105,7 +105,9 @@ export default function PromisePage({ account, onConnect }) {
   const ph = event ? phase(event, now) : "pre";
   const indicative = contract && ask > 0 ? indicativePremium({ payout, ask }) : null;
   const b = quote?.breakdown;
-  const premium = b?.premium ?? indicative?.premium;
+  // once signed, show exactly what the contract will charge (the quote's premium in USDC units)
+  const signedPremium = quote ? Number(quote.quote.premium) / 1e6 : null;
+  const premium = signedPremium ?? indicative?.premium;
   const secsLeft = quote ? Math.max(0, Number(quote.quote.expiry) - Math.floor(now / 1000)) : 0;
 
   function toggleHalf() {
@@ -134,7 +136,7 @@ export default function PromisePage({ account, onConnect }) {
     setErr(null);
     try {
       const r = await buyCover(account, quote, (s) => setBusy(s));
-      setDone({ ...r, label: contract.label, ticker: event.ticker, premium: b.premium });
+      setDone({ ...r, label: contract.label, ticker: event.ticker, premium: Number(quote.quote.premium) / 1e6, payout: Number(quote.quote.payout) / 1e6 });
       setQuote(null);
     } catch (e) {
       setErr(e.shortMessage ?? e.message);
@@ -148,8 +150,8 @@ export default function PromisePage({ account, onConnect }) {
     return (
       <section className="composer done">
                 <div className="done-doc">
-          <PromiseDoc merchant={merchant} team={done.label} eventTitle={event?.title} payout={payout} policyId={done.policyId} status="locked" verifyUrl={link}
-            lines={[["Payout locked", usd(payout)], ["Premium paid", usd(done.premium)]]} />
+          <PromiseDoc merchant={merchant} team={done.label} eventTitle={event?.title} payout={done.payout} policyId={done.policyId} status="locked" verifyUrl={link}
+            lines={[["Payout locked", usd(done.payout)], ["Premium paid", usd(done.premium)]]} />
         </div>
         <div className="composer-actions">
           <a className="btn primary big" href={`#/p/${done.policyId}?${new URLSearchParams({ t: done.ticker, l: done.label, ...(merchant ? { m: merchant } : {}) })}`}>Open the proof page</a>

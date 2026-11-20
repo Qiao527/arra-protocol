@@ -33,6 +33,12 @@ export async function connect() {
 
 const wallet = (account) => createWalletClient({ account, chain, transport: custom(window.ethereum) });
 
+/** Every write first makes sure the wallet is on Arc: users switch networks after connecting. */
+async function writer(account) {
+  await ensureArc();
+  return wallet(account);
+}
+
 export async function usdcBalance(account) {
   return Number(await client.readContract({ address: USDC, abi: erc20Abi, functionName: "balanceOf", args: [account] })) / 1e6;
 }
@@ -41,7 +47,7 @@ async function approveIfNeeded(account, amount, onStep) {
   const allowance = await client.readContract({ address: USDC, abi: erc20Abi, functionName: "allowance", args: [account, VAULT] });
   if (allowance >= amount) return null;
   onStep?.("Approve USDC");
-  const hash = await wallet(account).writeContract({ address: USDC, abi: erc20Abi, functionName: "approve", args: [VAULT, amount] });
+  const hash = await (await writer(account)).writeContract({ address: USDC, abi: erc20Abi, functionName: "approve", args: [VAULT, amount] });
   await client.waitForTransactionReceipt({ hash });
   return hash;
 }
@@ -54,7 +60,7 @@ export async function buyCover(account, { quote, signature }, onStep) {
   };
   await approveIfNeeded(account, q.premium, onStep);
   onStep?.("Lock the promise");
-  const hash = await wallet(account).writeContract({ address: VAULT, abi: vaultAbi, functionName: "buyCover", args: [q, signature] });
+  const hash = await (await writer(account)).writeContract({ address: VAULT, abi: vaultAbi, functionName: "buyCover", args: [q, signature] });
   const receipt = await client.waitForTransactionReceipt({ hash });
   if (receipt.status !== "success") throw new Error("Transaction reverted");
   const count = await client.readContract({ address: VAULT, abi: vaultAbi, functionName: "policyCount" });
@@ -65,7 +71,7 @@ export async function deposit(account, amountUsdc, onStep) {
   const amount = parseUnits(String(amountUsdc), 6);
   await approveIfNeeded(account, amount, onStep);
   onStep?.("Deposit");
-  const hash = await wallet(account).writeContract({ address: VAULT, abi: vaultAbi, functionName: "deposit", args: [amount, account] });
+  const hash = await (await writer(account)).writeContract({ address: VAULT, abi: vaultAbi, functionName: "deposit", args: [amount, account] });
   await client.waitForTransactionReceipt({ hash });
   return hash;
 }
@@ -74,13 +80,13 @@ export async function withdrawMax(account, onStep) {
   const max = await client.readContract({ address: VAULT, abi: vaultAbi, functionName: "maxWithdraw", args: [account] });
   if (max === 0n) throw new Error("Nothing withdrawable right now (capital backs open promises, or hedge proceeds are in transit)");
   onStep?.("Withdraw");
-  const hash = await wallet(account).writeContract({ address: VAULT, abi: vaultAbi, functionName: "withdraw", args: [max, account, account] });
+  const hash = await (await writer(account)).writeContract({ address: VAULT, abi: vaultAbi, functionName: "withdraw", args: [max, account, account] });
   await client.waitForTransactionReceipt({ hash });
   return hash;
 }
 
 export async function claim(account, policyId) {
-  const hash = await wallet(account).writeContract({ address: VAULT, abi: vaultAbi, functionName: "claim", args: [BigInt(policyId)] });
+  const hash = await (await writer(account)).writeContract({ address: VAULT, abi: vaultAbi, functionName: "claim", args: [BigInt(policyId)] });
   await client.waitForTransactionReceipt({ hash });
   return hash;
 }

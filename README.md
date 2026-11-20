@@ -110,16 +110,18 @@ Only markets whose outcomes are **mutually exclusive**, because netting depends 
 A settler's vote carries `keccak256` of Gemini's response bytes, which proves which bytes were voted on but not that Gemini sent them. Arra adds a zkTLS proof from [Reclaim Protocol](https://reclaimprotocol.org) zkFetch:
 
 1. After a market settles, `offchain/src/zkproof.js` fetches `https://api.gemini.com/v1/prediction-markets/events/<ticker>` through a Reclaim attestor, with the response match `"instrumentSymbol":"<winner>"[^{}]*?"resolutionSide":"yes"`.
-2. `ArraResultProofs.prove` checks onchain that the claim's URL is Gemini's endpoint for exactly that ticker, that the match pins that winning contract followed by `resolutionSide: yes` inside one contract object, recomputes the claim identifier, and recovers a trusted Reclaim attestor's signature.
-3. The proof page shows the check; `proofOf(eventId)` is readable by anyone.
+2. `ArraResultProofs.prove` checks onchain that the claim's parameters contain Gemini's endpoint for that ticker and the winner pattern, recomputes the claim identifier, and recovers a trusted Reclaim attestor's signature. `proofOf(eventId)` is readable by anyone.
+3. The proof page reads the claim back from its `prove` transaction and checks it exactly: the request URL, one unmodified winner pattern, no inverted match, no redaction, and the same winner the vault settled on. It shows the result as proven only if all of that holds.
 
 Live on Arc: a real proof of a settled Gemini market was recorded in tx [`0xbf4e8f…2390`](https://explorer.testnet.arc.io/tx/0xbf4e8fe88b396253d8d0fa21bcd4bb3264f1ab6824d7d96b85026a79e7262390), and the same proof is a fixture in `test/ArraResultProofs.real.t.sol`. The keeper proves each result it settles when `RECLAIM_ORG_TOKEN` is set; by hand: `node scripts/prove-result.js <ticker> && node scripts/record-proof.js evidence/zk/<ticker>.json`.
 
-Today the proof sits beside the settler quorum and does not replace it. Next step: let the vault accept a valid proof in place of a settler vote.
+Known limit of the deployed contract: it matches substrings, so it also accepts a signed claim that proves nothing about the winner, such as a regex with an extra `|` branch, an inverted match, or Gemini's URL placed in a request header while the request went elsewhere. Anyone with a Reclaim app can get such a claim signed, and the first proof recorded for an event can't be replaced. The fix is to check the parameters exactly onchain and to let the owner clear a bad record, which needs a redeploy ([REVIEW.md](docs/REVIEW.md#z-1-arraresultproofs-accepts-claims-that-dont-prove-the-winner)). Until then, rely on the proof page's check, not on `proofOf` alone.
+
+The proof sits beside the settler quorum and does not replace it. Once the contract checks parameters exactly, the next step is to let the vault accept a valid proof in place of a settler vote.
 
 ### Risk assumptions
 
-- **Oracle trust.** Results need a settler quorum and carry a hash of the raw Gemini response; the guardian can veto during the dispute window. Quotes are signed by one operator key (pricing only, not settlement). A zkTLS proof (Reclaim) that the payload came from api.gemini.com is checked onchain by `ArraResultProofs`.
+- **Oracle trust.** Results need a settler quorum and carry a hash of the raw Gemini response; the guardian can veto during the dispute window. Quotes are signed by one operator key (pricing only, not settlement). A zkTLS proof (Reclaim) that the payload came from api.gemini.com is recorded onchain by `ArraResultProofs` and checked exactly by the proof page (see the known limit above).
 - **Hedge reconciliation.** Winning hedges pay out at Gemini (offchain USD). The vault pays the merchant from onchain USDC first and records a `hedgeReceivable`; production sweeps proceeds back to Arc USDC via Circle Mint / CCTP (`returnHedgeProceeds`) before LP withdrawals unlock.
 - **Settlement source.** Arra inherits Gemini's CFTC-regulated settlement, not token voting.
 - **Regulation.** Testnet prototype, no real-money cover. Production would distribute through a licensed insurer or MGA, with Gemini as the regulated hedge venue.
@@ -169,7 +171,7 @@ docs/DEMO.md                        live demo script, what's real vs testnet, pr
 
 ```bash
 git clone --recurse-submodules https://github.com/Qiao527/arra-protocol && cd arra-protocol
-forge test                                         # 67 contract tests (incl. 8 invariants and a real zkTLS proof)
+forge test                                         # 59 tests + 8 fuzz invariants, incl. a real zkTLS proof (forge prints 60: the invariant suite counts once)
 (cd offchain && npm ci && npm test)                # 92 offchain tests on real Gemini captures
 ./script/e2e-anvil.sh                              # full local flow, no keys needed
 ./script/e2e-live-gemini.sh                        # same, on live Gemini markets (needs network)
@@ -266,8 +268,10 @@ Live at **https://arra-pricer.onrender.com** (Render free plan: the first reques
 ```
 forge test
   ArraVault.t.sol             48 passed  (quotes, netting, 128-team championships, O(1) gas, caps, solvency, quorum, fast path, veto, void, settler changes, NAV during disputes, inflation attack, LP locks, fuzz)
-  ArraVault.invariant.t.sol    8 passed  (256 runs × 32 calls incl. propose / veto / void: full collateral, cap at sale, locked == worst case incl. void, proposedLoss == rescan, LP locks, hedge bounds)
-npm test (offchain)            59 passed (real Gemini captures: REST events, stale in-game markets, WebSocket depth, sandbox orders; settler, hedger webhook, verifier, API)
+  ArraVault.invariant.t.sol    8 invariants + 1 handler test passed  (256 runs × 32 calls incl. propose / veto / void: full collateral, cap at sale, locked == worst case incl. void, proposedLoss == rescan, LP locks, hedge bounds)
+  ArraResultProofs.t.sol       8 passed  (attestor, URL, winner, tampering, quote smuggling, one proof per event, owner)
+  ArraResultProofs.real.t.sol  2 passed  (a real Reclaim proof of api.gemini.com, verified as on Arc)
+npm test (offchain)            92 passed (real Gemini captures: REST events, stale in-game markets, WebSocket depth, sandbox orders; settler, hedger webhook, verifier, API)
 ./script/e2e-anvil.sh          E2E OK    (single game via 2-of-3 + dispute window; 4-city championship via 3-of-3 instant; verifier PASS)
 ./script/e2e-live-gemini.sh    E2E LIVE OK (real moneyline + championship off live depth; settles a team past index 16; verifier PASS)
 ```

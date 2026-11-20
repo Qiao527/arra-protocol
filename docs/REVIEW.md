@@ -35,6 +35,7 @@ $ forge coverage             src/ArraVault.sol lines 87.1% -> 89.8%, branches 63
 | H-1 | High | LPs exit at the pre-loss price during the dispute window | Fixed |
 | H-2 | High | Settler can't settle a championship won by any team past the 16th | Fixed |
 | H-3 | High | In-game cover sold on finished games, priced off display prices | Fixed |
+| Z-1 | Medium | `ArraResultProofs` accepts claims that don't prove the winner | Not fixed onchain (needs redeploy); proof page checks claims exactly |
 | M-1 | Medium | One short hedge sweep freezes every LP until someone pays the gap | Fixed |
 | M-2 | Medium | Hedger records the requested quantity, not the fill | Fixed |
 | M-3 | Medium | Hedger webhook: optional auth, no dedupe, concurrent duplicate orders | Fixed |
@@ -247,6 +248,21 @@ Deploying the pricer and running the system unattended turned up five more probl
 - **Evidence writes raced.** Two syncs committed to the same branch at once and GitHub answered 409. Writes are now serialized and single-flight, 409s are retried, and identical bytes aren't re-committed (`test/keeper.test.js`).
 
 A real settlement is pending: policy #8, $5 on Indianapolis in `NFL-2611200115-IND-HOU-M`, bought through the live pricer before kickoff. The keeper settles it from Gemini's result once Gemini settles the market.
+
+## Z-1 ArraResultProofs accepts claims that don't prove the winner
+
+`src/ArraResultProofs.sol:78-83`. Found in the final pre-submission pass, after the contract was deployed at `0x0F59f81392bB71AB05A7cA7052CB4D6149Db8d2D`.
+
+`prove` checks that two strings occur somewhere in the claim's `parameters`: `"url":"<Gemini event URL><ticker>"` and the escaped winner regex. It doesn't check where they occur. A Reclaim attestor signs whatever request the requester asked it to make, so a requester can get these claims signed and the contract records them:
+
+1. A regex with an extra branch, `<winner pattern>|"ticker"`. The real Gemini response always contains `"ticker"`, so the match succeeds for a team that lost.
+2. An inverted match, `{"invert":true, ...}`, which proves the pattern is absent. Reclaim's provider schema has `invert` (`attestor-core/lib/types/providers.gen.d.ts`).
+3. The request sent to another host, with Gemini's URL in a request header named `url`. The canonical parameters then contain `"headers":{"url":"https://api.gemini.com/..."}`.
+4. A non-empty `responseRedactions`. Matching runs on the redacted response, which can splice parts of different contracts together.
+
+`prove` is permissionless and the first proof per event is final (`AlreadyProven`) with no owner override, so a false proof also blocks the true one for good. PoC: local forge tests with a test attestor key; cases 1 and 3 are recorded, and the true winner's proof then reverts with `AlreadyProven`. No real Reclaim proof was spent on the PoC.
+
+Impact today: the contract moves no money and the vault doesn't read it. The risk is the proof page showing a false "proven" badge, and colluding settlers backing a wrong vote with a matching "proof". Mitigation shipped: the proof page reads the claim from its `prove` transaction, parses `parameters`, and requires the exact URL, exactly one `{type, value}` regex equal to the winner pattern, no redactions, and a winner equal to the vault's settled outcome (`frontend/src/lib/zkcheck.js`, tests in `zkcheck.test.js` including the real recorded proof). Fix for the next deploy: compare `parameters` byte for byte with the expected canonical string (or parse it), and let the owner clear a bad record.
 
 ## Deployments
 

@@ -19,9 +19,9 @@ Say this up front. Judges trust a demo more when you tell them where the edges a
 | Money | **Testnet.** Arc testnet USDC. No real money moves. |
 | Contract | **Deployed and verified** on Arc testnet. Reviewed: see [REVIEW.md](REVIEW.md) and [SECURITY.md](SECURITY.md). |
 | Hedge | **A real order on Gemini's sandbox.** Order `145853902323013843`, 5/5 filled and recorded onchain with that id. The sandbox has no sports markets, so the order went to a sandbox stand-in contract. |
-| Settlement | **Automatic from Gemini's result.** The keeper votes when Gemini settles a market. The two settlements so far used synthetic results (labelled in their evidence) because the games hadn't been played. A real one is pending: $5 on Indianapolis, Nov 19, policy #8. |
+| Settlement | **Automatic from Gemini's result.** Two real settlements so far, on Nov 19: Houston over Indianapolis (promise #8) and Stanford over Sacramento State (promise #9), each voted within three minutes of Gemini settling the market. Earlier test settlements used synthetic results, labelled in their evidence. |
 | Settlers | **Demo setup.** Three settler keys in one keeper. In production they'd be three independent operators. |
-| Evidence | **Real.** The hash of Gemini's exact response bytes goes onchain, and the bytes are stored and served publicly. Anyone can re-check them. |
+| Evidence | **Real, with one gap.** The hash of Gemini's exact response bytes goes onchain, and the bytes are stored and served publicly so anyone can re-check them. For the two real settlements the bytes were lost to a keeper restart, so those can be checked against Gemini's live result but not against the attested bytes (see REVIEW.md). |
 
 ## Script (about 2½ minutes)
 
@@ -52,4 +52,4 @@ cd offchain && node scripts/verify-settlement.js NHL-2611200000-PHI-OTT-M --offl
 - **If MetaMask asks to switch or add Arc Testnet**, approve it. The site switches networks before every write. If anything still complains about the chain, switch MetaMask to **Arc Testnet** by hand and click Seal again.
 - **Vault room:** each game can take a $5 promise while the vault holds about $50 or more (10% per-game cap). Several different games at once are fine. If a quote says "Vault capacity reached", pick another game, or have an LP deposit faucet USDC.
 - **Pick a game that hasn't started**, or a championship. In-game cover closes well before a game could end.
-- **If tonight's real settlement lands**, show it: `node scripts/verify-settlement.js NFL-2611200115-IND-HOU-M` without `--offline`, passing the live Gemini check too.
+- **Real settlements:** open the proof page for promise #8 or #9, or run `node scripts/verify-settlement.js NCAAM-2611200300-SAC-STAN-M` without `--offline`. The winner matches Gemini's live result. Its evidence-hash check fails because those bytes were lost to a keeper restart; say so before you run it, and use PHI-OTT to show the full byte check.

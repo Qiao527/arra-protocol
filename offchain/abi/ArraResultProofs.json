@@ -44,6 +44,43 @@
  },
  {
   "type": "function",
+  "name": "clear",
+  "inputs": [
+   {
+    "name": "eventId",
+    "type": "bytes32",
+    "internalType": "bytes32"
+   }
+  ],
+  "outputs": [],
+  "stateMutability": "nonpayable"
+ },
+ {
+  "type": "function",
+  "name": "expectedParameters",
+  "inputs": [
+   {
+    "name": "eventTicker",
+    "type": "string",
+    "internalType": "string"
+   },
+   {
+    "name": "winningSymbol",
+    "type": "string",
+    "internalType": "string"
+   }
+  ],
+  "outputs": [
+   {
+    "name": "",
+    "type": "bytes",
+    "internalType": "bytes"
+   }
+  ],
+  "stateMutability": "pure"
+ },
+ {
+  "type": "function",
   "name": "owner",
   "inputs": [],
   "outputs": [
@@ -233,6 +270,19 @@
  },
  {
   "type": "event",
+  "name": "ProofCleared",
+  "inputs": [
+   {
+    "name": "eventId",
+    "type": "bytes32",
+    "indexed": true,
+    "internalType": "bytes32"
+   }
+  ],
+  "anonymous": false
+ },
+ {
+  "type": "event",
   "name": "ResultProven",
   "inputs": [
    {
@@ -367,12 +417,7 @@
  },
  {
   "type": "error",
-  "name": "WrongMatch",
-  "inputs": []
- },
- {
-  "type": "error",
-  "name": "WrongUrl",
+  "name": "WrongParameters",
   "inputs": []
  }
 ]

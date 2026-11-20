@@ -197,10 +197,15 @@ export async function settleOnce({ onAction = () => {} } = {}) {
         // non-fatal: the vote above already settled the event.
         const symbol = outcome !== VOID_OUTCOME ? info.outcomes?.[outcome] : null;
         if (symbol && zkEnabled()) {
-          proveResult(info.eventTicker, symbol)
-            .then(({ doc }) => recordProof(doc))
-            .then((tx) => onAction(`${info.eventTicker}: zkTLS proof recorded onchain ${tx}`))
-            .catch((e) => onAction(`${info.eventTicker}: zkTLS proof skipped (${e.message.split("\n")[0]})`));
+          // Awaited (not fire-and-forget) so its transaction never races the payouts from the same
+          // operator account for a nonce; bounded so a slow attestor can't stall the loop.
+          const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error("timed out after 120 s")), 120_000));
+          try {
+            const tx = await Promise.race([proveResult(info.eventTicker, symbol).then(({ doc }) => recordProof(doc)), timeout]);
+            onAction(`${info.eventTicker}: zkTLS proof recorded onchain ${tx}`);
+          } catch (e) {
+            onAction(`${info.eventTicker}: zkTLS proof skipped (${e.message.split("\n")[0]})`);
+          }
         }
       }
     } catch (err) {

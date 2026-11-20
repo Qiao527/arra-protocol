@@ -10,9 +10,9 @@ import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 /// @notice Onchain check of a zkTLS (Reclaim zkFetch) proof that api.gemini.com reported a
 ///         contract as resolved YES. The settlers' vote carries a hash of Gemini's bytes; this
 ///         contract adds a proof that those bytes came from Gemini's server, checked by the chain:
-///         - the claim's request URL is Gemini's public event endpoint for exactly this ticker,
-///         - the claim's response match pins `instrumentSymbol` = the winning contract followed
-///           by `"resolutionSide":"yes"` in the same contract object,
+///         - the claim's request parameters equal, byte for byte, a GET of Gemini's public event
+///           endpoint for exactly this ticker with one regex pinning `instrumentSymbol` = the
+///           winning contract followed by `"resolutionSide":"yes"` in the same contract object,
 ///         - the claim identifier is recomputed from those strings,
 ///         - and the claim is signed by an attestor the owner trusts.
 ///         It does not move money. The vault and the proof page read `proofOf(eventId)`.
@@ -34,6 +34,7 @@ contract ArraResultProofs is Ownable {
     mapping(bytes32 => Proven) public proofOf;
 
     event AttestorSet(address indexed attestor, bool trusted);
+    event ProofCleared(bytes32 indexed eventId);
     event ResultProven(
         bytes32 indexed eventId,
         string eventTicker,
@@ -44,8 +45,7 @@ contract ArraResultProofs is Ownable {
     );
 
     error NotHttpProvider();
-    error WrongUrl();
-    error WrongMatch();
+    error WrongParameters();
     error UntrustedAttestor(address signer);
     error AlreadyProven();
     error BadTicker();
@@ -66,6 +66,31 @@ contract ArraResultProofs is Ownable {
         emit AttestorSet(a, trusted);
     }
 
+    /// @notice Remove a record (guardian), e.g. if an attestor is later found compromised.
+    function clear(bytes32 eventId) external onlyOwner {
+        delete proofOf[eventId];
+        emit ProofCleared(eventId);
+    }
+
+    /// @notice The exact `parameters` JSON of the zkFetch request that proves `winningSymbol`
+    ///         resolved YES in `eventTicker`. The regex sits inside a JSON string, so its quotes
+    ///         are escaped.
+    function expectedParameters(string calldata eventTicker, string calldata winningSymbol)
+        public
+        pure
+        returns (bytes memory)
+    {
+        return abi.encodePacked(
+            '{"body":"","headers":{"User-Agent":"reclaim/0.0.1","accept":"application/json"},"method":"GET",',
+            '"responseMatches":[{"type":"regex","value":"\\"instrumentSymbol\\":\\"',
+            winningSymbol,
+            '\\"[^{}]*?\\"resolutionSide\\":\\"yes\\""}],"responseRedactions":[],"url":"',
+            GEMINI_EVENT_URL,
+            eventTicker,
+            '"}'
+        );
+    }
+
     /// @notice Record a proof that `winningSymbol` resolved YES in Gemini event `eventTicker`.
     function prove(string calldata eventTicker, string calldata winningSymbol, Claim calldata c, bytes calldata signature)
         external
@@ -74,13 +99,11 @@ contract ArraResultProofs is Ownable {
         if (!_safeToken(bytes(eventTicker)) || !_safeToken(bytes(winningSymbol))) revert BadTicker();
         if (keccak256(bytes(c.provider)) != keccak256("http")) revert NotHttpProvider();
 
-        // the request went to Gemini's event endpoint for exactly this ticker (closing quote included)
-        if (!_contains(bytes(c.parameters), abi.encodePacked('"url":"', GEMINI_EVENT_URL, eventTicker, '"'))) revert WrongUrl();
-        // and the response matched this contract followed by resolutionSide yes inside one object.
-        // In the parameters JSON the regex is a JSON string, so its quotes are escaped.
-        bytes memory needle =
-            abi.encodePacked('\\"instrumentSymbol\\":\\"', winningSymbol, '\\"[^{}]*?\\"resolutionSide\\":\\"yes\\"');
-        if (!_contains(bytes(c.parameters), needle)) revert WrongMatch();
+        // Exact match, not substrings: the claim's parameters must be byte-for-byte the request
+        // Arra's prover makes (GET Gemini's event endpoint for this ticker, fixed headers, one regex
+        // pinning this contract to "resolutionSide":"yes", no redactions). Any extra regex branch,
+        // invert flag, other host, extra header or redaction changes the bytes and fails.
+        if (keccak256(bytes(c.parameters)) != keccak256(expectedParameters(eventTicker, winningSymbol))) revert WrongParameters();
 
         bytes32 identifier = keccak256(abi.encodePacked(c.provider, "\n", c.parameters, "\n", c.context));
         string memory serialised = string.concat(
@@ -110,17 +133,5 @@ contract ArraResultProofs is Ownable {
             if (!ok) return false;
         }
         return true;
-    }
-
-    function _contains(bytes memory hay, bytes memory needle) private pure returns (bool) {
-        if (needle.length > hay.length) return false;
-        uint256 end = hay.length - needle.length;
-        for (uint256 i; i <= end; i++) {
-            if (hay[i] != needle[0]) continue;
-            uint256 j = 1;
-            while (j < needle.length && hay[i + j] == needle[j]) j++;
-            if (j == needle.length) return true;
-        }
-        return false;
     }
 }

@@ -22,11 +22,30 @@ contract ArraResultProofsTest is Test {
         proofs.setAttestor(attestor, true);
     }
 
+    string constant URL = "https://api.gemini.com/v1/prediction-markets/events/";
+
+    /// The parameters Arra's prover sends (same bytes as a real zkFetch claim, see the real-proof test).
     function _params(string memory ticker, string memory symbol) internal pure returns (string memory) {
+        return _paramsWith(ticker, symbol, '""', "", '"responseRedactions":[]', URL);
+    }
+
+    /// Build variants: `regexTail` is appended inside the regex, `matchExtra` inside the match object.
+    function _paramsWith(string memory ticker, string memory symbol, string memory regexTail, string memory matchExtra, string memory redactions, string memory url)
+        internal
+        pure
+        returns (string memory)
+    {
         return string.concat(
-            '{"body":"","method":"GET","responseMatches":[{"type":"regex","value":"\\"instrumentSymbol\\":\\"',
+            '{"body":"","headers":{"User-Agent":"reclaim/0.0.1","accept":"application/json"},"method":"GET",',
+            '"responseMatches":[{"type":"regex","value":"\\"instrumentSymbol\\":\\"',
             symbol,
-            '\\"[^{}]*?\\"resolutionSide\\":\\"yes\\""}],"responseRedactions":[],"url":"https://api.gemini.com/v1/prediction-markets/events/',
+            '\\"[^{}]*?\\"resolutionSide\\":\\"yes\\',
+            regexTail,
+            matchExtra,
+            '}],',
+            redactions,
+            ',"url":"',
+            url,
             ticker,
             '"}'
         );
@@ -52,6 +71,10 @@ contract ArraResultProofsTest is Test {
         return abi.encodePacked(r, sg, v);
     }
 
+    function test_syntheticParamsMatchContract() public view {
+        assertEq(keccak256(bytes(_params(TICKER, WIN))), keccak256(proofs.expectedParameters(TICKER, WIN)));
+    }
+
     function test_provesResult() public {
         ArraResultProofs.Claim memory c = _claim(_params(TICKER, WIN));
         bytes32 eventId = proofs.prove(TICKER, WIN, c, _sign(attestorKey, c));
@@ -74,14 +97,14 @@ contract ArraResultProofsTest is Test {
         // a real proof for another game can't settle this one
         ArraResultProofs.Claim memory c = _claim(_params("NFL-2611200115-IND-HOU-2HM", WIN));
         bytes memory sig = _sign(attestorKey, c);
-        vm.expectRevert(ArraResultProofs.WrongUrl.selector);
+        vm.expectRevert(ArraResultProofs.WrongParameters.selector);
         proofs.prove(TICKER, WIN, c, sig);
     }
 
     function test_rejectsOtherWinner() public {
         ArraResultProofs.Claim memory c = _claim(_params(TICKER, WIN));
         bytes memory sig = _sign(attestorKey, c);
-        vm.expectRevert(ArraResultProofs.WrongMatch.selector);
+        vm.expectRevert(ArraResultProofs.WrongParameters.selector);
         proofs.prove(TICKER, "GEMI-NFL-2611200115-IND-HOU-M-IND", c, sig);
     }
 
@@ -106,6 +129,48 @@ contract ArraResultProofsTest is Test {
         proofs.prove(TICKER, WIN, c, sig);
         vm.expectRevert(ArraResultProofs.AlreadyProven.selector);
         proofs.prove(TICKER, WIN, c, sig);
+    }
+
+    // Z-1 (review): each of these is signed by a trusted attestor yet proves nothing about the winner.
+    function _expectForgeryRejected(string memory params) internal {
+        ArraResultProofs.Claim memory c = _claim(params);
+        bytes memory sig = _sign(attestorKey, c);
+        vm.expectRevert(ArraResultProofs.WrongParameters.selector);
+        proofs.prove(TICKER, WIN, c, sig);
+    }
+
+    function test_rejectsRegexWithExtraBranch() public {
+        _expectForgeryRejected(_paramsWith(TICKER, WIN, '|\\"ticker\\"\"', "", '"responseRedactions":[]', URL));
+    }
+
+    function test_rejectsInvertedMatch() public {
+        _expectForgeryRejected(_paramsWith(TICKER, WIN, '""', ',"invert":true', '"responseRedactions":[]', URL));
+    }
+
+    function test_rejectsRedactions() public {
+        _expectForgeryRejected(_paramsWith(TICKER, WIN, '""', "", '"responseRedactions":[{"regex":".*"}]', URL));
+    }
+
+    function test_rejectsOtherHostWithGeminiUrlInHeader() public {
+        string memory p = string.concat(
+            '{"body":"","headers":{"url":"https://api.gemini.com/v1/prediction-markets/events/', TICKER,
+            '"},"method":"GET","responseMatches":[{"type":"regex","value":"\\"instrumentSymbol\\":\\"', WIN,
+            '\\"[^{}]*?\\"resolutionSide\\":\\"yes\\""}],"responseRedactions":[],"url":"https://evil.example/x"}'
+        );
+        _expectForgeryRejected(p);
+    }
+
+    function test_guardianCanClear() public {
+        ArraResultProofs.Claim memory c = _claim(_params(TICKER, WIN));
+        bytes memory sig = _sign(attestorKey, c);
+        bytes32 eventId = proofs.prove(TICKER, WIN, c, sig);
+        proofs.clear(eventId);
+        (bytes32 id,,,) = proofs.proofOf(eventId);
+        assertEq(id, bytes32(0));
+        proofs.prove(TICKER, WIN, c, sig); // can be recorded again
+        vm.prank(address(0xCAFE));
+        vm.expectRevert();
+        proofs.clear(eventId);
     }
 
     function test_onlyOwnerSetsAttestors() public {

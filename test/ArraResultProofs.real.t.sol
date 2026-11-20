@@ -36,9 +36,13 @@ contract ArraResultProofsRealTest is Test {
         assertEq(id, 0x7462f07a0a3076d11c6edc01a981393f6c80ec1c65172879dbfb91928dd4c957);
     }
 
+    function test_expectedParametersEqualRealClaimBytes() public view {
+        assertEq(keccak256(proofs.expectedParameters("XRP2611200200", "GEMI-XRP2611200200-HI0D88")), keccak256(bytes(_claim().parameters)));
+    }
+
     function test_realProofCannotClaimAnotherWinner() public {
         proofs.setAttestor(RECLAIM_ATTESTOR, true);
-        vm.expectRevert(ArraResultProofs.WrongMatch.selector);
+        vm.expectRevert(ArraResultProofs.WrongParameters.selector);
         proofs.prove("XRP2611200200", "GEMI-XRP2611200200-HI0D96", _claim(), SIG);
     }
 }

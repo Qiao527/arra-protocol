@@ -8,7 +8,7 @@ import { arcTestnet } from "viem/chains";
 import abi from "../abi/ArraResultProofs.json" with { type: "json" };
 
 /** ArraResultProofs on Arc testnet (also in deployments/arc-testnet.json). */
-export const RESULT_PROOFS = "0x0F59f81392bB71AB05A7cA7052CB4D6149Db8d2D";
+export const RESULT_PROOFS = "0xFBddD7f4c2319bFecBE126bf9b48e0186d82FB72";
 
 export const eventUrl = (t) => `https://api.gemini.com/v1/prediction-markets/events/${t}`;
 /** The regex ArraResultProofs pins: this contract, then resolutionSide yes, within one object. */

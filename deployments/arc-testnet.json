@@ -103,7 +103,8 @@
     "insuredUsdc": 20,
     "lockedUsdc": 5
   },
-  "resultProofs": "0x0F59f81392bB71AB05A7cA7052CB4D6149Db8d2D",
-  "resultProofsDeployTx": "0x97d84a21fb835107d73d99e0f81253585ce60ccf113eabdd4fb43a9b65c96f7a",
-  "reclaimAttestor": "0x244897572368Eadf65bfBc5aec98D8e5443a9072"
+  "resultProofs": "0xFBddD7f4c2319bFecBE126bf9b48e0186d82FB72",
+  "resultProofsDeployTx": "0xec0a74a9ba9c9a0e8429c9eb793ed78fdb97326aa51b61bd86f65df63ece3dcf",
+  "reclaimAttestor": "0x244897572368Eadf65bfBc5aec98D8e5443a9072",
+  "resultProofsV1Retired": "0x0F59f81392bB71AB05A7cA7052CB4D6149Db8d2D"
 }

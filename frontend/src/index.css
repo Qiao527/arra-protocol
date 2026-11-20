@@ -786,3 +786,5 @@ main { animation: routeIn .8s var(--ease); } /* no fill: a lingering transform w
   .gbar { grid-template-columns: 96px minmax(0, 1fr) 60px; gap: 10px; }
   .gcard { padding: 20px; }
 }
+
+@media (max-width: 560px) { .tbl-card { padding: 4px 12px; } .tbl-card .tbl .mono-s { white-space: normal; word-break: break-all; } .tbl-card .tbl th, .tbl-card .tbl td { padding-left: 6px; padding-right: 6px; } }

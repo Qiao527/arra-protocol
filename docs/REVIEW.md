@@ -35,7 +35,7 @@ $ forge coverage             src/ArraVault.sol lines 87.1% -> 89.8%, branches 63
 | H-1 | High | LPs exit at the pre-loss price during the dispute window | Fixed |
 | H-2 | High | Settler can't settle a championship won by any team past the 16th | Fixed |
 | H-3 | High | In-game cover sold on finished games, priced off display prices | Fixed |
-| Z-1 | Medium | `ArraResultProofs` accepts claims that don't prove the winner | Not fixed onchain (needs redeploy); proof page checks claims exactly |
+| Z-1 | Medium | `ArraResultProofs` accepts claims that don't prove the winner | Fixed: redeployed at `0xFBdd…FB72` with an exact parameter check and an owner `clear`; proof page also checks |
 | M-1 | Medium | One short hedge sweep freezes every LP until someone pays the gap | Fixed |
 | M-2 | Medium | Hedger records the requested quantity, not the fill | Fixed |
 | M-3 | Medium | Hedger webhook: optional auth, no dedupe, concurrent duplicate orders | Fixed |
@@ -262,7 +262,7 @@ A real settlement is pending: policy #8, $5 on Indianapolis in `NFL-2611200115-I
 
 `prove` is permissionless and the first proof per event is final (`AlreadyProven`) with no owner override, so a false proof also blocks the true one for good. PoC: local forge tests with a test attestor key; cases 1 and 3 are recorded, and the true winner's proof then reverts with `AlreadyProven`. No real Reclaim proof was spent on the PoC.
 
-Impact today: the contract moves no money and the vault doesn't read it. The risk is the proof page showing a false "proven" badge, and colluding settlers backing a wrong vote with a matching "proof". Mitigation shipped: the proof page reads the claim from its `prove` transaction, parses `parameters`, and requires the exact URL, exactly one `{type, value}` regex equal to the winner pattern, no redactions, and a winner equal to the vault's settled outcome (`frontend/src/lib/zkcheck.js`, tests in `zkcheck.test.js` including the real recorded proof). Fix for the next deploy: compare `parameters` byte for byte with the expected canonical string (or parse it), and let the owner clear a bad record.
+Impact today: the contract moves no money and the vault doesn't read it. The risk is the proof page showing a false "proven" badge, and colluding settlers backing a wrong vote with a matching "proof". Mitigation shipped: the proof page reads the claim from its `prove` transaction, parses `parameters`, and requires the exact URL, exactly one `{type, value}` regex equal to the winner pattern, no redactions, and a winner equal to the vault's settled outcome (`frontend/src/lib/zkcheck.js`, tests in `zkcheck.test.js` including the real recorded proof). **Fixed the same night.** `ArraResultProofs` was redeployed at `0xFBddD7f4c2319bFecBE126bf9b48e0186d82FB72`. `prove` now rebuilds the exact `parameters` bytes for the ticker and winner (`expectedParameters`) and compares hashes, so all four forgeries revert (`test_rejectsRegexWithExtraBranch`, `test_rejectsInvertedMatch`, `test_rejectsRedactions`, `test_rejectsOtherHostWithGeminiUrlInHeader`). `test_expectedParametersEqualRealClaimBytes` pins the rebuilt string to a real Reclaim claim. The owner can `clear` a bad record. The real proof was recorded again on the new contract (tx `0x50d5c7ef501b77c0f25debdb827f26d6b704141d30315971cf52205c6bdcc544`). The old contract (`0x0F59f81392bB71AB05A7cA7052CB4D6149Db8d2D`) is retired.
 
 ## Deployments
 

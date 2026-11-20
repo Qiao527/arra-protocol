@@ -44,7 +44,7 @@ export default function DeskPage({ account, onConnect }) {
         .map((e) => ({ ...e, policies: pols.filter((p) => p.eventId === e.eventId) }))
         .sort((a, b) => (a.state === 3) - (b.state === 3) || b.policies.at(-1).id - a.policies.at(-1).id)
     );
-    vaultLogs("HedgeRecorded").then((h) => setHedges(h.sort((a, b) => b.time - a.time)));
+    vaultLogs("HedgeRecorded").then((h) => setHedges(h.filter((x) => !/^demo/i.test(String(x.geminiOrderId))).sort((a, b) => b.time - a.time))); // the local dry-run row is not a Gemini order
   }
   useEffect(() => {
     load();

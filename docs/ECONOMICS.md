@@ -43,7 +43,7 @@ Benchmark: Mattress Mack paid 10–20% of the refund amount for traditional prom
 
 ### The favorite–longshot bias works in LPs' favor
 
-Prediction-market prices for long shots tend to run *above* their true win rates. A 2026 study of Kalshi finds low-price contracts win less often than they need to break even after fees (Bürgi & Deng, 2026; see also Wolfers & Zitzewitz, 2004). Two consequences:
+Prices for long shots tend to run *above* their true win rates: long shots are overbet and favourites underbet. This is a long-standing, peer-reviewed regularity in betting markets (Snowberg & Wolfers, 2010, *Journal of Political Economy*; Wolfers & Zitzewitz, 2004). A 2026 working paper finds the same pattern on Kalshi, where low-price contracts win less often than they need to break even after fees (Bürgi & Deng, 2026; not yet peer reviewed). Two consequences:
 
 1. Pricing off the market is **conservative for LPs**: on average, the vault charges more than the true probability.
 2. With enough independent events in the book, the vault can **under-hedge long shots** and keep part of that edge, passing savings to merchants. The MVP hedges only above `HEDGE_THRESHOLD_USDC`; a production version would size hedges to a solvency target instead.
@@ -97,8 +97,9 @@ The MVP is a testnet prototype. A production version would distribute cover thro
 
 Verified (opened or confirmed):
 
+- Snowberg, E., & Wolfers, J. (2010). Explaining the favorite–long shot bias: is it risk-love or misperceptions? *Journal of Political Economy*, 118(4), 723–746. https://doi.org/10.1086/655844
 - Wolfers, J., & Zitzewitz, E. (2004). Prediction Markets. *Journal of Economic Perspectives*, 18(2), 107–126. https://doi.org/10.1257/0895330041371321
-- Bürgi, C., & Deng, W. (2026). Kalshi prices and the favorite–longshot bias. GWU Research Program on Forecasting working paper 2026-001. https://www2.gwu.edu/~forcpgm/2026-001.pdf
+- Bürgi, C., & Deng, W. (2026). Kalshi prices and the favorite–longshot bias. GWU Research Program on Forecasting working paper 2026-001 (working paper, not peer reviewed). https://www2.gwu.edu/~forcpgm/2026-001.pdf
 - Goffard, P.-O., & Loisel, S. (2025). Collaborative and parametric insurance on the Ethereum blockchain. *ASTIN Bulletin* (online Nov 2025); arXiv:2412.05321. A pool of "surplus providers" underwrites parametric policies in a Solidity contract, with solvency-capital calculations; the same three roles as our vault.
 - CFTC (2026, Nov 13). CFTC Sues Louisiana After State Court Blocks CFTC-Regulated Exchanges. Release 9326-26. https://www.cftc.gov/PressRoom/PressReleases/9326-26
 - Greenberg Traurig (2026, June). CFTC Proposes New Rules for Events Contracts on Prediction Markets. https://www.gtlaw.com/en/insights/2026/6/cftc-proposes-new-rules-for-events-contracts-on-prediction-markets

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowRight } from "../components/Icons.jsx";
 import PromiseDoc from "../components/PromiseDoc.jsx";
-import { readPolicy, readEvent, readVault, vaultLogs, eventIdOf, readResultProof } from "../lib/chain.js";
+import { readPolicy, readEvent, readVault, vaultLogs, eventIdOf, readResultProof, checkResultProof } from "../lib/chain.js";
 import { claim } from "../lib/wallet.js";
 import { VAULT, addrUrl, txUrl, STATE, VOID_OUTCOME, RESULT_PROOFS } from "../lib/config.js";
 import { usd, short, prettyTicker } from "../lib/format.js";
@@ -78,7 +78,8 @@ export default function VerifyPage({ policyId, params, account }) {
         vaultLogs("EventSettled", { eventId: policy.eventId }),
         readResultProof(policy.eventId).catch(() => null),
       ]);
-      setD({ vault, policy, event, zk, hedges: hedges.filter((h) => Number(h.outcome) === policy.outcome), settled: settled[0] });
+      const zkCheck = zk && event.state === 3 ? await checkResultProof(policy.eventId, event.winningOutcome).catch(() => ({ ok: null, why: "the proof could not be re-checked right now" })) : null;
+      setD({ vault, policy, event, zk, zkCheck, hedges: hedges.filter((h) => Number(h.outcome) === policy.outcome), settled: settled[0] });
     } catch (e) {
       setErr(e.shortMessage ?? e.message);
     }
@@ -97,7 +98,7 @@ export default function VerifyPage({ policyId, params, account }) {
   if (err) return <p className="err" role="alert">{err}</p>;
   if (!d) return <div className="stack" style={{ maxWidth: 640 }}><div className="skeleton" style={{ height: 260 }} /><div className="skeleton" style={{ height: 160 }} /></div>;
 
-  const { vault, policy, event, hedges, settled, zk } = d;
+  const { vault, policy, event, hedges, settled, zk, zkCheck } = d;
   const tickerOk = ticker ? eventIdOf(ticker) === policy.eventId : null;
   const lockedOk = event.state !== 3 ? event.locked + 1e-9 >= event.liability[policy.outcome] && event.liability[policy.outcome] + 1e-9 >= policy.payout : true;
   const solvent = vault.balance + vault.hedgeReceivable + 1e-9 >= vault.totalLocked + vault.pendingClaims;
@@ -182,10 +183,18 @@ export default function VerifyPage({ policyId, params, account }) {
               {event.state !== 3 && <>Dispute window {vault.disputeWindow}s, guardian can veto a wrong result.</>}
             </Check>
             {event.state === 3 && !voided && (
-              <Check state={zk ? "ok" : "wait"} title={zk ? "Gemini’s result proven with zkTLS, checked on Arc" : "zkTLS proof of Gemini’s result: pending"}>
-                {zk
-                  ? <>A Reclaim attestor signed that api.gemini.com returned this result; the contract <a href={addrUrl(RESULT_PROOFS)} target="_blank" rel="noreferrer" className="mono-s">{short(RESULT_PROOFS, 6)}</a> checked the URL, the winning contract and the signature. Claim <span className="mono-s">{short(zk.identifier, 8)}</span></>
-                  : <>Generated after settlement from Gemini’s own response.</>}
+              <Check
+                state={!zk ? "wait" : zkCheck?.ok === true ? "ok" : zkCheck?.ok === false ? "no" : "wait"}
+                title={
+                  !zk ? "zkTLS proof of Gemini’s result: pending"
+                    : zkCheck?.ok === true ? "Gemini’s result proven with zkTLS"
+                    : zkCheck?.ok === false ? "A zkTLS proof was recorded, but it doesn’t prove this result"
+                    : "zkTLS proof recorded, not re-checked"
+                }
+              >
+                {!zk && <>Generated after settlement from Gemini’s own response.</>}
+                {zk && zkCheck?.ok === true && <>A Reclaim attestor signed that api.gemini.com returned this team as the winner. This page re-read the claim from its transaction in <a href={addrUrl(RESULT_PROOFS)} target="_blank" rel="noreferrer" className="mono-s">{short(RESULT_PROOFS, 6)}</a> and checked the URL, the match and the winner exactly. Claim <span className="mono-s">{short(zk.identifier, 8)}</span></>}
+                {zk && zkCheck?.ok !== true && <>{zkCheck?.why ? `Reason: ${zkCheck.why}.` : ""} The settlement above doesn’t depend on this proof. Claim <span className="mono-s">{short(zk.identifier, 8)}</span></>}
               </Check>
             )}
           </ul>

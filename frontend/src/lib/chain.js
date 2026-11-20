@@ -1,7 +1,9 @@
 // Read-only access to ArraVault on Arc: contract views over JSON-RPC, history via Blockscout
 // (Arc's RPC caps eth_getLogs ranges; the explorer API indexes the full history).
-import { createPublicClient, http, keccak256, toBytes, decodeEventLog, getAbiItem, toEventSelector } from "viem";
-import { chain, VAULT, USDC, EXPLORER, vaultAbi, erc20Abi, RESULT_PROOFS, proofsAbi } from "./config.js";
+import { createPublicClient, http, keccak256, toBytes, decodeEventLog, decodeFunctionData, getAbiItem, toEventSelector } from "viem";
+import { chain, VAULT, USDC, EXPLORER, PRICER_URL, vaultAbi, erc20Abi, RESULT_PROOFS, proofsAbi } from "./config.js";
+import proofsArtifact from "../../../offchain/abi/ArraResultProofs.json";
+import { checkClaim } from "./zkcheck.js";
 
 // Multicall3 batching: dozens of view calls per page become one eth_call (Arc's public RPC rate-limits).
 export const client = createPublicClient({
@@ -86,4 +88,28 @@ export async function readResultProof(eventId) {
   const [identifier, attestor, timestampS, winningSymbolHash] = await client.readContract({ address: RESULT_PROOFS, abi: proofsAbi, functionName: "proofOf", args: [eventId] });
   if (/^0x0+$/.test(identifier)) return null;
   return { identifier, attestor, timestampS: Number(timestampS), winningSymbolHash };
+}
+
+/**
+ * Re-check a recorded proof from its transaction: the claim must be exactly a proof of the winner
+ * (zkcheck.js), and its winner must be the outcome the vault settled on (from the keeper's
+ * outcome list). Returns { ok: true } | { ok: false, why } | { ok: null, why } when it can't tell.
+ */
+export async function checkResultProof(eventId, winningOutcome) {
+  const proofsAbiFull = proofsArtifact.abi ?? proofsArtifact;
+  const q = new URLSearchParams({ module: "logs", action: "getLogs", fromBlock: "0", toBlock: "latest", address: RESULT_PROOFS,
+    topic0: toEventSelector(getAbiItem({ abi: proofsAbiFull, name: "ResultProven" })), topic1: eventId, topic0_1_opr: "and" });
+  const logs = (await (await fetch(`${EXPLORER}/api?${q}`)).json()).result;
+  if (!Array.isArray(logs) || !logs.length) return { ok: null, why: "the proof transaction could not be found" };
+  const tx = await client.getTransaction({ hash: logs[0].transactionHash });
+  const { functionName, args } = decodeFunctionData({ abi: proofsAbiFull, data: tx.input });
+  if (functionName !== "prove") return { ok: null, why: "the proof was recorded through another contract" };
+  const [eventTicker, winningSymbol, claim] = args;
+  if (keccak256(toBytes(eventTicker)) !== eventId) return { ok: false, why: "the proof is for another event" };
+  const r = checkClaim({ eventTicker, winningSymbol, provider: claim.provider, parameters: claim.parameters });
+  if (!r.ok) return r;
+  const outcomes = PRICER_URL ? (await (await fetch(`${PRICER_URL}/registry`)).json())[eventId]?.outcomes : null;
+  if (!outcomes) return { ok: null, why: "the outcome list is unavailable, so the winner can't be compared" };
+  if (outcomes[winningOutcome] !== winningSymbol) return { ok: false, why: `it proves ${winningSymbol}, but the vault settled on another outcome` };
+  return { ok: true };
 }

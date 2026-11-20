@@ -58,5 +58,13 @@
       "GEMI-NBAF-2627CHAMP-UTA",
       "GEMI-NBAF-2627CHAMP-WAS"
     ]
+  },
+  "0x98c31bafb3e2d506785f8b93fd5f9e293e6e300498239b397e1e3917188a53a4": {
+    "eventTicker": "NCAAM-2611200200-ORST-ORE-M",
+    "title": "Oregon State vs Oregon",
+    "outcomes": [
+      "GEMI-NCAAM-2611200200-ORST-ORE-M-ORE",
+      "GEMI-NCAAM-2611200200-ORST-ORE-M-ORST"
+    ]
   }
 }

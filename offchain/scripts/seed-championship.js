@@ -15,7 +15,7 @@ import { privateKeyToAccount, generatePrivateKey } from "viem/accounts";
 const dep = JSON.parse(fs.readFileSync(new URL("../../deployments/arc-testnet.json", import.meta.url), "utf8"));
 process.env.VAULT_ADDRESS ??= dep.arraVault;
 const { config, chain } = await import("../src/config.js");
-const { publicClient, vaultAbi, eventIdFor } = await import("../src/chain.js");
+const { publicClient, vaultAbi, eventIdFor, getLogsChunked } = await import("../src/chain.js");
 
 const PRICER = (process.env.PRICER_URL ?? dep.pricerUrl ?? "").replace(/\/$/, "");
 const EVENT = process.env.EVENT ?? "NBAF-2627CHAMP";
@@ -65,7 +65,8 @@ const deployer = wallet(process.env.DEPLOYER_PK);
 console.log(`pricer ${PRICER}  vault ${config.vault}  event ${EVENT}`);
 
 // Which bars still need a cover (re-runs skip the ones already done).
-const logs = await publicClient.getContractEvents({ ...vault, eventName: "CoverPurchased", args: { eventId }, fromBlock: BigInt(process.env.FROM_BLOCK ?? 0) }).catch(() => []);
+// No catch: if this read fails, a re-run must stop rather than buy every bar a second cover.
+const logs = await getLogsChunked(publicClient, { ...vault, eventName: "CoverPurchased", args: { eventId } }, { fromBlock: BigInt(process.env.FROM_BLOCK ?? 0) });
 const covered = new Set(logs.map((l) => l.args.holder.toLowerCase()));
 const todo = TEAMS.filter((t) => !covered.has(privateKeyToAccount(bars[t].pk).address.toLowerCase()));
 

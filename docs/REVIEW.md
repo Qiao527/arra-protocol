@@ -238,11 +238,12 @@ Introduced by H-1's fix. While Proposed, NAV is marked down, and a veto restores
 
 ## After the review: running it live
 
-Deploying the pricer and running the system unattended turned up four more problems. All are fixed, with tests:
+Deploying the pricer and running the system unattended turned up five more problems. All are fixed, with tests:
 
 - **Arc's public RPC refused the hosted pricer** ("Request exceeds defined limit"). A quote read `liability` and `hedged` per outcome as separate calls, about 64 for a 30-team championship. Reads now go through Multicall3 (5 requests for 30 outcomes), and RPC limit errors return 502 instead of 400 (`test/rpc.test.js`).
 - **Live games were invisible past the first page.** `listActiveEvents` read only the first 50 results per query, so an NFL game with a $5 promise on it would never have been settled. The keeper's recovery now pages through every result (about 1,400 events); the public list stays one page so `/events` stays fast.
 - **Nothing settled without someone at a terminal.** The keeper ([`offchain/src/keeper.js`](../offchain/src/keeper.js)) runs the pricer and the settler in one Render service. It persists the registry and the evidence bytes to the `keeper-data` branch, because Render wipes its disk on restart. It also serves hash-checked evidence publicly, so the verifier works even though the repo is private. Its key concentration is described in [SECURITY.md](SECURITY.md#the-demo-keeper).
+- **Winners would not have been paid a day after deploy.** Arc's RPC refuses `eth_getLogs` over more than 10,000 blocks, and the payout step scanned `CoverPurchased` from the deploy block, about 105,000 blocks back by the evening of Nov 19. The vote would have landed, the payout would have thrown, and later passes skipped `Settled` events, so the bar would never have been paid. Every scan now goes through `getLogsChunked` (10,000-block windows), and the keeper re-checks each settled event once per start and pays any unclaimed winner (`test/logs.test.js`; checked against the live RPC: 9 of 9 promises found in 3.6 s). The demo seeding script also swallowed this error and would have bought duplicate covers on a re-run; it now stops.
 - **Evidence writes raced.** Two syncs committed to the same branch at once and GitHub answered 409. Writes are now serialized and single-flight, 409s are retried, and identical bytes aren't re-committed (`test/keeper.test.js`).
 
 A real settlement is pending: policy #8, $5 on Indianapolis in `NFL-2611200115-IND-HOU-M`, bought through the live pricer before kickoff. The keeper settles it from Gemini's result once Gemini settles the market.

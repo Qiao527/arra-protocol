@@ -155,7 +155,7 @@ docs/DEMO.md                        live demo script, what's real vs testnet, pr
 ```bash
 git clone --recurse-submodules https://github.com/Qiao527/arra-protocol && cd arra-protocol
 forge test                                         # 50 contract tests (incl. 8 invariants)
-(cd offchain && npm ci && npm test)                # 59 offchain tests on real Gemini captures
+(cd offchain && npm ci && npm test)                # 89 offchain tests on real Gemini captures
 ./script/e2e-anvil.sh                              # full local flow, no keys needed
 ./script/e2e-live-gemini.sh                        # same, on live Gemini markets (needs network)
 ```

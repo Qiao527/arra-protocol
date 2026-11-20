@@ -27,6 +27,7 @@ const events = [];
 for (const [eventId, info] of Object.entries(registry)) {
   const e = await read("events", [eventId]);
   const onchain = { state: STATE[Number(e[0])], winningOutcome: Number(e[1]), evidenceHash: e[6] };
+  if (onchain.state === "None") continue; // quoted but never sold: nothing to prove
   const r = await proveEvent({
     eventTicker: info.eventTicker,
     onchain,

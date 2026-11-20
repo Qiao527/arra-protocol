@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-11-20T01:19:10.492Z",
+  "generatedAt": "2026-11-20T02:18:17.480Z",
   "vault": "0x1D69e0fE014df1007aE66A68a5c9714a7E833d6f",
   "chainId": 5042002,
   "keeper": "https://arra-pricer.onrender.com",
-  "runUrl": "https://github.com/Qiao527/arra-protocol/actions/runs/44652691745",
+  "runUrl": "https://github.com/Qiao527/arra-protocol/actions/runs/44659774729",
   "solvency": {
     "usdcHeld": 54.508124,
     "locked": 15,
@@ -16,7 +16,7 @@
     "SYNTHETIC": 1,
     "UNCHECKED": 0,
     "UNCONFIRMED": 0,
-    "PENDING": 3
+    "PENDING": 5
   },
   "events": [
     {
@@ -95,6 +95,36 @@
       "checks": [],
       "insuredUsdc": 25,
       "lockedUsdc": 5
+    },
+    {
+      "eventId": "0x98c31bafb3e2d506785f8b93fd5f9e293e6e300498239b397e1e3917188a53a4",
+      "title": "Oregon State vs Oregon",
+      "eventTicker": "NCAAM-2611200200-ORST-ORE-M",
+      "state": "None",
+      "winningOutcome": 0,
+      "evidenceHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "verdict": "PENDING",
+      "evidence": null,
+      "live": null,
+      "synthetic": false,
+      "checks": [],
+      "insuredUsdc": 0,
+      "lockedUsdc": 0
+    },
+    {
+      "eventId": "0x2349cfb358cbed6f316c2cd129ef593c2884fc2850fb3586d5e3f612d12c7fe7",
+      "title": "Texas A&M vs TCU: Point Spread",
+      "eventTicker": "NCAAM-2611200100-TAMU-TCU-S",
+      "state": "None",
+      "winningOutcome": 0,
+      "evidenceHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "verdict": "PENDING",
+      "evidence": null,
+      "live": null,
+      "synthetic": false,
+      "checks": [],
+      "insuredUsdc": 0,
+      "lockedUsdc": 0
     }
   ]
 }

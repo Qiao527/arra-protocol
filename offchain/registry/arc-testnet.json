@@ -179,5 +179,13 @@
       "GEMI-NCAAM-2611210000-HAR-HC-M-HAR",
       "GEMI-NCAAM-2611210000-HAR-HC-M-HC"
     ]
+  },
+  "0xaa4944d0485b7dbbe25e001852abc3ad8bd92bd24bab9a6358e442ca7348d036": {
+    "eventTicker": "NCAAM-2611210000-OAK-PUR-M",
+    "title": "Oakland vs Purdue",
+    "outcomes": [
+      "GEMI-NCAAM-2611210000-OAK-PUR-M-OAK",
+      "GEMI-NCAAM-2611210000-OAK-PUR-M-PUR"
+    ]
   }
 }

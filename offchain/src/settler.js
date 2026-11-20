@@ -159,6 +159,29 @@ export async function settle(eventTicker, outcome, evidence) {
 // after the vote, e.g. an RPC error, is retried on the next pass instead of being skipped for good.
 const paidOut = new Set();
 
+/**
+ * Gemini can reopen a result for review after reporting it (seen on Nov 20: contracts went
+ * settled -> under_review -> settled within minutes). A unanimous vote settles instantly, so the
+ * settlers only vote once Gemini has shown the same result continuously for SETTLE_CONFIRM_SEC
+ * (default 10 min). Any review state or a different result restarts the clock. A keeper restart
+ * also restarts it, which only makes the wait longer.
+ */
+const seenSettled = new Map(); // eventId -> { outcome, since }
+export const settleConfirmMs = () => Number(process.env.SETTLE_CONFIRM_SEC ?? 600) * 1000;
+export function stableOutcome(eventId, outcome, now = Date.now(), confirmMs = settleConfirmMs()) {
+  if (outcome === null) {
+    seenSettled.delete(eventId);
+    return { ready: false };
+  }
+  const seen = seenSettled.get(eventId);
+  if (!seen || seen.outcome !== outcome) {
+    seenSettled.set(eventId, { outcome, since: now });
+    return { ready: confirmMs <= 0, waitMs: confirmMs };
+  }
+  const waited = now - seen.since;
+  return { ready: waited >= confirmMs, waitMs: Math.max(0, confirmMs - waited) };
+}
+
 export async function settleOnce({ onAction = () => {} } = {}) {
   const acted = [];
   const errors = [];
@@ -185,6 +208,11 @@ export async function settleOnce({ onAction = () => {} } = {}) {
       if (st.state !== "Open") continue;
       const { event, bytes } = await getEventRaw(info.eventTicker);
       const outcome = settledOutcome(event, info.outcomes);
+      const gate = stableOutcome(eventId, outcome);
+      if (outcome !== null && !gate.ready) {
+        onAction(`${info.eventTicker}: Gemini reports outcome ${outcome === VOID_OUTCOME ? "VOID" : outcome}; voting once it holds ${Math.ceil(gate.waitMs / 1000)} s more`);
+        continue;
+      }
       if (outcome !== null) {
         const { saveOutcomes } = await import("./verify.js");
         saveOutcomes({ dir: process.env.EVIDENCE_DIR, eventTicker: info.eventTicker, outcomes: info.outcomes });

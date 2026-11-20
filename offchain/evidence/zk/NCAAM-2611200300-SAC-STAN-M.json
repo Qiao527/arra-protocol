@@ -1,0 +1,26 @@
+{
+  "eventTicker": "NCAAM-2611200300-SAC-STAN-M",
+  "winningSymbol": "GEMI-NCAAM-2611200300-SAC-STAN-M-STAN",
+  "url": "https://api.gemini.com/v1/prediction-markets/events/NCAAM-2611200300-SAC-STAN-M",
+  "proof": {
+    "claimData": {
+      "provider": "http",
+      "parameters": "{\"body\":\"\",\"headers\":{\"User-Agent\":\"reclaim/0.0.1\",\"accept\":\"application/json\"},\"method\":\"GET\",\"responseMatches\":[{\"type\":\"regex\",\"value\":\"\\\"instrumentSymbol\\\":\\\"GEMI-NCAAM-2611200300-SAC-STAN-M-STAN\\\"[^{}]*?\\\"resolutionSide\\\":\\\"yes\\\"\"}],\"responseRedactions\":[],\"url\":\"https://api.gemini.com/v1/prediction-markets/events/NCAAM-2611200300-SAC-STAN-M\"}",
+      "owner": "0xe852d43737868d4db6b6db9de960aa9eeea6a97f",
+      "timestampS": 1795155258,
+      "context": "{\"providerHash\":\"0xbfcc5a260f92ec2a10d43fd7d3179b2545bb8735f2a48000818000e89ccd8e5b\"}",
+      "identifier": "0x1e1ed70e15b0c8880d1bbf7049cb0daaf7b02501d28abb8b832b696254f86f50",
+      "epoch": 1
+    },
+    "identifier": "0x1e1ed70e15b0c8880d1bbf7049cb0daaf7b02501d28abb8b832b696254f86f50",
+    "signatures": [
+      "0xa899b8f1f8470aa8f5823ecb301f7e039fdfb612a4a038386ff05f4b51f8d2b02519c55787ca96581983dfe699efaac1e9b3ce2d851665ce086e1cde472dd03d1b"
+    ],
+    "witnesses": [
+      {
+        "id": "0x244897572368eadf65bfbc5aec98d8e5443a9072",
+        "url": "wss://attestor.reclaimprotocol.org/ws"
+      }
+    ]
+  }
+}

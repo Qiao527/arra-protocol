@@ -1,0 +1,26 @@
+{
+  "eventTicker": "NFL-2611200115-IND-HOU-M",
+  "winningSymbol": "GEMI-NFL-2611200115-IND-HOU-M-HOU",
+  "url": "https://api.gemini.com/v1/prediction-markets/events/NFL-2611200115-IND-HOU-M",
+  "proof": {
+    "claimData": {
+      "provider": "http",
+      "parameters": "{\"body\":\"\",\"headers\":{\"User-Agent\":\"reclaim/0.0.1\",\"accept\":\"application/json\"},\"method\":\"GET\",\"responseMatches\":[{\"type\":\"regex\",\"value\":\"\\\"instrumentSymbol\\\":\\\"GEMI-NFL-2611200115-IND-HOU-M-HOU\\\"[^{}]*?\\\"resolutionSide\\\":\\\"yes\\\"\"}],\"responseRedactions\":[],\"url\":\"https://api.gemini.com/v1/prediction-markets/events/NFL-2611200115-IND-HOU-M\"}",
+      "owner": "0x2b19b6d950b093f59e76c94e9b7c3bb9ec6cae5e",
+      "timestampS": 1795155208,
+      "context": "{\"providerHash\":\"0x97c8c4e9c219d903aeaf8e8901d62e33307eb943a67fcf7800ba2a71eb3eb8f4\"}",
+      "identifier": "0x07e0c0c4253cdef0a1cded0bc19bc70357a3f3829144c89004f146d68babd106",
+      "epoch": 1
+    },
+    "identifier": "0x07e0c0c4253cdef0a1cded0bc19bc70357a3f3829144c89004f146d68babd106",
+    "signatures": [
+      "0x56ac797fcb3dece9b780149718a90887677ece2f63ff05ff1cfd347573add316691b88335bba20f1afb380709afb6309e5457b393e41d593f4eddf48b4b53b221b"
+    ],
+    "witnesses": [
+      {
+        "id": "0x244897572368eadf65bfbc5aec98d8e5443a9072",
+        "url": "wss://attestor.reclaimprotocol.org/ws"
+      }
+    ]
+  }
+}

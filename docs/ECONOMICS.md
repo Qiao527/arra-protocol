@@ -52,11 +52,11 @@ Prediction-market prices for long shots tend to run *above* their true win rates
 
 Cover is a transfer of risk, not a bet against the merchant, so it can leave both sides better off. The argument rests on standard results:
 
-1. **The merchant is risk averse; the pool is close to risk neutral.** A bar that owes $5,000 the night of an upset can lose a month's profit, so a sure small premium is worth more to it than an equal expected loss (expected utility with concave utility; Pratt, 1964). A pool spread over many independent games barely notices one payout. When one party is more risk averse than the other, moving the risk to the less averse party is a Pareto improvement, and the optimal contract shifts it entirely (Borch, 1962; Arrow, 1963). Any premium between the pool's fair cost and the merchant's certainty equivalent leaves both better off (Mossin, 1968).
+1. **The merchant is risk averse; the pool is close to risk neutral.** A bar that owes $5,000 the night of an upset can lose a month's profit, so a sure small premium is worth more to it than an equal expected loss (expected utility with concave utility; Pratt, 1964). A pool spread over many independent games barely notices one payout. When one party is more risk averse than the other, moving the risk to the less averse party is a Pareto improvement, and the optimal contract shifts it entirely (Borch, 1962; Arrow, 1963). Any premium between the pool's fair cost and the most the merchant would pay to be rid of the risk (its risk premium in Pratt's sense) leaves both better off. With a loaded premium, a rational buyer may prefer partial cover (Mossin, 1968), which is why the merchant chooses the payout size.
 2. **Small firms have a specific reason to hedge.** When outside money is costly, a cash shock forces a firm to cut spending it would otherwise make; hedging protects that spending (Froot, Scharfstein & Stein, 1993). A bar can't raise capital overnight to cover a promo, so this applies strongly.
 3. **The pool's edge is the law of large numbers.** Each game is a coin flip for the vault, but across many independent games the average loss converges to the market probability. The premium sits above it by the buffer, the utilization surcharge and the capital charge, so the expected margin is positive and its variance shrinks with the number of games. The per-event cap (10% of NAV) keeps any one game from dominating.
 4. **Netting adds value neither side could create alone.** Outcomes of one market are mutually exclusive, so the vault locks the largest payout, not the sum. That capital saving exists only when many merchants are pooled, which is why the pool can charge less than a merchant would pay to hedge on its own.
-5. **The promise becomes credible.** A customer who can check that the payout is locked onchain can trust the promo, and a credible promise draws more custom than an unverifiable one (signalling; Spence, 1973).
+5. **The promise becomes credible.** A customer who can check that the payout is locked onchain can trust the promo, and a credible promise draws more custom than an unverifiable one. This is the same idea as costly signalling (Spence, 1973), applied by analogy: Spence's model is about job markets.
 6. **The usual failure modes are weak here.** Moral hazard is close to zero: a bar can't change a game's result. Adverse selection (Rothschild & Stiglitz, 1976) is limited because prices follow a liquid public market, in-game sales stop after a sport-specific limit, and favourites above 50% are refused.
 
 When it does not hold: a premium above the merchant's certainty equivalent (the merchant should not buy), a pool concentrated in few games (the cap and netting address this), or a market that misprices the outcome (hedging on Gemini limits the damage, and the favorite–longshot bias above tends to work in LPs' favour).
@@ -103,15 +103,15 @@ Verified (opened or confirmed):
 - CFTC (2026, Nov 13). CFTC Sues Louisiana After State Court Blocks CFTC-Regulated Exchanges. Release 9326-26. https://www.cftc.gov/PressRoom/PressReleases/9326-26
 - Greenberg Traurig (2026, June). CFTC Proposes New Rules for Events Contracts on Prediction Markets. https://www.gtlaw.com/en/insights/2026/6/cftc-proposes-new-rules-for-events-contracts-on-prediction-markets
 
-Classic theory behind "Why both sides gain" (standard results, journal citations):
+Classic theory behind "Why both sides gain" (each citation checked against the journal record on Nov 20, 2026):
 
-- Arrow, K. J. (1963). Uncertainty and the welfare economics of medical care. *American Economic Review*, 53(5), 941–973.
-- Borch, K. (1962). Equilibrium in a reinsurance market. *Econometrica*, 30(3), 424–444.
-- Pratt, J. W. (1964). Risk aversion in the small and in the large. *Econometrica*, 32(1/2), 122–136.
-- Mossin, J. (1968). Aspects of rational insurance purchasing. *Journal of Political Economy*, 76(4), 553–568.
-- Froot, K. A., Scharfstein, D. S., & Stein, J. C. (1993). Risk management: coordinating corporate investment and financing policies. *Journal of Finance*, 48(5), 1629–1658.
-- Spence, M. (1973). Job market signaling. *Quarterly Journal of Economics*, 87(3), 355–374.
-- Rothschild, M., & Stiglitz, J. (1976). Equilibrium in competitive insurance markets. *Quarterly Journal of Economics*, 90(4), 629–649.
+- Arrow, K. J. (1963). Uncertainty and the welfare economics of medical care. *American Economic Review*, 53(5), 941–973. https://www.jstor.org/stable/1812044
+- Borch, K. (1962). Equilibrium in a reinsurance market. *Econometrica*, 30(3), 424–444. https://www.jstor.org/stable/1909887
+- Pratt, J. W. (1964). Risk aversion in the small and in the large. *Econometrica*, 32(1/2), 122–136. https://www.jstor.org/stable/1913738
+- Mossin, J. (1968). Aspects of rational insurance purchasing. *Journal of Political Economy*, 76(4), 553–568. https://doi.org/10.1086/259427
+- Froot, K. A., Scharfstein, D. S., & Stein, J. C. (1993). Risk management: coordinating corporate investment and financing policies. *Journal of Finance*, 48(5), 1629–1658. https://doi.org/10.3386/w4084 (NBER working-paper version)
+- Spence, M. (1973). Job market signaling. *Quarterly Journal of Economics*, 87(3), 355–374. https://doi.org/10.2307/1882010
+- Rothschild, M., & Stiglitz, J. (1976). Equilibrium in competitive insurance markets. *Quarterly Journal of Economics*, 90(4), 629–649. https://doi.org/10.2307/1885326
 
 Widely cited, check the exact claim before quoting on stage:
 

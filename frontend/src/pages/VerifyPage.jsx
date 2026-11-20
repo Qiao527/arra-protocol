@@ -196,7 +196,7 @@ export default function VerifyPage({ policyId, params, account }) {
                 }
               >
                 {!zk && <>Generated after settlement from Gemini’s own response.</>}
-                {zk && zkCheck?.ok === true && <>A Reclaim attestor signed that api.gemini.com returned this team as the winner. This page re-read the claim from its transaction in <a href={addrUrl(RESULT_PROOFS)} target="_blank" rel="noreferrer" className="mono-s">{short(RESULT_PROOFS, 6)}</a> and checked the URL, the match and the winner exactly. Claim <span className="mono-s">{short(zk.identifier, 8)}</span></>}
+                {zk && zkCheck?.ok === true && <>A Reclaim attestor signed that api.gemini.com reported the winner the vault settled on. This page re-read the claim from its transaction in <a href={addrUrl(RESULT_PROOFS)} target="_blank" rel="noreferrer" className="mono-s">{short(RESULT_PROOFS, 6)}</a> and checked the URL, the match and the winner exactly. Claim <span className="mono-s">{short(zk.identifier, 8)}</span></>}
                 {zk && zkCheck?.ok !== true && <>{zkCheck?.why ? `Reason: ${zkCheck.why}.` : ""} The settlement above doesn’t depend on this proof. Claim <span className="mono-s">{short(zk.identifier, 8)}</span></>}
               </Check>
             )}

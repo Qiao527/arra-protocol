@@ -139,5 +139,21 @@
       "GEMI-NCAAM-2611200300-SAC-STAN-M-SAC",
       "GEMI-NCAAM-2611200300-SAC-STAN-M-STAN"
     ]
+  },
+  "0xeb73329f8dcb26410eb2027d8636c93cc6772d92fe650041e2c5ed8be962c88a": {
+    "eventTicker": "NCAAM-2611200300-ETAM-CAL-M",
+    "title": "East Texas A&M vs California",
+    "outcomes": [
+      "GEMI-NCAAM-2611200300-ETAM-CAL-M-CAL",
+      "GEMI-NCAAM-2611200300-ETAM-CAL-M-ETAM"
+    ]
+  },
+  "0x407b798b92d7f5595352f6dd1a0df1c97bb6c99de54c05a9d640900c6e12524d": {
+    "eventTicker": "NHL-2611200300-DAL-VGK-M",
+    "title": "Dallas vs Vegas",
+    "outcomes": [
+      "GEMI-NHL-2611200300-DAL-VGK-M-DAL",
+      "GEMI-NHL-2611200300-DAL-VGK-M-VGK"
+    ]
   }
 }

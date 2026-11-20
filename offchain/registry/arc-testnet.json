@@ -163,5 +163,13 @@
       "GEMI-NCAAM-2611201700-GB-FSU-M-FSU",
       "GEMI-NCAAM-2611201700-GB-FSU-M-GB"
     ]
+  },
+  "0x736a805ebfa625a939caa7b05eb99d64bca6ea03d2ecd03bb296928062431840": {
+    "eventTicker": "NCAAM-2611200400-TARL-USC-M",
+    "title": "Tarleton State vs USC",
+    "outcomes": [
+      "GEMI-NCAAM-2611200400-TARL-USC-M-TARL",
+      "GEMI-NCAAM-2611200400-TARL-USC-M-USC"
+    ]
   }
 }

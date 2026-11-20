@@ -14,6 +14,13 @@ export const eventUrl = (t) => `https://api.gemini.com/v1/prediction-markets/eve
 /** The regex ArraResultProofs pins: this contract, then resolutionSide yes, within one object. */
 export const winnerRegex = (sym) => `"instrumentSymbol":"${sym}"[^{}]*?"resolutionSide":"yes"`;
 export const zkEnabled = () => !!process.env.RECLAIM_ORG_TOKEN;
+/**
+ * Prove inside the keeper only when ZK_IN_KEEPER=1. On Nov 19 the in-process proof after the
+ * IND-HOU vote blocked the event loop; Render's health check timed out, restarted the instance,
+ * and the attested evidence bytes were lost before they reached the store. Prove off the keeper
+ * instead: `node scripts/prove-result.js <ticker> && node scripts/record-proof.js <file>`.
+ */
+export const zkInKeeper = () => zkEnabled() && process.env.ZK_IN_KEEPER === "1";
 
 export async function proveResult(eventTicker, winningSymbol, { dir } = {}) {
   const { ReclaimClient } = await import("@reclaimprotocol/zk-fetch");

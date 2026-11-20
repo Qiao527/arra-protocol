@@ -30,7 +30,9 @@ export const publicClient = createPublicClient({
  * 10,000 blocks, and the scan from FROM_BLOCK grows by ~100k blocks a day.
  */
 export async function getLogsChunked(client, params, { fromBlock, toBlock, step = 10_000n }) {
-  const end = toBlock ?? (await client.getBlockNumber());
+  // cacheTime 0: viem caches the block number for a polling interval, which can miss logs from
+  // the last few seconds (a cover bought just before settlement would go unpaid until next run)
+  const end = toBlock ?? (await client.getBlockNumber({ cacheTime: 0 }));
   const logs = [];
   for (let a = BigInt(fromBlock); a <= end; a += step) {
     const b = a + step - 1n < end ? a + step - 1n : end;

@@ -1,7 +1,7 @@
 // Read-only access to ArraVault on Arc: contract views over JSON-RPC, history via Blockscout
 // (Arc's RPC caps eth_getLogs ranges; the explorer API indexes the full history).
 import { createPublicClient, http, keccak256, toBytes, decodeEventLog, getAbiItem, toEventSelector } from "viem";
-import { chain, VAULT, USDC, EXPLORER, vaultAbi, erc20Abi } from "./config.js";
+import { chain, VAULT, USDC, EXPLORER, vaultAbi, erc20Abi, RESULT_PROOFS, proofsAbi } from "./config.js";
 
 // Multicall3 batching: dozens of view calls per page become one eth_call (Arc's public RPC rate-limits).
 export const client = createPublicClient({
@@ -78,4 +78,12 @@ export async function vaultLogs(name, { eventId, eventIdTopic = 1 } = {}) {
     const decoded = decodeEventLog({ abi: vaultAbi, data: l.data, topics: l.topics.filter(Boolean) });
     return { ...decoded.args, txHash: l.transactionHash, time: Number(l.timeStamp) * 1000, block: Number(l.blockNumber) };
   });
+}
+
+/** zkTLS proof of Gemini's result for an event, if one was recorded in ArraResultProofs. */
+export async function readResultProof(eventId) {
+  if (!RESULT_PROOFS) return null;
+  const [identifier, attestor, timestampS, winningSymbolHash] = await client.readContract({ address: RESULT_PROOFS, abi: proofsAbi, functionName: "proofOf", args: [eventId] });
+  if (/^0x0+$/.test(identifier)) return null;
+  return { identifier, attestor, timestampS: Number(timestampS), winningSymbolHash };
 }

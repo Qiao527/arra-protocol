@@ -10,6 +10,7 @@
 //
 // In production each settler is an independent operator with its own key and its own Gemini
 // fetch; SETTLER_PRIVATE_KEYS holding several keys in one process is a demo convenience.
+import { zkEnabled, proveResult, recordProof } from "./zkproof.js";
 import { keccak256, toBytes } from "viem";
 import { config } from "./config.js";
 import { getEventRaw, orderedContracts, outcomeSymbols, MAX_OUTCOMES } from "./gemini.js";
@@ -192,6 +193,15 @@ export async function settleOnce({ onAction = () => {} } = {}) {
         paidOut.add(eventId);
         acted.push(info.eventTicker);
         onAction(`${info.eventTicker}: Gemini settled -> outcome ${outcome === VOID_OUTCOME ? "VOID" : outcome}, voted and paid`);
+        // zkTLS: prove the result came from api.gemini.com and record it onchain. Optional and
+        // non-fatal: the vote above already settled the event.
+        const symbol = outcome !== VOID_OUTCOME ? info.outcomes?.[outcome] : null;
+        if (symbol && zkEnabled()) {
+          proveResult(info.eventTicker, symbol)
+            .then(({ doc }) => recordProof(doc))
+            .then((tx) => onAction(`${info.eventTicker}: zkTLS proof recorded onchain ${tx}`))
+            .catch((e) => onAction(`${info.eventTicker}: zkTLS proof skipped (${e.message.split("\n")[0]})`));
+        }
       }
     } catch (err) {
       errors.push(`${info.eventTicker}: ${err.message.split("\n")[0]}`);

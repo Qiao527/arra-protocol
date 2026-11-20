@@ -15,6 +15,7 @@ Track: **DeFi & Onchain Applications** · Chain award: **Best use of Arc** · Bo
 | LP share token | `Arra LP` (`arLP`), ERC-4626 |
 | Settlement | 2-of-3 settlers, 60 s dispute window, unanimous vote settles instantly |
 | Live smoke test | deposit → signed quote → buyCover → recordHedge → 3/3 votes → claim. Tx hashes in [`deployments/arc-testnet.json`](deployments/arc-testnet.json) |
+| zkTLS result proofs | [`ArraResultProofs`](https://explorer.testnet.arc.io/address/0x0F59f81392bB71AB05A7cA7052CB4D6149Db8d2D) `0x0F59f81392bB71AB05A7cA7052CB4D6149Db8d2D`: checks a Reclaim zkFetch proof that api.gemini.com reported the winning contract, onchain ([details](#zktls-proof-of-geminis-result)) |
 | Real Gemini hedge | Gemini sandbox order `145853902323013843`, 5/5 filled, recorded onchain with that id ([details](#gemini-sandbox-hedge-on-arc-testnet)) |
 | USDC (ERC-20 interface) | `0x3600000000000000000000000000000000000000` |
 | Explorer | https://explorer.testnet.arc.io |
@@ -104,9 +105,21 @@ Only markets whose outcomes are **mutually exclusive**, because netting depends 
 
 **In-game quotes** live for `IN_GAME_TTL_SEC` (20 s) and are sold only within a per-sport limit after the scheduled start (basketball 2 h, football 3 h). Gemini leaves finished games `open` with `isLive: true` until it settles them, once for 103 hours in our live data, so the market state can't be trusted to close sales.
 
+### zkTLS proof of Gemini's result
+
+A settler's vote carries `keccak256` of Gemini's response bytes, which proves which bytes were voted on but not that Gemini sent them. Arra adds a zkTLS proof from [Reclaim Protocol](https://reclaimprotocol.org) zkFetch:
+
+1. After a market settles, `offchain/src/zkproof.js` fetches `https://api.gemini.com/v1/prediction-markets/events/<ticker>` through a Reclaim attestor, with the response match `"instrumentSymbol":"<winner>"[^{}]*?"resolutionSide":"yes"`.
+2. `ArraResultProofs.prove` checks onchain that the claim's URL is Gemini's endpoint for exactly that ticker, that the match pins that winning contract followed by `resolutionSide: yes` inside one contract object, recomputes the claim identifier, and recovers a trusted Reclaim attestor's signature.
+3. The proof page shows the check; `proofOf(eventId)` is readable by anyone.
+
+Live on Arc: a real proof of a settled Gemini market was recorded in tx [`0xbf4e8f…2390`](https://explorer.testnet.arc.io/tx/0xbf4e8fe88b396253d8d0fa21bcd4bb3264f1ab6824d7d96b85026a79e7262390), and the same proof is a fixture in `test/ArraResultProofs.real.t.sol`. The keeper proves each result it settles when `RECLAIM_ORG_TOKEN` is set; by hand: `node scripts/prove-result.js <ticker> && node scripts/record-proof.js evidence/zk/<ticker>.json`.
+
+Today the proof sits beside the settler quorum and does not replace it. Next step: let the vault accept a valid proof in place of a settler vote.
+
 ### Risk assumptions
 
-- **Oracle trust.** Results need a settler quorum and carry a hash of the raw Gemini response; the guardian can veto during the dispute window. Quotes are signed by one operator key (pricing only, not settlement). Roadmap: a zkTLS proof that the payload came from api.gemini.com.
+- **Oracle trust.** Results need a settler quorum and carry a hash of the raw Gemini response; the guardian can veto during the dispute window. Quotes are signed by one operator key (pricing only, not settlement). A zkTLS proof (Reclaim) that the payload came from api.gemini.com is checked onchain by `ArraResultProofs`.
 - **Hedge reconciliation.** Winning hedges pay out at Gemini (offchain USD). The vault pays the merchant from onchain USDC first and records a `hedgeReceivable`; production sweeps proceeds back to Arc USDC via Circle Mint / CCTP (`returnHedgeProceeds`) before LP withdrawals unlock.
 - **Settlement source.** Arra inherits Gemini's CFTC-regulated settlement, not token voting.
 - **Regulation.** Testnet prototype, no real-money cover. Production would distribute through a licensed insurer or MGA, with Gemini as the regulated hedge venue.
@@ -119,6 +132,7 @@ Full math, the favorite–longshot discussion, regulatory context and references
 
 ```
 src/ArraVault.sol                   vault, quotes, netting, caps, settlement (Solidity 0.8.26, OpenZeppelin v5.1)
+src/ArraResultProofs.sol            onchain check of Reclaim zkTLS proofs of Gemini results
 src/mocks/MockUSDC.sol              local testing only
 test/ArraVault.t.sol                48 unit + fuzz tests
 test/ArraVault.invariant.t.sol      8 invariants over random action sequences
@@ -128,6 +142,7 @@ script/e2e-live-gemini.sh           same flow on REAL Gemini markets and live de
 offchain/src/pricer.js              HTTP quote server (Gemini depth → EIP-712 signed quote)
 offchain/src/hedger.js              QuickNode Streams webhook (or --poll): Gemini hedge + recordHedge
 offchain/src/settler.js             votes Gemini results (or VOID), stores the attested bytes, finalizes, pays
+offchain/src/zkproof.js             zkFetch proof of a Gemini result + record it onchain
 offchain/src/depth.js               live order books from Gemini's WebSocket depth stream
 offchain/src/verify.js              evidence check: bytes -> onchain evidenceHash -> winning outcome
 offchain/scripts/verify-settlement.js  public verifier, no keys: node scripts/verify-settlement.js <eventTicker>
@@ -154,8 +169,8 @@ docs/DEMO.md                        live demo script, what's real vs testnet, pr
 
 ```bash
 git clone --recurse-submodules https://github.com/Qiao527/arra-protocol && cd arra-protocol
-forge test                                         # 50 contract tests (incl. 8 invariants)
-(cd offchain && npm ci && npm test)                # 89 offchain tests on real Gemini captures
+forge test                                         # 67 contract tests (incl. 8 invariants and a real zkTLS proof)
+(cd offchain && npm ci && npm test)                # 92 offchain tests on real Gemini captures
 ./script/e2e-anvil.sh                              # full local flow, no keys needed
 ./script/e2e-live-gemini.sh                        # same, on live Gemini markets (needs network)
 ```

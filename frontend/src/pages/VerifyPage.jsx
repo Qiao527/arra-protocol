@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowRight } from "../components/Icons.jsx";
 import PromiseDoc from "../components/PromiseDoc.jsx";
-import { readPolicy, readEvent, readVault, vaultLogs, eventIdOf } from "../lib/chain.js";
+import { readPolicy, readEvent, readVault, vaultLogs, eventIdOf, readResultProof } from "../lib/chain.js";
 import { claim } from "../lib/wallet.js";
-import { VAULT, addrUrl, txUrl, STATE, VOID_OUTCOME } from "../lib/config.js";
+import { VAULT, addrUrl, txUrl, STATE, VOID_OUTCOME, RESULT_PROOFS } from "../lib/config.js";
 import { usd, short, prettyTicker } from "../lib/format.js";
 
 function Check({ state, title, children }) {
@@ -72,12 +72,13 @@ export default function VerifyPage({ policyId, params, account }) {
       const vault = await readVault();
       if (policyId >= vault.policyCount) throw new Error(`No promise #${policyId} on this vault yet (${vault.policyCount} sold so far).`);
       const policy = await readPolicy(policyId);
-      const [event, hedges, settled] = await Promise.all([
+      const [event, hedges, settled, zk] = await Promise.all([
         readEvent(policy.eventId),
         vaultLogs("HedgeRecorded", { eventId: policy.eventId }),
         vaultLogs("EventSettled", { eventId: policy.eventId }),
+        readResultProof(policy.eventId).catch(() => null),
       ]);
-      setD({ vault, policy, event, hedges: hedges.filter((h) => Number(h.outcome) === policy.outcome), settled: settled[0] });
+      setD({ vault, policy, event, zk, hedges: hedges.filter((h) => Number(h.outcome) === policy.outcome), settled: settled[0] });
     } catch (e) {
       setErr(e.shortMessage ?? e.message);
     }
@@ -96,7 +97,7 @@ export default function VerifyPage({ policyId, params, account }) {
   if (err) return <p className="err" role="alert">{err}</p>;
   if (!d) return <div className="stack" style={{ maxWidth: 640 }}><div className="skeleton" style={{ height: 260 }} /><div className="skeleton" style={{ height: 160 }} /></div>;
 
-  const { vault, policy, event, hedges, settled } = d;
+  const { vault, policy, event, hedges, settled, zk } = d;
   const tickerOk = ticker ? eventIdOf(ticker) === policy.eventId : null;
   const lockedOk = event.state !== 3 ? event.locked + 1e-9 >= event.liability[policy.outcome] && event.liability[policy.outcome] + 1e-9 >= policy.payout : true;
   const solvent = vault.balance + vault.hedgeReceivable + 1e-9 >= vault.totalLocked + vault.pendingClaims;
@@ -180,6 +181,13 @@ export default function VerifyPage({ policyId, params, account }) {
               )}
               {event.state !== 3 && <>Dispute window {vault.disputeWindow}s, guardian can veto a wrong result.</>}
             </Check>
+            {event.state === 3 && !voided && (
+              <Check state={zk ? "ok" : "wait"} title={zk ? "Gemini’s result proven with zkTLS, checked on Arc" : "zkTLS proof of Gemini’s result: pending"}>
+                {zk
+                  ? <>A Reclaim attestor signed that api.gemini.com returned this result; the contract <a href={addrUrl(RESULT_PROOFS)} target="_blank" rel="noreferrer" className="mono-s">{short(RESULT_PROOFS, 6)}</a> checked the URL, the winning contract and the signature. Claim <span className="mono-s">{short(zk.identifier, 8)}</span></>
+                  : <>Generated after settlement from Gemini’s own response.</>}
+              </Check>
+            )}
           </ul>
         </div>
       </aside>

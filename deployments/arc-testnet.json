@@ -102,5 +102,8 @@
     },
     "insuredUsdc": 20,
     "lockedUsdc": 5
-  }
+  },
+  "resultProofs": "0x0F59f81392bB71AB05A7cA7052CB4D6149Db8d2D",
+  "resultProofsDeployTx": "0x97d84a21fb835107d73d99e0f81253585ce60ccf113eabdd4fb43a9b65c96f7a",
+  "reclaimAttestor": "0x244897572368Eadf65bfBc5aec98D8e5443a9072"
 }

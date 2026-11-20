@@ -26,5 +26,8 @@
   },
   "engines": {
     "node": ">=22"
+  },
+  "optionalDependencies": {
+    "@reclaimprotocol/zk-fetch": "^2.1.0"
   }
 }

@@ -55,6 +55,16 @@ export function salesWindow(event, now = Math.floor(Date.now() / 1000)) {
   return { mode: "in-game", salesClose: close, expiry: close };
 }
 
+/**
+ * In-game quotes need a live book that has moved within maxAgeMs (H-3 residual, N-7). A game that
+ * ends early can leave its book frozen at pre-result prices while the socket stays healthy.
+ */
+export function checkInGameBook(book, maxAgeMs = config.inGameBookMaxAgeMs) {
+  if (book.source !== "ws-depth" || book.changedAgeMs == null || book.changedAgeMs > maxAgeMs) {
+    throw new Error(`Sales closed: this game's Gemini book hasn't moved in the last ${maxAgeMs / 1000} s`);
+  }
+}
+
 class ClientError extends Error {
   status = 400;
 }
@@ -118,6 +128,7 @@ export async function buildQuote(req) {
 
   const now = Math.floor(Date.now() / 1000);
   const win = salesWindow(event, now);
+  if (win.mode === "in-game") checkInGameBook(book);
 
   const quote = {
     eventId,

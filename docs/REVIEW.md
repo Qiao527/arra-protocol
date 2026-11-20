@@ -34,7 +34,7 @@ $ forge coverage             src/ArraVault.sol lines 87.1% -> 89.8%, branches 63
 | --- | --- | --- | --- |
 | H-1 | High | LPs exit at the pre-loss price during the dispute window | Fixed |
 | H-2 | High | Settler can't settle a championship won by any team past the 16th | Fixed |
-| H-3 | High | In-game cover sold on finished games, priced off display prices | Fixed (small residual window) |
+| H-3 | High | In-game cover sold on finished games, priced off display prices | Fixed |
 | M-1 | Medium | One short hedge sweep freezes every LP until someone pays the gap | Fixed |
 | M-2 | Medium | Hedger records the requested quantity, not the fill | Fixed |
 | M-3 | Medium | Hedger webhook: optional auth, no dedupe, concurrent duplicate orders | Fixed |
@@ -54,7 +54,7 @@ $ forge coverage             src/ArraVault.sol lines 87.1% -> 89.8%, branches 63
 | N-4 | Low | Verifier didn't check the bytes were for this event | Fixed |
 | N-5 | Low | Pricer's collateral mirror ignored premiums | Fixed |
 | N-6 | Low | Automatic VOID with all keys in one process skipped the veto window | Fixed |
-| N-7 | Low | Depth freshness is per socket, not per symbol | Not fixed (mitigated) |
+| N-7 | Low | Depth freshness is per socket, not per symbol | Fixed for in-game quotes |
 | I-1..I-6 | Info | Slither triage, inflation attack check, residual risks, live API facts | See below |
 
 ---
@@ -106,7 +106,7 @@ So the pricer would have signed a $5,000 "in-game" cover on WSU, priced at 0.49 
 
 Fix: in-game cover is sold only within a per-sport limit after the scheduled start (basketball and soccer 1.5 h, hockey 2 h, football and baseball 2.5 h; `IN_GAME_MAX_SEC` overrides). Books are built only from `bestAsk`/`bestBid`. Tests: `H-3: no in-game cover once the game is surely over…`, `H-3: buy/sell are display prices…`, `H-3 residual: in-game windows end well inside a regulation game`.
 
-Residual: inside the window, a game that ends early (blowout, mercy rule) can still be quoted if its book is stale. `MAX_PROBABILITY` (0.5) still blocks the winner's normal ~0.99 price.
+Residual: inside the window, a game that ends early (blowout, mercy rule) could still be quoted if its book was stale. `MAX_PROBABILITY` (0.5) blocks the winner's normal ~0.99 price. Closed on Nov 19: an in-game quote now also needs a live depth book that a delta moved within the last 180 s (`IN_GAME_BOOK_MAX_AGE_MS`); a snapshot alone doesn't count, and the modeled REST fallback is refused in-game (`test/ingame-book.test.js`). Measured on the live IND-HOU game: the two sides updated 15 and 8 times in 2 minutes, with a longest gap of 73 s, so 60 s would have closed normal live sales.
 
 ### M-1 One short hedge sweep froze every LP
 
@@ -184,7 +184,7 @@ Introduced by H-1's fix. While Proposed, NAV is marked down, and a veto restores
 - **N-4** `verify.js`: the verifier didn't check the bytes named the event being verified, and passed when the live re-fetch failed. Both fixed.
 - **N-5** `pricing.js:57`: the pricer computed locked collateral as `max L_i`, ignoring `premiumsOf`, so it under-charged capital on crowded championships and didn't see `Insolvent` reverts coming. Fixed.
 - **N-6** `settler.js`: with every key in one process, an automatic VOID was unanimous and skipped the veto window. An automatic VOID now casts only `threshold` votes.
-- **N-7** `depth.js:79`: freshness is "the socket delivered any frame in the last 5 s", so a symbol whose stream goes quiet keeps its last book. Not fixed: a quiet book is usually still the true book, and `buildQuote` separately requires Gemini's REST `marketState: "open"`, which covers halted markets.
+- **N-7** `depth.js:79`: freshness was "the socket delivered any frame in the last 5 s", so a symbol whose stream went quiet kept its last book. Fixed where it matters: each book records when a delta last changed it, and in-game quotes require a change within 180 s (see H-3). Pre-game quotes still accept a quiet book, which is usually the true book; `buildQuote` also requires Gemini's REST `marketState: "open"`.
 
 ### Informational
 

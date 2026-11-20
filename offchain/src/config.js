@@ -40,6 +40,10 @@ export const config = {
   // Hedger
   allowInGame: env("ALLOW_IN_GAME", "true") === "true", // live cover while Gemini keeps the market open
   inGameTtlSec: Number(env("IN_GAME_TTL_SEC", "20")),
+  // In-game: the book must have moved this recently. Live NFL, Nov 19: one side of IND-HOU went 73 s
+  // between updates mid-game, so 60 s would close live sales. The risk is a book left frozen at
+  // pre-result prices after the game ends.
+  inGameBookMaxAgeMs: Number(env("IN_GAME_BOOK_MAX_AGE_MS", "180000")),
   // Latest point (seconds after the scheduled start) at which in-game cover is sold. Gemini keeps
   // finished games open (and isLive: true) for days until it settles, so this cannot come from
   // the market state. IN_GAME_MAX_SEC overrides every sport.

@@ -52,7 +52,9 @@ export function createDepthStore({ now = () => Date.now(), freshMs = FRESH_MS } 
       // A snapshot frame has U == u (every one of 23 live snapshots did; none of 1,078 deltas
       // did). Deltas still in flight from before a gap must not become a partial book.
       if (Number(m.U) !== Number(m.u)) return "awaiting-snapshot";
-      const fresh = { bids: new Map(), asks: new Map(), lastU: Number(m.u) };
+      // changedAt: when a delta last moved this book. A snapshot only says what the book is now,
+      // not that anyone is still trading it, so it doesn't count (in-game quotes need movement).
+      const fresh = { bids: new Map(), asks: new Map(), lastU: Number(m.u), changedAt: null };
       applyLevels(fresh.bids, m.b);
       applyLevels(fresh.asks, m.a);
       books.set(k, fresh);
@@ -72,6 +74,7 @@ export function createDepthStore({ now = () => Date.now(), freshMs = FRESH_MS } 
     applyLevels(book.bids, m.b);
     applyLevels(book.asks, m.a);
     book.lastU = Number(m.u);
+    book.changedAt = now();
     return "delta";
   }
 
@@ -85,6 +88,7 @@ export function createDepthStore({ now = () => Date.now(), freshMs = FRESH_MS } 
       bids: levels(b.bids).sort((x, y) => y.price - x.price),
       source: "ws-depth",
       ageMs: now() - lastFrameAt,
+      changedAgeMs: b.changedAt === null ? null : now() - b.changedAt,
     };
   }
 

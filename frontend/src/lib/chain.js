@@ -95,7 +95,19 @@ export async function readResultProof(eventId) {
  * (zkcheck.js), and its winner must be the outcome the vault settled on (from the keeper's
  * outcome list). Returns { ok: true } | { ok: false, why } | { ok: null, why } when it can't tell.
  */
+const proofChecks = new Map(); // a recorded proof and a settled outcome never change, so a verdict is final
+
 export async function checkResultProof(eventId, winningOutcome) {
+  const key = `${eventId}:${winningOutcome}`;
+  if (!proofChecks.has(key)) {
+    const r = await checkResultProofOnce(eventId, winningOutcome);
+    if (r.ok !== null) proofChecks.set(key, r);
+    return r;
+  }
+  return proofChecks.get(key);
+}
+
+async function checkResultProofOnce(eventId, winningOutcome) {
   const proofsAbiFull = proofsArtifact.abi ?? proofsArtifact;
   const q = new URLSearchParams({ module: "logs", action: "getLogs", fromBlock: "0", toBlock: "latest", address: RESULT_PROOFS,
     topic0: toEventSelector(getAbiItem({ abi: proofsAbiFull, name: "ResultProven" })), topic1: eventId, topic0_1_opr: "and" });

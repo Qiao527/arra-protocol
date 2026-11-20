@@ -130,7 +130,10 @@ export default function VerifyPage({ policyId, params, account }) {
             ["Premium paid", usd(policy.premium)],
             ["Status", voided ? "Void: premium refunded" : won ? (policy.claimed ? "Won: paid out" : "Won: payout owed") : lost ? "Settled: team lost" : STATE[event.state] === "Proposed" ? "Result proposed" : "Open, awaiting the game", "total"],
           ]}
-          fine={merchant ? "Business name as stated by the merchant. Everything else on this page is read live from Arc." : "Read live from Arc. Nothing on this page comes from our servers."}
+          fine={
+            (merchant ? "Business name as stated by the merchant. Everything else on this page is read live from Arc" : "Read live from Arc")
+            + (zkCheck ? ", except the outcome order for the zkTLS check, which comes from Arra’s public keeper." : merchant ? "." : ". Nothing on this page comes from our servers.")
+          }
         />
         {won && !policy.claimed && (
           <div className="panel" style={{ marginTop: 16 }}>

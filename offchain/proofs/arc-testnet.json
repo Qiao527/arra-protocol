@@ -1,33 +1,33 @@
 {
-  "generatedAt": "2026-11-20T02:18:17.480Z",
+  "generatedAt": "2026-11-20T10:30:10.344Z",
   "vault": "0x1D69e0fE014df1007aE66A68a5c9714a7E833d6f",
   "chainId": 5042002,
   "keeper": "https://arra-pricer.onrender.com",
-  "runUrl": "https://github.com/Qiao527/arra-protocol/actions/runs/44659774729",
+  "runUrl": "https://github.com/Qiao527/arra-protocol/actions/runs/44719685918",
   "solvency": {
-    "usdcHeld": 54.508124,
-    "locked": 15,
+    "usdcHeld": 56.282049,
+    "locked": 20,
     "owed": 0,
     "ok": true
   },
   "summary": {
-    "PASS": 0,
-    "FAIL": 0,
+    "PASS": 1,
+    "FAIL": 2,
     "SYNTHETIC": 1,
     "UNCHECKED": 0,
     "UNCONFIRMED": 0,
-    "PENDING": 5
+    "PENDING": 4
   },
   "events": [
     {
       "eventId": "0x0636ff4e144255954bddac8c6740456864980f58f9a8092209eb58b9aca6b8c5",
       "title": "Indianapolis vs Houston",
       "eventTicker": "NFL-2611200115-IND-HOU-M",
-      "state": "Open",
+      "state": "Settled",
       "winningOutcome": 0,
-      "evidenceHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
-      "verdict": "PENDING",
-      "evidence": null,
+      "evidenceHash": "0xdfb2aeb5cc837e86772225a8c414c9d5c23e3da9057bbfa5f0f0ccbf312197e9",
+      "verdict": "FAIL",
+      "evidence": "missing",
       "live": null,
       "synthetic": false,
       "checks": [],
@@ -43,7 +43,7 @@
       "evidenceHash": "0x7af03862a33453596d87395c73d6c543bf01dfdfab989695bd829d2ee93fb964",
       "verdict": "SYNTHETIC",
       "evidence": "ok",
-      "live": "not-settled",
+      "live": "agrees",
       "synthetic": true,
       "checks": [
         {
@@ -97,25 +97,57 @@
       "lockedUsdc": 5
     },
     {
-      "eventId": "0x98c31bafb3e2d506785f8b93fd5f9e293e6e300498239b397e1e3917188a53a4",
-      "title": "Oregon State vs Oregon",
-      "eventTicker": "NCAAM-2611200200-ORST-ORE-M",
-      "state": "None",
-      "winningOutcome": 0,
-      "evidenceHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
-      "verdict": "PENDING",
-      "evidence": null,
+      "eventId": "0xa34d55f1249962249f92f50c824843fc082faf242d49a189fcb8722a63a52271",
+      "title": "Sacramento State vs Stanford",
+      "eventTicker": "NCAAM-2611200300-SAC-STAN-M",
+      "state": "Settled",
+      "winningOutcome": 1,
+      "evidenceHash": "0x494b8a905f9bdd4a61fdb79ca9910418059501a0e09059d508bd0e97c53f4238",
+      "verdict": "FAIL",
+      "evidence": "missing",
       "live": null,
       "synthetic": false,
       "checks": [],
-      "insuredUsdc": 0,
-      "lockedUsdc": 0
+      "insuredUsdc": 5,
+      "lockedUsdc": 5
     },
     {
-      "eventId": "0x2349cfb358cbed6f316c2cd129ef593c2884fc2850fb3586d5e3f612d12c7fe7",
-      "title": "Texas A&M vs TCU: Point Spread",
-      "eventTicker": "NCAAM-2611200100-TAMU-TCU-S",
-      "state": "None",
+      "eventId": "0x736a805ebfa625a939caa7b05eb99d64bca6ea03d2ecd03bb296928062431840",
+      "title": "Tarleton State vs USC",
+      "eventTicker": "NCAAM-2611200400-TARL-USC-M",
+      "state": "Settled",
+      "winningOutcome": 1,
+      "evidenceHash": "0xb607c5a0e472f6a35116d86175020fe609753a04aa123b3de2f9502d3ece272b",
+      "verdict": "PASS",
+      "evidence": "ok",
+      "live": "agrees",
+      "synthetic": false,
+      "checks": [
+        {
+          "name": "event settled onchain",
+          "ok": true
+        },
+        {
+          "name": "evidence hash",
+          "ok": true
+        },
+        {
+          "name": "evidence is for this event",
+          "ok": true
+        },
+        {
+          "name": "winning outcome",
+          "ok": true
+        }
+      ],
+      "insuredUsdc": 5,
+      "lockedUsdc": 5
+    },
+    {
+      "eventId": "0xcf14e086f00dad15c3bb5e5ccb8f97f2473b7b0af6df1467bf4f15a9eee6f299",
+      "title": "Harvard vs Holy Cross",
+      "eventTicker": "NCAAM-2611210000-HAR-HC-M",
+      "state": "Open",
       "winningOutcome": 0,
       "evidenceHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
       "verdict": "PENDING",
@@ -123,8 +155,23 @@
       "live": null,
       "synthetic": false,
       "checks": [],
-      "insuredUsdc": 0,
-      "lockedUsdc": 0
+      "insuredUsdc": 5,
+      "lockedUsdc": 5
+    },
+    {
+      "eventId": "0xaa4944d0485b7dbbe25e001852abc3ad8bd92bd24bab9a6358e442ca7348d036",
+      "title": "Oakland vs Purdue",
+      "eventTicker": "NCAAM-2611210000-OAK-PUR-M",
+      "state": "Open",
+      "winningOutcome": 0,
+      "evidenceHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "verdict": "PENDING",
+      "evidence": null,
+      "live": null,
+      "synthetic": false,
+      "checks": [],
+      "insuredUsdc": 5,
+      "lockedUsdc": 5
     }
   ]
 }

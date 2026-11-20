@@ -67,16 +67,47 @@ export async function readPolicies(count) {
 const topic = (name) => toEventSelector(getAbiItem({ abi: vaultAbi, name }));
 
 /** Logs of one vault event, optionally filtered by an indexed eventId (topic position). */
+// Blockscout allows a client roughly ten log queries before it rate-limits for ~20 minutes, and the
+// proof page and risk desk poll. So: one request per query per minute, results that can't change
+// (a settled event) cached for good, and the last good answer served when the API refuses.
+const LOG_TTL_MS = 60_000;
+const logCache = new Map(); // url -> { at, rows, final }
+function cached(url) {
+  if (logCache.has(url)) return logCache.get(url);
+  try {
+    const v = JSON.parse(sessionStorage.getItem(`arra:logs:${url}`) ?? "null");
+    if (v) logCache.set(url, v);
+    return v;
+  } catch { return null; }
+}
+function remember(url, entry) {
+  logCache.set(url, entry);
+  try { sessionStorage.setItem(`arra:logs:${url}`, JSON.stringify(entry)); } catch { /* storage full or blocked */ }
+}
+
 export async function vaultLogs(name, { eventId, eventIdTopic = 1 } = {}) {
   const q = new URLSearchParams({ module: "logs", action: "getLogs", fromBlock: "0", toBlock: "latest", address: VAULT, topic0: topic(name) });
   if (eventId) {
     q.set(`topic${eventIdTopic}`, eventId);
     q.set(`topic0_${eventIdTopic}_opr`, "and");
   }
-  const res = await fetch(`${EXPLORER}/api?${q}`);
-  const body = await res.json();
-  if (!Array.isArray(body.result)) return [];
-  return body.result.map((l) => {
+  const url = `${EXPLORER}/api?${q}`;
+  const hit = cached(url);
+  if (hit && (hit.final || Date.now() - hit.at < LOG_TTL_MS)) return decodeRows(hit.rows);
+  try {
+    const res = await fetch(url);
+    const body = await res.json();
+    if (!Array.isArray(body.result)) throw new Error(body.message || `explorer ${res.status}`);
+    const final = name === "EventSettled" && !!eventId && body.result.length > 0; // a settlement never changes
+    remember(url, { at: Date.now(), rows: body.result, final });
+    return decodeRows(body.result);
+  } catch {
+    return hit ? decodeRows(hit.rows) : []; // rate-limited or offline: keep showing the last good answer
+  }
+}
+
+function decodeRows(rows) {
+  return rows.map((l) => {
     const decoded = decodeEventLog({ abi: vaultAbi, data: l.data, topics: l.topics.filter(Boolean) });
     return { ...decoded.args, txHash: l.transactionHash, time: Number(l.timeStamp) * 1000, block: Number(l.blockNumber) };
   });

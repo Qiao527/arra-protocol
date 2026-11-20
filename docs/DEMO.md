@@ -27,7 +27,7 @@ Say this up front. Judges trust a demo more when you tell them where the edges a
 
 **0:00 The problem.** "Bars and shops love 'if our team wins, it's on us.' Big players insure it. Mattress Mack paid 10–20% to brokers. A neighbourhood bar can't buy that. Arra sells it in one click, priced by a prediction market and backed by USDC you can see."
 
-**0:15 Make a promise.** On the site, pick a game. Show that the price comes from Gemini's live order book. Choose **$5 testnet**, type a bar name, then **Get signed quote**: the premium, the marketing multiple, and "Gemini depth (live)". Click **Seal the promise** and approve in MetaMask. The receipt shows the promise number and a QR code.
+**0:15 Make a promise.** On the site, click the team button to pick a game and team, and leave the payout at **$5**. The line under the premium shows Gemini's price per contract. Open **How it's priced** to show the cost breakdown, and type a bar name under **Name on the promise**. Click **Get quote**: the premium is now signed and held for a short countdown. Click **Seal the promise** and approve in MetaMask. The receipt shows the promise number and a QR code.
 
 **0:50 Scan it.** Scan the QR with a phone. This is what a customer sees: the promise exists onchain, the $5 is locked, the vault can pay every open promise at once, and how it settles. "No account, no trusting us. It reads the chain."
 

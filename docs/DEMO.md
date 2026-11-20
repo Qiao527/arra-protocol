@@ -47,7 +47,7 @@ cd offchain && node scripts/verify-settlement.js NHL-2611200000-PHI-OTT-M --offl
 
 ## Before you present
 
-- **Wake the service** about a minute before: open https://arra-pricer.onrender.com/health. The free plan can sleep. A keep-alive job pings it every 10 minutes, but GitHub can delay scheduled runs.
+- **Check the service** about a minute before: open https://arra-pricer.onrender.com/health. The keeper pings its own public URL every 10 minutes so the free plan doesn't sleep it; if it was restarted, this wakes it.
 - **Wallet:** about 0.5 testnet USDC on Arc (from https://faucet.circle.com). A $5 promise costs roughly $0.20–$1.10 in premium plus a cent of gas, depending on the team.
 - **If sealing fails with "chain … does not match":** switch MetaMask to **Arc Testnet** by hand and click Seal again. (A wallet that already knows the site skips the automatic network switch; the frontend fix is pending.)
 - **Vault room:** each game can take a $5 promise while the vault holds about $50 or more (10% per-game cap). Several different games at once are fine. If a quote says "Vault capacity reached", pick another game, or have an LP deposit faucet USDC.

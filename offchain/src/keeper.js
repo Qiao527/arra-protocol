@@ -34,6 +34,19 @@ export function resolveTickers(eventIds, events) {
 }
 
 /** Add the public keeper routes to an express app. */
+/**
+ * Render's free plan stops a service after 15 minutes without inbound traffic, which also stops the
+ * settler loop. A request to the service's own public URL goes through Render's proxy and counts as
+ * traffic. RENDER_EXTERNAL_URL is set by Render; elsewhere this does nothing.
+ */
+export function startSelfPing({ url = process.env.RENDER_EXTERNAL_URL, everyMs = 10 * 60_000, fetchImpl = fetch, setIntervalImpl = setInterval } = {}) {
+  if (!url) return null;
+  const target = `${url.replace(/\/$/, "")}/health`;
+  const timer = setIntervalImpl(() => fetchImpl(target, { signal: AbortSignal.timeout(30_000) }).catch(() => {}), everyMs);
+  timer.unref?.();
+  return timer;
+}
+
 export function keeperRoutes(a, { evidenceDir, store, status, registry = readRegistry }) {
   a.get("/keeper", (_req, res) => res.json(status()));
   // Tracked events: ticker, title and the outcome order pinned at first sale (all public facts).
@@ -180,6 +193,7 @@ async function main() {
   const a = app();
   keeperRoutes(a, { evidenceDir, store, status: () => state });
   a.listen(config.port, () => console.log(`Keeper on :${config.port} (settler: ${state.settler.enabled}, hedger: ${hedgerOn}, store: ${store.enabled})`));
+  startSelfPing();
   if (state.settler.enabled) settlerLoop();
   if (hedgerOn) hedgerLoop();
   await sync();

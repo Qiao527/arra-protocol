@@ -175,3 +175,21 @@ test("GET /registry lists tracked events (tickers + pinned outcome order) and GE
     assert.equal((await p.json()).events[0].verdict, "PASS");
   });
 });
+
+test("self-ping: on Render the keeper hits its own public /health so the free plan never sleeps it", async () => {
+  const { startSelfPing } = await import("../src/keeper.js");
+  const hits = [];
+  let tick;
+  const timer = startSelfPing({
+    url: "https://arra-pricer.onrender.com/",
+    fetchImpl: async (u) => (hits.push(u), { ok: true }),
+    setIntervalImpl: (fn, ms) => ((tick = fn), assert.ok(ms < 15 * 60_000, "must beat the 15-minute idle limit"), { unref() {} }),
+  });
+  assert.ok(timer);
+  await tick();
+  assert.deepEqual(hits, ["https://arra-pricer.onrender.com/health"]);
+  assert.equal(startSelfPing({ url: undefined }), null, "off the platform (no RENDER_EXTERNAL_URL) it does nothing");
+  const failing = startSelfPing({ url: "https://x.example", fetchImpl: async () => { throw new Error("down"); }, setIntervalImpl: (fn) => ((tick = fn), {}) });
+  await tick(); // a failed ping must not crash the keeper
+  assert.ok(failing);
+});

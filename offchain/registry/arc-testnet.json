@@ -155,5 +155,13 @@
       "GEMI-NHL-2611200300-DAL-VGK-M-DAL",
       "GEMI-NHL-2611200300-DAL-VGK-M-VGK"
     ]
+  },
+  "0x6096e7345c57389ff2c02454f2ccadce06f81ed3ca892c83e03322d0251bf86f": {
+    "eventTicker": "NCAAM-2611201700-GB-FSU-M",
+    "title": "Green Bay vs Florida State",
+    "outcomes": [
+      "GEMI-NCAAM-2611201700-GB-FSU-M-FSU",
+      "GEMI-NCAAM-2611201700-GB-FSU-M-GB"
+    ]
   }
 }

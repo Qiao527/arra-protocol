@@ -15,6 +15,7 @@ const { getEvent } = await import("../src/gemini.js");
 const { fetchEvidence } = await import("../src/verify.js");
 const { proveEvent } = await import("../src/proofs.js");
 const { createStore } = await import("../src/store.js");
+const { loadZkProof, checkZkProof } = await import("../src/zkcheck.js");
 
 const KEEPER = (process.env.KEEPER_URL ?? dep.pricerUrl).replace(/\/$/, "");
 const STATE = ["None", "Open", "Proposed", "Settled"];
@@ -34,6 +35,12 @@ for (const [eventId, info] of Object.entries(registry)) {
     outcomes: info.outcomes ?? undefined,
     loadBytes: () => fetchEvidence({ base: KEEPER, eventTicker: info.eventTicker, evidenceHash: onchain.evidenceHash }),
     getLive: () => getEvent(info.eventTicker),
+    loadZk: async () => {
+      if (!dep.resultProofs || !dep.resultProofsDeployTx) return null;
+      const z = await loadZkProof({ client: publicClient, address: dep.resultProofs, deployTx: dep.resultProofsDeployTx, eventTicker: info.eventTicker });
+      if (!z) return null;
+      return checkZkProof({ eventTicker: info.eventTicker, outcomes: info.outcomes, winningOutcome: onchain.winningOutcome, ...z, trustedAttestors: [dep.reclaimAttestor] });
+    },
   });
   events.push({
     eventId,

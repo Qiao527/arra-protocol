@@ -91,5 +91,53 @@
       "GEMI-NCAAM-2611200100-TAMU-TCU-S-TCU4",
       "GEMI-NCAAM-2611200100-TAMU-TCU-S-TCU7"
     ]
+  },
+  "0x1b5c778a3d0184b41d6898a44ddfb61978039ede16ce65a677cd6edf0bea5cae": {
+    "eventTicker": "NBA-2611200100-POR-MIL-M",
+    "title": "Portland vs Milwaukee",
+    "outcomes": [
+      "GEMI-NBA-2611200100-POR-MIL-M-MIL",
+      "GEMI-NBA-2611200100-POR-MIL-M-POR"
+    ]
+  },
+  "0xc9cd6b1c93c05018723cd095a687d1084dacac3e60ab1d37a7d98ee8561260b3": {
+    "eventTicker": "NBA-2611200100-LAC-SAS-M",
+    "title": "Los Angeles C vs San Antonio",
+    "outcomes": [
+      "GEMI-NBA-2611200100-LAC-SAS-M-LAC",
+      "GEMI-NBA-2611200100-LAC-SAS-M-SAS"
+    ]
+  },
+  "0x201e58aad8346def68d2cdf87587c23220379bbdaa24a6226ea9072ddddbd620": {
+    "eventTicker": "NBA-2611200100-NYK-MIN-M",
+    "title": "New York vs Minnesota",
+    "outcomes": [
+      "GEMI-NBA-2611200100-NYK-MIN-M-MIN",
+      "GEMI-NBA-2611200100-NYK-MIN-M-NYK"
+    ]
+  },
+  "0x7d880ce8ead811b93ce595f14becf96a4222ab466923b8c3bc6e9cea7480446f": {
+    "eventTicker": "NCAAM-2611200200-UTEP-NMSU-M",
+    "title": "UTEP vs New Mexico State",
+    "outcomes": [
+      "GEMI-NCAAM-2611200200-UTEP-NMSU-M-NMSU",
+      "GEMI-NCAAM-2611200200-UTEP-NMSU-M-UTEP"
+    ]
+  },
+  "0x3babff89fe072ddd6c2cb14f02d63188361c4f01cf57ad1679d5e2b2d0dea959": {
+    "eventTicker": "NCAAM-2611200200-UCSB-PEPP-M",
+    "title": "UC Santa Barbara vs Pepperdine",
+    "outcomes": [
+      "GEMI-NCAAM-2611200200-UCSB-PEPP-M-PEPP",
+      "GEMI-NCAAM-2611200200-UCSB-PEPP-M-UCSB"
+    ]
+  },
+  "0xa34d55f1249962249f92f50c824843fc082faf242d49a189fcb8722a63a52271": {
+    "eventTicker": "NCAAM-2611200300-SAC-STAN-M",
+    "title": "Sacramento State vs Stanford",
+    "outcomes": [
+      "GEMI-NCAAM-2611200300-SAC-STAN-M-SAC",
+      "GEMI-NCAAM-2611200300-SAC-STAN-M-STAN"
+    ]
   }
 }

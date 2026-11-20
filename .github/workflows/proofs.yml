@@ -1,7 +1,7 @@
 name: proofs
 # Independent re-check of every promise the vault sold, from public inputs only: the chain, the
 # keeper's /registry and hash-checked /evidence, and Gemini's live API. With the
-# GITHUB_EVIDENCE_TOKEN secret set, the result is published to the keeper-data branch and served
+# EVIDENCE_TOKEN repo secret set (GitHub reserves the GITHUB_ prefix; it is passed to the script as GITHUB_EVIDENCE_TOKEN), the result is published to the keeper-data branch and served
 # at <keeper>/proofs. Fails if any settled promise fails its proof.
 on:
   schedule:
@@ -32,7 +32,7 @@ jobs:
         env:
           KEEPER_URL: ${{ vars.PRICER_URL }}
           PUBLISH: "true"
-          GITHUB_EVIDENCE_TOKEN: ${{ secrets.GITHUB_EVIDENCE_TOKEN }}
+          GITHUB_EVIDENCE_TOKEN: ${{ secrets.EVIDENCE_TOKEN }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:

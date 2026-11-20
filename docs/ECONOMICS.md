@@ -39,7 +39,7 @@ premium = L·p·(1 + b + k·u²) + r·ΔLocked·(1 − p)
 
 Four bars in four cities each insure their own team to win the title ($5,000 each). Only one team can win, so the vault locks $5,000, not $20,000. The first bar pays the capital charge on $5,000 of added collateral; the next three add none and pay $0 capital charge.
 
-Benchmark: Mattress Mack paid 10–20% of the refund amount for traditional promo insurance in 2017. We land in that range, but instantly, at $1k–$10k sizes, with no broker.
+Benchmark: Mattress Mack paid 10–20% of the refund amount for traditional promo insurance in 2017 ([Las Vegas Review-Journal](https://pressreader.com/usa/las-vegas-review-journal/20171103/282355450010142)). We land in that range, but instantly, at $1k–$10k sizes, with no broker.
 
 ### The favorite–longshot bias works in LPs' favor
 

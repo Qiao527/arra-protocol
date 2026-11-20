@@ -70,7 +70,7 @@ export default function PromisePage({ account, onConnect }) {
   const [data, setData] = useState(null);
   const [eventTicker, setEventTicker] = useState(null);
   const [symbol, setSymbol] = useState(null);
-  const [payout, setPayout] = useState(5000);
+  const [payout, setPayout] = useState(5);
   const [merchant, setMerchant] = useState("");
   const [quote, setQuote] = useState(null);
   const [quoteAt, setQuoteAt] = useState(0);
@@ -165,7 +165,9 @@ export default function PromisePage({ account, onConnect }) {
   }
 
   const amount = payout.toLocaleString("en-US");
-  const PRESETS = [1000, 5000, 10000, 25000];
+  // Testnet vault: about $55 of LP capital with a 10% per-game cap, so a promise above ~$5 per game
+  // can't be backed (and $5,000 also exceeds the depth Gemini shows on most games).
+  const PRESETS = [1, 2, 5];
   return (
     <section className="composer">
       <h1 className="composer-line">
@@ -199,7 +201,7 @@ export default function PromisePage({ account, onConnect }) {
           </div>
           <div className="presets" role="group" aria-label="Quick amounts">
             {PRESETS.map((v) => (
-              <button key={v} type="button" className={`chip sm ${payout === v ? "on" : ""}`} onClick={() => setPayout(v)}>${v / 1000}k</button>
+              <button key={v} type="button" className={`chip sm ${payout === v ? "on" : ""}`} onClick={() => setPayout(v)}>${v}</button>
             ))}
           </div>
         </div>

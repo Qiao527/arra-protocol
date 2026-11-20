@@ -1,7 +1,7 @@
 // Read-only access to ArraVault on Arc: contract views over JSON-RPC, history via Blockscout
 // (Arc's RPC caps eth_getLogs ranges; the explorer API indexes the full history).
 import { createPublicClient, http, keccak256, toBytes, decodeEventLog, decodeFunctionData, getAbiItem, toEventSelector } from "viem";
-import { chain, VAULT, USDC, EXPLORER, PRICER_URL, vaultAbi, erc20Abi, RESULT_PROOFS, proofsAbi } from "./config.js";
+import { chain, VAULT, USDC, EXPLORER, PRICER_URL, vaultAbi, erc20Abi, RESULT_PROOFS, proofsAbi, deploymentInfo } from "./config.js";
 import proofsArtifact from "../../../offchain/abi/ArraResultProofs.json";
 import { checkClaim } from "./zkcheck.js";
 
@@ -95,6 +95,19 @@ export async function readResultProof(eventId) {
  * (zkcheck.js), and its winner must be the outcome the vault settled on (from the keeper's
  * outcome list). Returns { ok: true } | { ok: false, why } | { ok: null, why } when it can't tell.
  */
+let proofsFromBlock = null;
+async function proofTxFromRpc(eventId, abi) {
+  if (!deploymentInfo.resultProofsDeployTx) return null;
+  proofsFromBlock ??= (await client.getTransactionReceipt({ hash: deploymentInfo.resultProofsDeployTx })).blockNumber;
+  const head = await client.getBlockNumber({ cacheTime: 0 });
+  for (let a = proofsFromBlock; a <= head; a += 10_000n) {
+    const b = a + 9_999n < head ? a + 9_999n : head;
+    const found = await client.getContractEvents({ address: RESULT_PROOFS, abi, eventName: "ResultProven", args: { eventId }, fromBlock: a, toBlock: b });
+    if (found.length) return found[0].transactionHash;
+  }
+  return null;
+}
+
 const proofChecks = new Map(); // a recorded proof and a settled outcome never change, so a verdict is final
 
 export async function checkResultProof(eventId, winningOutcome) {
@@ -111,9 +124,12 @@ async function checkResultProofOnce(eventId, winningOutcome) {
   const proofsAbiFull = proofsArtifact.abi ?? proofsArtifact;
   const q = new URLSearchParams({ module: "logs", action: "getLogs", fromBlock: "0", toBlock: "latest", address: RESULT_PROOFS,
     topic0: toEventSelector(getAbiItem({ abi: proofsAbiFull, name: "ResultProven" })), topic1: eventId, topic0_1_opr: "and" });
-  const logs = (await (await fetch(`${EXPLORER}/api?${q}`)).json()).result;
-  if (!Array.isArray(logs) || !logs.length) return { ok: null, why: "the proof transaction could not be found" };
-  const tx = await client.getTransaction({ hash: logs[0].transactionHash });
+  const logs = await fetch(`${EXPLORER}/api?${q}`).then((r) => r.json()).then((b) => b.result).catch(() => null);
+  // The explorer API allows about 10 calls per client before it answers 429 for ~20 min; fall back
+  // to the RPC, scanning from the proofs contract's deploy block in Arc's 10,000-block windows.
+  const hash = Array.isArray(logs) && logs.length ? logs[0].transactionHash : await proofTxFromRpc(eventId, proofsAbiFull);
+  if (!hash) return { ok: null, why: "the proof transaction could not be found" };
+  const tx = await client.getTransaction({ hash });
   const { functionName, args } = decodeFunctionData({ abi: proofsAbiFull, data: tx.input });
   if (functionName !== "prove") return { ok: null, why: "the proof was recorded through another contract" };
   const [eventTicker, winningSymbol, claim] = args;

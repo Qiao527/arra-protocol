@@ -12,6 +12,12 @@ export const deploymentInfo = deployment;
 /** Pricer service (live Gemini quotes). Build-time env wins, then the deployment file. */
 export const PRICER_URL = (import.meta.env.VITE_PRICER_URL || deployment.pricerUrl || "").replace(/\/$/, "");
 
+export const RESULT_PROOFS = deployment.resultProofs;
+export const proofsAbi = [
+  { type: "function", name: "proofOf", stateMutability: "view", inputs: [{ name: "eventId", type: "bytes32" }],
+    outputs: [{ name: "identifier", type: "bytes32" }, { name: "attestor", type: "address" }, { name: "timestampS", type: "uint64" }, { name: "winningSymbolHash", type: "bytes32" }] },
+];
+
 export const vaultAbi = vaultArtifact.abi ?? vaultArtifact;
 
 export const erc20Abi = [

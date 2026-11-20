@@ -171,5 +171,13 @@
       "GEMI-NCAAM-2611200400-TARL-USC-M-TARL",
       "GEMI-NCAAM-2611200400-TARL-USC-M-USC"
     ]
+  },
+  "0xcf14e086f00dad15c3bb5e5ccb8f97f2473b7b0af6df1467bf4f15a9eee6f299": {
+    "eventTicker": "NCAAM-2611210000-HAR-HC-M",
+    "title": "Harvard vs Holy Cross",
+    "outcomes": [
+      "GEMI-NCAAM-2611210000-HAR-HC-M-HAR",
+      "GEMI-NCAAM-2611210000-HAR-HC-M-HC"
+    ]
   }
 }

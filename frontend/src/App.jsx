@@ -1,3 +1,4 @@
+import { ArrowRight } from "./components/Icons.jsx";
 import { useEffect, useState } from "react";
 import PromisePage from "./pages/PromisePage.jsx";
 import VerifyPage from "./pages/VerifyPage.jsx";
@@ -72,7 +73,7 @@ export default function App() {
       {route.page === "promise" && <Hero />}
       {route.page === "promise" && <Ticker />}
     <div className="shell">
-      <main id="make" className={route.page === "promise" ? "on-promise" : undefined}>
+      <main id="make" key={route.page} className={route.page === "promise" ? "on-promise" : undefined}>
         {route.page === "promise" && <PromisePage account={account} onConnect={onConnect} />}
         {route.page === "verify" && <VerifyPage policyId={route.policyId} params={route.params} account={account} />}
         {route.page === "desk" && <DeskPage account={account} onConnect={onConnect} />}
@@ -88,7 +89,7 @@ export default function App() {
             Four bars in four cities each promise their team wins the title. <span className="dim">Only one team can.</span> So
             the vault locks <b>one payout</b>, not four, and the premium for a long shot stays near <b>15%</b>.
           </p>
-          <a className="band-link" href="#/desk">See it on the risk desk</a>
+          <a className="band-link" href="#/desk">See it on the risk desk <ArrowRight /></a>
           </div>
           <figure className="netting-fig reveal" aria-label="Four promises of $5, one lock of $5">
             {[["New Orleans", "Pelicans"], ["Dallas", "Mavericks"], ["Indianapolis", "Pacers"], ["Cleveland", "Cavaliers"]].map(([city, team]) => (

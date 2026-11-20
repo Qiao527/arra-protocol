@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import PromiseDoc from "../components/PromiseDoc.jsx";
 import CountUp from "../components/CountUp.jsx";
 import Ring from "../components/Ring.jsx";
+import { ArrowRight, Chevron, Lock, Search, Close, Spinner } from "../components/Icons.jsx";
 import { loadEvents, requestQuote, indicativePremium, pricerConfigured } from "../lib/pricer.js";
 import { buyCover } from "../lib/wallet.js";
 import { txUrl } from "../lib/config.js";
@@ -37,8 +38,10 @@ function Picker({ events, now, onPick, onClose }) {
     <div className="sheet" role="dialog" aria-modal="true" aria-label="Choose a team" onClick={onClose}>
       <div className="sheet-card" onClick={(e) => e.stopPropagation()}>
         <div className="sheet-head">
-          <input ref={input} className="sheet-search" placeholder="Search a team or game" value={q} onChange={(e) => setQ(e.target.value)} />
-          <button className="btn ghost" onClick={onClose}>Close</button>
+          <label className="input-wrap sheet-field"><Search />
+            <input ref={input} className="sheet-search" placeholder="Search a team or game" value={q} onChange={(e) => setQ(e.target.value)} />
+          </label>
+          <button className="icon-btn" onClick={onClose} aria-label="Close"><Close /></button>
         </div>
         <div className="sheet-list" data-lenis-prevent>
           {list.map((e) => (
@@ -154,7 +157,7 @@ export default function PromisePage({ account, onConnect }) {
             lines={[["Payout locked", usd(done.payout)], ["Premium paid", usd(done.premium)]]} />
         </div>
         <div className="composer-actions">
-          <a className="btn primary big" href={`#/p/${done.policyId}?${new URLSearchParams({ t: done.ticker, l: done.label, ...(merchant ? { m: merchant } : {}) })}`}>Open the proof page</a>
+          <a className="btn primary big" href={`#/p/${done.policyId}?${new URLSearchParams({ t: done.ticker, l: done.label, ...(merchant ? { m: merchant } : {}) })}`}>Open the proof page<ArrowRight /></a>
           <a className="btn ghost big" href={txUrl(done.hash)} target="_blank" rel="noreferrer">Transaction</a>
         </div>
       </section>
@@ -162,51 +165,65 @@ export default function PromisePage({ account, onConnect }) {
   }
 
   const amount = payout.toLocaleString("en-US");
+  const PRESETS = [1000, 5000, 10000, 25000];
   return (
     <section className="composer">
       <h1 className="composer-line">
         If{" "}
-        <button className="token" onClick={() => setPicking(true)} aria-label="Change team">{contract?.label ?? "your team"}</button>{" "}
-        {event && isChampionship(event) ? <>wins {shortTitle(event)},</> : onHalf ? <>wins the 2nd half,</> : <>wins,</>} it’s <em>on us.</em>
-        <br />
-        Up to{" "}
-        <label className="token token-amount">
-          <span className="sr-only">Payout in USDC</span>$
-          <span className="autosize">
-            <span aria-hidden="true">{amount || "0"}</span>
-            <input inputMode="numeric" size={1} value={amount}
-              onChange={(e) => setPayout(Math.min(1e7, Number(e.target.value.replace(/[^0-9]/g, "")) || 0))} />
-          </span>
-        </label>
-        .
+        <button className="token" onClick={() => setPicking(true)} aria-label={`Team: ${contract?.label ?? "choose"}. Change team`}>
+          <span>{contract?.label ?? "your team"}</span><Chevron />
+        </button>{" "}
+        {event && isChampionship(event) ? <>wins {shortTitle(event)},</> : onHalf ? <>wins the 2nd half,</> : <>wins,</>} it’s <em>on&nbsp;us.</em>
       </h1>
 
       <div className="composer-meta">
         <span className="meta"><span className={`dot ${data?.live ? "live" : "warn"}`} />{event ? (isChampionship(event) ? "Season-long" : `${parent?.title}, ${when(parent?.startTime)}`) : "Loading markets"}</span>
         {half && (
-          <button className={`linkish ${onHalf ? "on" : ""}`} onClick={toggleHalf}>
-            {onHalf ? "Back to full game" : "Halftime comeback"}
+          <button className={`chip ${onHalf ? "on" : ""}`} onClick={toggleHalf} aria-pressed={onHalf}>
+            Halftime comeback
           </button>
         )}
       </div>
 
-      <div className="composer-price">
-        <div>
-          <div className="price-label">{b ? "Premium, signed" : "Premium"}</div>
-          <div className="price-value"><CountUp value={premium} format={(x) => usd(x)} /></div>
-          <div className="price-sub">{premium ? `${pct(premium / payout)} of the payout` : " "}</div>
+      <div className="deal">
+        <div className="deal-cell">
+          <label className="deal-k" htmlFor="payout">Payout if they win</label>
+          <div className="deal-amount">
+            <span className="deal-cur">$</span>
+            <span className="autosize">
+              <span aria-hidden="true">{amount || "0"}</span>
+              <input id="payout" inputMode="numeric" size={1} value={amount} autoComplete="off"
+                onChange={(e) => setPayout(Math.min(1e7, Number(e.target.value.replace(/[^0-9]/g, "")) || 0))} />
+            </span>
+            <span className="deal-unit">USDC</span>
+          </div>
+          <div className="presets" role="group" aria-label="Quick amounts">
+            {PRESETS.map((v) => (
+              <button key={v} type="button" className={`chip sm ${payout === v ? "on" : ""}`} onClick={() => setPayout(v)}>${v / 1000}k</button>
+            ))}
+          </div>
         </div>
-        <div className="composer-cta">
+
+        <div className="deal-cell">
+          <span className="deal-k">{b ? "Premium, signed" : "Premium"}</span>
+          <div className="deal-v num"><CountUp value={premium} format={(x) => usd(x)} /></div>
+          <div className="deal-sub">
+            <span>{premium ? `${pct(premium / payout)} of the payout` : " "}</span>
+            {ask > 0 && <span className="faint num">Gemini {cents(b?.pExec ?? ask)}</span>}
+          </div>
+        </div>
+
+        <div className="deal-cell deal-cta">
           {quote ? (
             <>
               <button className="btn primary big" onClick={seal} disabled={!!busy || secsLeft === 0}>
-                {busy ? `${busy}…` : secsLeft === 0 ? "Quote expired" : "Seal the promise"}
+                {busy ? <><Spinner />{busy}</> : secsLeft === 0 ? "Quote expired" : <><Lock />Seal the promise</>}
               </button>
-              <span className="countdown meta"><Ring left={secsLeft} total={Math.max(1, Number(quote.quote.expiry) - quoteAt)} />{secsLeft}s</span>
+              <span className="countdown meta"><Ring left={secsLeft} total={Math.max(1, Number(quote.quote.expiry) - quoteAt)} />Quote held {secsLeft}s</span>
             </>
           ) : (
             <button className="btn primary big" onClick={getQuote} disabled={!!busy || !contract || !(payout > 0) || ph === "done" || !pricerConfigured()}>
-              {busy ? `${busy}…` : !account ? "Connect to quote" : ph === "live" ? "Quote live" : "Get quote"}
+              {busy ? <><Spinner />{busy}</> : <>{!account ? "Connect to quote" : ph === "live" ? "Quote live" : "Get quote"}<ArrowRight /></>}
             </button>
           )}
         </div>
@@ -223,7 +240,7 @@ export default function PromisePage({ account, onConnect }) {
           <div className="row"><span className="muted">Buffer and capacity</span><span className="num">{usd(b ? b.buffer + b.utilizationSurcharge : indicative ? indicative.buffer + indicative.surcharge : null)}</span></div>
           <div className="row"><span className="muted">Capital charge</span><span className="num">{usd(b?.capitalCharge ?? indicative?.capital)}</span></div>
           <label className="row"><span className="muted">Name on the promise</span>
-            <input className="inline-input" placeholder="Your bar" value={merchant} onChange={(e) => setMerchant(e.target.value.slice(0, 40))} />
+            <input className="field-input" placeholder="Your bar" value={merchant} onChange={(e) => setMerchant(e.target.value.slice(0, 40))} />
           </label>
           {!pricerConfigured() && <p className="faint">Pricer offline. This is an estimate.</p>}
         </div>

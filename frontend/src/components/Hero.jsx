@@ -1,10 +1,28 @@
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
+import { ArrowRight } from "./Icons.jsx";
 
+// Each headline is a list of [text, emphasis] runs; words are masked and rise in one at a time.
 const BEATS = [
-  { h: <>“If we win, it’s <em>on us.</em>”</>, p: "A bar’s best promo, until the upset happens." },
-  { h: <>Arra locks the payout in <em>USDC.</em></>, p: "Priced by Gemini’s prediction market. Held on Arc." },
-  { h: <>Paid at the <em>whistle.</em></>, p: "Customers scan a QR code to see the money is there." },
+  { h: [["“If we win, it’s"], ["on us.”", true]], p: "A bar’s best promo, until the upset happens." },
+  { h: [["Arra locks the payout in"], ["USDC.", true]], p: "Priced by Gemini’s prediction market. Held on Arc." },
+  { h: [["Paid at the"], ["whistle.", true]], p: "Customers scan a QR code to see the money is there." },
 ];
+
+function Words({ runs }) {
+  let i = 0;
+  return runs.flatMap(([text, em]) =>
+    text.split(" ").map((w) => {
+      const k = i++;
+      const inner = <span className="w-i" style={{ "--i": k }}>{w}</span>;
+      return <Fragment key={k}>{k > 0 && " "}<span className="w">{em ? <em>{inner}</em> : inner}</span></Fragment>;
+    }),
+  );
+}
+
+const goMake = () => {
+  const el = document.getElementById("make");
+  window.__lenis ? window.__lenis.scrollTo(el, { duration: 1.6 }) : el?.scrollIntoView({ behavior: "smooth" });
+};
 
 /** Scroll-driven 3D hero. The WebGL scene loads lazily; without WebGL the copy still reads in order. */
 export default function Hero() {
@@ -47,17 +65,29 @@ export default function Hero() {
       <div className="hero3d-sticky">
         <canvas ref={canvas} className={`hero3d-canvas ${ready ? "on" : ""}`} aria-hidden="true" />
         <div className="hero3d-copy">
-          <h1 className="hero3d-title" key={beat}>{BEATS[beat].h}</h1>
-          <p className="hero3d-p" key={`p${beat}`}>{BEATS[beat].p}</p>
-          {beat === 2 && (
-            <button className="btn primary big hero3d-cta" onClick={() => { const el = document.getElementById("make"); window.__lenis ? window.__lenis.scrollTo(el, { duration: 1.4 }) : el?.scrollIntoView({ behavior: "smooth" }); }}>
-              Make a promise
-            </button>
-          )}
+          {BEATS.map((b, i) => (
+            <div key={i} className={`beat ${i === beat ? "on" : i < beat ? "past" : ""}`} aria-hidden={i !== beat}>
+              <h1 className="hero3d-title"><Words runs={b.h} /></h1>
+              <p className="hero3d-p">{b.p}</p>
+              {i === 2 && (
+                <button className="btn primary big hero3d-cta" onClick={goMake} tabIndex={beat === 2 ? 0 : -1}>
+                  Make a promise <ArrowRight />
+                </button>
+              )}
+            </div>
+          ))}
         </div>
         <div className="hero3d-foot">
-          <span className="num">{String(beat + 1).padStart(2, "0")} / 03</span>
-          <span style={{ opacity: p < 0.05 ? 1 : 0, transition: "opacity .4s" }}>Scroll</span>
+          <span className="hero3d-count num">
+            <span className="hero3d-n" key={beat}>{String(beat + 1).padStart(2, "0")}</span>
+            <span className="faint"> / 03</span>
+          </span>
+          <span className="hero3d-progress" aria-hidden="true">
+            {[0, 1, 2].map((i) => (
+              <i key={i}><b style={{ transform: `scaleX(${Math.min(1, Math.max(0, p * 3 - i))})` }} /></i>
+            ))}
+          </span>
+          <span className="hero3d-scroll" style={{ opacity: p < 0.05 ? 1 : 0 }}>Scroll</span>
         </div>
       </div>
     </section>

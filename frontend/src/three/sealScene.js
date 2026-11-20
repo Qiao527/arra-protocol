@@ -4,60 +4,103 @@
 //   0.33-0.66  locked in USDC: it settles face-on to camera
 //   0.66-1.00  paid at the whistle: a band of light sweeps across the face
 import * as THREE from "three";
-import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 
 const smooth = (a, b, x) => {
   const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
   return t * t * (3 - 2 * t);
 };
 
-/** Struck-coin face as a bump map: raised rim, beaded ring, concentric field lines, ARRA and a value line. */
-function drawFace(g, S) {
-  g.fillStyle = "#808080";
+const SERIF = "'Source Serif 4 Variable', Georgia, serif";
+const SANS = "'Inter Variable', Helvetica, Arial, sans-serif";
+
+/**
+ * Struck-coin face as a height map: raised rim, beaded ring, lathe-turned field, legend.
+ */
+function drawFace(g, S, { field, relief, lines }) {
+  g.fillStyle = field;
   g.fillRect(0, 0, S, S);
   const cx = S / 2;
-  g.lineWidth = 46; g.strokeStyle = "#ffffff";
+  g.lineWidth = 46; g.strokeStyle = relief;
   g.beginPath(); g.arc(cx, cx, S / 2 - 26, 0, Math.PI * 2); g.stroke();
-  g.fillStyle = "#e6e6e6";
-  for (let i = 0; i < 96; i++) {
-    const a = (i / 96) * Math.PI * 2;
-    g.beginPath(); g.arc(cx + Math.cos(a) * 430, cx + Math.sin(a) * 430, 6, 0, Math.PI * 2); g.fill();
+  g.fillStyle = relief;
+  for (let i = 0; i < 120; i++) {
+    const a = (i / 120) * Math.PI * 2;
+    g.beginPath(); g.arc(cx + Math.cos(a) * 432, cx + Math.sin(a) * 432, 5, 0, Math.PI * 2); g.fill();
   }
-  g.lineWidth = 2; g.strokeStyle = "#868686";
-  for (let r = 60; r < 400; r += 18) { g.beginPath(); g.arc(cx, cx, r, 0, Math.PI * 2); g.stroke(); }
-  g.fillStyle = "#f2f2f2";
+  // lathe lines across the field catch the light in a slow radial sheen
+  g.lineWidth = 1.5; g.strokeStyle = lines;
+  for (let r = 40; r < 404; r += 9) { g.beginPath(); g.arc(cx, cx, r, 0, Math.PI * 2); g.stroke(); }
+  g.fillStyle = relief;
   g.textAlign = "center"; g.textBaseline = "middle";
-  g.font = "500 220px Geist, Helvetica, Arial, sans-serif";
-  g.fillText("ARRA", cx, cx - 20);
-  g.font = "500 54px 'Geist Mono', ui-monospace, monospace";
-  g.fillText("1 USDC   ARC", cx, cx + 150);
-  g.lineWidth = 6; g.strokeStyle = "#f2f2f2";
-  g.beginPath(); g.moveTo(cx - 170, cx + 95); g.lineTo(cx + 170, cx + 95); g.stroke();
+  g.font = `500 236px ${SERIF}`;
+  if ("letterSpacing" in g) g.letterSpacing = "6px";
+  g.fillText("Arra", cx, cx - 28);
+  g.font = `600 46px ${SANS}`;
+  if ("letterSpacing" in g) g.letterSpacing = "14px";
+  g.fillText("ONE USDC", cx, cx + 150);
+  g.lineWidth = 5; g.strokeStyle = relief;
+  g.beginPath(); g.moveTo(cx - 150, cx + 92); g.lineTo(cx + 150, cx + 92); g.stroke();
 }
 
-/** Struck-coin face as a bump map: raised rim, beaded ring, lathe lines, ARRA and a value line. */
-function faceTexture() {
+function faceTextures() {
   const S = 1024;
-  const c = document.createElement("canvas");
-  c.width = c.height = S;
-  const soft = document.createElement("canvas");
-  soft.width = soft.height = S;
-  const t = new THREE.CanvasTexture(soft);
-  const paint = () => {
-    const g = c.getContext("2d");
-    g.clearRect(0, 0, S, S);
-    drawFace(g, S);
-    const sg = soft.getContext("2d");
-    sg.filter = "blur(2px)";
-    sg.drawImage(c, 0, 0);
-    t.needsUpdate = true;
+  const make = (pal, blur) => {
+    const c = document.createElement("canvas");
+    c.width = c.height = S;
+    const out = document.createElement("canvas");
+    out.width = out.height = S;
+    const t = new THREE.CanvasTexture(out);
+    t.anisotropy = 8;
+    t.center.set(0.5, 0.5);
+    t.rotation = Math.PI / 2; // cylinder caps map u/v rotated; turn the legend upright
+    const paint = () => {
+      const g = c.getContext("2d");
+      g.clearRect(0, 0, S, S);
+      drawFace(g, S, pal);
+      const o = out.getContext("2d");
+      o.filter = blur ? `blur(${blur}px)` : "none";
+      o.clearRect(0, 0, S, S);
+      o.drawImage(c, 0, 0);
+      t.needsUpdate = true;
+    };
+    return { t, paint };
   };
+  const bump = make({ field: "#7a7a7a", relief: "#ffffff", lines: "#828282" }, 2);
+  const paint = () => bump.paint();
   paint();
-  document.fonts?.load("500 220px Geist").then(paint).catch(() => {});
-  t.anisotropy = 8;
-  t.center.set(0.5, 0.5);
-  t.rotation = Math.PI / 2; // cylinder caps map u/v rotated; turn the legend upright
-  return t;
+  Promise.all([document.fonts?.load(`500 236px ${SERIF}`), document.fonts?.load(`600 46px ${SANS}`)]).then(paint).catch(() => {});
+  return { bump: bump.t };
+}
+
+/**
+ * A photo studio as an environment map: a dim grey room with softboxes. The strips are what a
+ * polished coin actually shows, long clean highlights, rather than a blurry room.
+ */
+function studio() {
+  const env = new THREE.Scene();
+  const room = new THREE.Mesh(new THREE.SphereGeometry(20, 32, 16), new THREE.MeshBasicMaterial({ color: 0x5e6261, side: THREE.BackSide }));
+  env.add(room);
+  const box = (w, h, x, y, z, k) => {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: new THREE.Color(1, 1, 1).multiplyScalar(k), side: THREE.DoubleSide }));
+    m.position.set(x, y, z);
+    m.lookAt(0, 0, 0);
+    env.add(m);
+  };
+  box(14, 4, 0, 12, 4, 3.2);     // overhead softbox
+  box(1.2, 16, -11, 0, 6, 6);    // left strip
+  box(1.2, 16, 11, 1, 2, 4.5);   // right strip
+  box(18, 0.5, 0, -4, 10, 5);    // a thin floor-level line: the "tech" glint across the face
+  box(6, 6, 0, 2, -14, 1.4);     // back fill for the rim
+  // a graded wall behind the camera: a face-on coin mirrors it as a top-lit gradient, not flat grey
+  box(44, 3.4, 0, 6.5, 12, 3.0);
+  box(44, 3.4, 0, 3.0, 12, 1.9);
+  box(44, 3.4, 0, -0.5, 12, 1.0);
+  box(3, 10, 9, -1, 13, 3.5);    // front-right kicker, a second bright edge on the field
+  // a faint floor so the lower half of the coin is not black
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(40, 40), new THREE.MeshBasicMaterial({ color: 0xc4c7c6 }));
+  floor.rotation.x = -Math.PI / 2; floor.position.y = -10;
+  env.add(floor);
+  return env;
 }
 
 /** Reeded edge as a bump map: fine vertical ridges wrapped around the rim. */
@@ -83,22 +126,24 @@ export function createSealScene(canvas, { reducedMotion = false } = {}) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: "high-performance" });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, window.innerWidth < 700 ? 1.5 : 2));
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.1;
+  renderer.toneMappingExposure = 1.0;
   renderer.setClearColor(0x000000, 0);
 
   const scene = new THREE.Scene();
   const pmrem = new THREE.PMREMGenerator(renderer);
-  scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.02).texture;
+  scene.environment = pmrem.fromScene(studio(), 0.01).texture;
 
   const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
   camera.position.set(0, 0, 10);
 
-  const bump = faceTexture();
+  const { bump } = faceTextures();
   const reed = edgeTexture();
-  const edge = new THREE.MeshPhysicalMaterial({ color: 0xdfe2e1, metalness: 1, roughness: 0.3, bumpMap: reed, bumpScale: 1.5, envMapIntensity: 1.1 });
+  // sterling: a hair warmer than pure grey, fully metallic
+  const edge = new THREE.MeshPhysicalMaterial({ color: 0xe6e8e7, metalness: 1, roughness: 0.2, bumpMap: reed, bumpScale: 1.2, envMapIntensity: 1 });
   const face = new THREE.MeshPhysicalMaterial({
-    color: 0xe4e6e5, metalness: 1, roughness: 0.3, clearcoat: 0.4, clearcoatRoughness: 0.25,
-    bumpMap: bump, bumpScale: 1.6, envMapIntensity: 1.15,
+    color: 0xd4d7d6, metalness: 1, roughness: 0.2,
+    clearcoat: 0.6, clearcoatRoughness: 0.08,
+    bumpMap: bump, bumpScale: 1.8, envMapIntensity: 0.95,
   });
   const coin = new THREE.Mesh(coinGeometry(), [edge, face, face]);
 
@@ -178,6 +223,7 @@ export function createSealScene(canvas, { reducedMotion = false } = {}) {
     // paid: a band of light sweeps across the face, then holds soft
     sweep.intensity = pay > 0 && pay < 1 ? 160 * Math.sin(pay * Math.PI) : pay >= 1 ? 25 : 0;
     sweep.position.x = -6 + pay * 12;
+    if (!reducedMotion && scene.environmentRotation) scene.environmentRotation.y = Math.sin(t * 0.00015) * 0.22;
     group.scale.setScalar((narrow ? 0.62 : 0.74) * (1 + pay * 0.04));
     renderer.render(scene, camera);
     if (running && !reducedMotion) raf = requestAnimationFrame(frame);

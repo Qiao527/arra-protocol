@@ -4,7 +4,7 @@
 
 > *Arra* comes from the Roman *arrha*: earnest money paid up front to make a promise binding.
 
-A bar promises: *"If the underdog wins, everyone's tab is free, up to $5,000."* It pays about $737 for cover. A QR code on the table lets any customer check that the $5,000 is locked onchain. If the upset happens, the $5,000 lands in the bar's wallet within seconds. If not, the bar paid for a banner that packed the room.
+A bar promises: *"If the underdog wins, everyone's tab is free, up to $5,000."* It pays about $737 for cover. A QR code on the table lets any customer check that the $5,000 is locked onchain. If the upset happens, the $5,000 lands in the bar's wallet minutes after Gemini settles the game. If not, the bar paid for a banner that packed the room.
 
 Track: **DeFi & Onchain Applications** · Chain award: **Best use of Arc** · Bounty: **Gemini Prediction Markets**
 
@@ -24,8 +24,8 @@ Track: **DeFi & Onchain Applications** · Chain award: **Best use of Arc** · Bo
 
 ## Why this exists
 
-- **The demand is real.** Houston's "Mattress Mack" has hedged "refund if the Astros win" promotions for years: traditional promo insurance at 10–20% of the refund amount, sportsbook bets, and in 2026 a Kalshi position. Small merchants can't buy any of that. Prize-indemnity insurance is broker-led and slow.
-- **The price signal is here.** Sports dominate event-contract volume. Prediction markets have the price and the depth, but no product turns them into cover a merchant can buy in one click.
+- **The demand is real.** Houston's "Mattress Mack" has hedged "refund if the Astros win" promotions for years: promo insurance at 10–20% of the refund in 2017 ([Las Vegas Review-Journal](https://pressreader.com/usa/las-vegas-review-journal/20171103/282355450010142)), sportsbook bets, and in 2026 a $516,000 Kalshi position ([Bonus.com](https://www.bonus.com/news/mattress-mack-uses-kalshi-to-hedge-astros-world-series-promotion/)). A New York bar now runs the same kind of title promo and hedges it on Kalshi by hand ([Casino.org](https://casino.org/news/nyc-bar-mimics-mattress-mack-but-hedges-prediction-market)). Prize-indemnity insurance is broker-led and slow, and a bar can't place and size a hedge itself the afternoon before a game.
+- **The price signal is here.** Prediction markets already price these outcomes, but no product turns that price into cover a merchant can buy in one click.
 - **What Arra adds:** an onchain USDC pool that underwrites the cover, prices it from Gemini order-book depth, nets mutually exclusive outcomes, hedges the excess on Gemini, and pays winners without a claims process.
 
 ## How it works
@@ -34,14 +34,14 @@ Track: **DeFi & Onchain Applications** · Chain award: **Best use of Arc** · Bo
  Liquidity providers ─1 deposit USDC─▶ ┌────────────────────────┐ ◀─2 signed quote── Pricer ◀── Gemini order book
                                        │    ArraVault (Arc)     │
  Merchant ─────────3 premium─────────▶ │  USDC · netting · caps │ ─hedge excess─▶ Hedger ──▶ Gemini order
-          ◀────────6 payout──────────── │  solvency · quorum     │ ◀─4 CoverPurchased (QuickNode Stream)
+          ◀────────6 payout──────────── │  solvency · quorum     │ ◀─4 CoverPurchased (log poll)
                                        └────────────────────────┘ ◀─5 votes + evidence── Settlers ◀── Gemini result
 ```
 
 1. **LPs deposit USDC** into the ERC-4626 vault and receive `arLP` shares.
 2. **Pricer** walks Gemini's order book for the full payout size and signs a 60-second EIP-712 quote.
 3. **Merchant calls `buyCover(quote, sig)`.** The contract checks signature, expiry, buyer, nonce, sales close, per-event cap and solvency, then takes the premium.
-4. **Hedger** receives the `CoverPurchased` log via QuickNode Streams, buys the same outcome on Gemini when unhedged exposure crosses a threshold, and calls `recordHedge` with the Gemini order ID.
+4. **Hedger** watches `CoverPurchased` logs (the live keeper polls Arc; a QuickNode Streams webhook is also supported), buys the same outcome on Gemini when unhedged exposure crosses a threshold, and calls `recordHedge` with the Gemini order ID.
 5. **Settlers** vote Gemini's result with `voteResult`, attaching `keccak256(raw Gemini settlement payload)` as evidence.
 6. **Anyone calls `claim`.** USDC goes straight to the merchant.
 
@@ -81,7 +81,7 @@ As one event fills up, each extra dollar of cover costs more (`k·u²`). The vau
 
 ### Settlement: optimistic fast path
 
-- **All settlers agree → settles instantly.** The merchant is paid within seconds of the final whistle.
+- **All settlers agree → settles instantly.** Settlers vote only after Gemini has shown the same result for 10 minutes in a row (`SETTLE_CONFIRM_SEC`), because Gemini sometimes reopens a result for review. The merchant is paid in the same pass.
 - **Only the threshold agrees (2 of 3) → dispute window.** The guardian can veto and force a re-vote; anyone finalizes afterwards.
 
 ### Risk controls (enforced in `ArraVault.sol`)
@@ -103,7 +103,7 @@ Only markets whose outcomes are **mutually exclusive**, because netting depends 
 
 **Real order-book depth.** Gemini's REST endpoints carry only top of book, so the pricer and hedger stream depth from `wss://ws.gemini.com?snapshot=-1` (`{instrumentSymbol}@depth`, see [`offchain/src/depth.js`](offchain/src/depth.js)). The quote walks that book while the stream is alive and reports `bookSource: "ws-depth"`. If the stream is down it falls back to a modeled ladder (`top-of-book+slippage`). Real books are thin: on Nov 19 the Boston NBA-title YES book held 526 contracts of asks where the old ladder assumed 10,000, so a cover the book can't fill is now refused instead of underpriced. Only `bestAsk`/`bestBid` count as executable. `buy`/`sell` are display prices that fall back to the other side of the book.
 
-**In-game quotes** live for `IN_GAME_TTL_SEC` (20 s) and are sold only within a per-sport limit after the scheduled start (basketball 2 h, football 3 h). Gemini leaves finished games `open` with `isLive: true` until it settles them, once for 103 hours in our live data, so the market state can't be trusted to close sales.
+**In-game quotes** live for `IN_GAME_TTL_SEC` (20 s) and are sold only within a per-sport limit after the scheduled start (basketball 1.5 h, football 2.5 h). Gemini leaves finished games `open` with `isLive: true` until it settles them, once for 103 hours in our live data, so the market state can't be trusted to close sales.
 
 ### zkTLS proof of Gemini's result
 

@@ -171,8 +171,8 @@ docs/DEMO.md                        live demo script, what's real vs testnet, pr
 
 ```bash
 git clone --recurse-submodules https://github.com/Qiao527/arra-protocol && cd arra-protocol
-forge test                                         # 74 tests incl. 8 fuzz invariants, a real zkTLS proof and 4 forged-proof cases
-(cd offchain && npm ci && npm test)                # 92 offchain tests on real Gemini captures
+forge test                                         # 67 tests (the invariant suite counts once and runs 8 invariants), incl. a real zkTLS proof and 4 forged-proof cases
+(cd offchain && npm ci && npm test)                # 97 offchain tests on real Gemini captures
 ./script/e2e-anvil.sh                              # full local flow, no keys needed
 ./script/e2e-live-gemini.sh                        # same, on live Gemini markets (needs network)
 ```
@@ -269,9 +269,9 @@ Live at **https://arra-pricer.onrender.com** (Render free plan: the first reques
 forge test
   ArraVault.t.sol             48 passed  (quotes, netting, 128-team championships, O(1) gas, caps, solvency, quorum, fast path, veto, void, settler changes, NAV during disputes, inflation attack, LP locks, fuzz)
   ArraVault.invariant.t.sol    8 invariants + 1 handler test passed  (256 runs × 32 calls incl. propose / veto / void: full collateral, cap at sale, locked == worst case incl. void, proposedLoss == rescan, LP locks, hedge bounds)
-  ArraResultProofs.t.sol       8 passed  (attestor, URL, winner, tampering, quote smuggling, one proof per event, owner)
-  ArraResultProofs.real.t.sol  2 passed  (a real Reclaim proof of api.gemini.com, verified as on Arc)
-npm test (offchain)            92 passed (real Gemini captures: REST events, stale in-game markets, WebSocket depth, sandbox orders; settler, hedger webhook, verifier, API)
+  ArraResultProofs.t.sol      14 passed  (exact parameters, attestor, URL, winner, tampering, quote smuggling, 4 forged-proof cases, one proof per event, guardian clear, owner)
+  ArraResultProofs.real.t.sol  3 passed  (a real Reclaim proof of api.gemini.com, verified as on Arc)
+npm test (offchain)            97 passed (real Gemini captures: REST events, stale in-game markets, WebSocket depth, sandbox orders; settler, hedger webhook, verifier, API)
 ./script/e2e-anvil.sh          E2E OK    (single game via 2-of-3 + dispute window; 4-city championship via 3-of-3 instant; verifier PASS)
 ./script/e2e-live-gemini.sh    E2E LIVE OK (real moneyline + championship off live depth; settles a team past index 16; verifier PASS)
 ```

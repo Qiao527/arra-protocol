@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { ArrowRight } from "../components/Icons.jsx";
 import PromiseDoc from "../components/PromiseDoc.jsx";
 import { readPolicy, readEvent, readVault, vaultLogs, eventIdOf } from "../lib/chain.js";
 import { claim } from "../lib/wallet.js";
@@ -15,6 +16,45 @@ function Check({ state, title, children }) {
         {children && <div className="d">{children}</div>}
       </div>
     </li>
+  );
+}
+
+/** Landing for the verify route: one field, live feedback against the vault as you type. */
+function Lookup() {
+  const [count, setCount] = useState(null);
+  const [v, setV] = useState("");
+  const [shake, setShake] = useState(0);
+  const input = useRef(null);
+  useEffect(() => { readVault().then((x) => setCount(Number(x.policyCount))).catch(() => setCount(null)); input.current?.focus(); }, []);
+  const n = v === "" ? null : Number(v);
+  const exists = n !== null && count !== null && n < count;
+  const missing = n !== null && count !== null && n >= count;
+  const go = (id) => { location.hash = `#/p/${id}`; };
+  const recent = count ? Array.from({ length: Math.min(5, count) }, (_, i) => count - 1 - i) : [];
+  return (
+    <section className="lookup">
+      <h1 className="lookup-title">Check a <em>promise.</em></h1>
+      <p className="lookup-lede">Every promise is a numbered policy on Arc. Type its number or scan the QR code on the table.</p>
+      <form
+        key={shake}
+        className={`lookup-field ${exists ? "ok" : ""} ${missing ? "bad" : ""} ${shake ? "shake" : ""}`}
+        onSubmit={(e) => { e.preventDefault(); exists ? go(n) : setShake((k) => k + 1); }}
+      >
+        <span className="lookup-hash">#</span>
+        <input ref={input} inputMode="numeric" autoComplete="off" aria-label="Promise number" aria-describedby="lookup-hint"
+          value={v} onChange={(e) => setV(e.target.value.replace(/\D/g, "").slice(0, 7))} placeholder="Promise number" />
+        <button className="btn primary" type="submit" disabled={!exists}>Verify<ArrowRight /></button>
+      </form>
+      <p id="lookup-hint" className={`lookup-hint ${missing ? "bad" : exists ? "ok" : ""}`} aria-live="polite">
+        {count === null ? "Reading the vault on Arc" : missing ? `No promise #${n} yet. ${count} have been sold so far.` : exists ? `Promise #${n} is on Arc. Press Enter to check it.` : `${count} promises on Arc so far`}
+      </p>
+      {recent.length > 0 && (
+        <div className="lookup-recent">
+          <span className="faint">Latest</span>
+          {recent.map((id) => <button key={id} className="chip sm num" onClick={() => go(id)}>#{id}</button>)}
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -51,21 +91,7 @@ export default function VerifyPage({ policyId, params, account }) {
     return () => clearInterval(t);
   }, [policyId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (policyId == null) {
-    return (
-      <div style={{ maxWidth: 560 }}>
-        <h1 className="display">Check a promise.</h1>
-        <p className="lede">Every Arra promise is a numbered policy on Arc. Enter its number, or scan the QR code on the table.</p>
-        <form className="row" onSubmit={(e) => { e.preventDefault(); if (lookup !== "") location.hash = `#/p/${Number(lookup)}`; }}>
-          <div className="amount" style={{ flex: 1 }}>
-            <span className="num muted">#</span>
-            <input inputMode="numeric" aria-label="Promise number" value={lookup} onChange={(e) => setLookup(e.target.value.replace(/\D/g, ""))} placeholder="0" />
-          </div>
-          <button className="btn primary big" type="submit">Verify</button>
-        </form>
-      </div>
-    );
-  }
+  if (policyId == null) return <Lookup />;
 
   if (err) return <p className="err" role="alert">{err}</p>;
   if (!d) return <div className="stack" style={{ maxWidth: 640 }}><div className="skeleton" style={{ height: 260 }} /><div className="skeleton" style={{ height: 160 }} /></div>;

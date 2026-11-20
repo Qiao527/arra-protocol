@@ -5,6 +5,7 @@ import { loadEvents } from "../lib/pricer.js";
 import snapshot from "../data/snapshot.json";
 import { txUrl, STATE, VOID_OUTCOME, deploymentInfo } from "../lib/config.js";
 import { usd, pct, short, prettyTicker } from "../lib/format.js";
+import { ArrowRight, Spinner } from "../components/Icons.jsx";
 
 function knownTickers(events) {
   const extra = ["DEMO-UNDERDOG", "DEMO-CHAMP", "NFL-2611221800-ARI-KC-M", "NFL-2611221800-ARI-KC-2HM", deploymentInfo.sandboxHedgeRun?.market?.eventTicker].filter(Boolean);
@@ -81,74 +82,95 @@ export default function DeskPage({ account, onConnect }) {
     return e?.contracts?.[outcome]?.label ?? `Outcome ${outcome}`;
   };
 
+  const shown = rows?.filter((r) => showSettled || r.state !== 3) ?? [];
+  const settledCount = rows?.filter((r) => r.state === 3).length ?? 0;
+  const free = vault ? Math.max(0, vault.totalAssets - vault.totalLocked) : 0;
+
   return (
-    <div>
-      <div className="row" style={{ alignItems: "flex-end", marginBottom: 20, flexWrap: "wrap" }}>
+    <div className="desk">
+      <header className="desk-head">
         <div>
-          <h1 className="display" style={{ marginBottom: 8 }} data-enter="1">Risk desk</h1>
-          <p className="muted" style={{ margin: 0 }}>The pool that backs every promise. Read live from Arc.</p>
+          <h1 className="desk-title">Risk <em>desk</em></h1>
+          <p className="desk-lede">The pool behind every promise, read live from Arc.</p>
         </div>
-        <span className="chip"><span className="dot live" />Arc testnet<span className="sep" />refreshes every 15s</span>
-      </div>
+        <span className="chip"><span className="dot live" />Live, every 15 s</span>
+      </header>
 
-      <div className="stats">
-        <div className="stat"><div className="k">Vault NAV</div><div className="v">{usd(vault?.totalAssets)}</div><div className="h">USDC + hedge receivable − owed</div></div>
-        <div className="stat"><div className="k">Locked for open promises</div><div className="v">{usd(vault?.totalLocked)}</div><div className="h">{pct(utilization)} of NAV</div></div>
-        <div className="stat"><div className="k">Promises backed</div><div className="v">{usd(insuredOpen)}</div><div className="h">{lockedOpen > 0 ? `${(insuredOpen / lockedOpen).toFixed(1)}× per locked dollar` : "netting ratio"}</div></div>
-        <div className="stat"><div className="k">arLP share price</div><div className="v">{vault ? vault.sharePrice.toFixed(4) : "—"}</div><div className="h">{vault ? `${vault.policyCount} promises sold` : ""}</div></div>
-      </div>
-
-      <div className="grid-2">
-        <section>
-          <div className="panel">
-            <h3>Games on the book</h3>
-            <p className="sub">Bars: payout owed if that outcome wins (dark) and the part hedged on Gemini (green). The vault locks only the largest bar.</p>
-            {!rows && <div className="skeleton" style={{ height: 120 }} />}
-            {rows?.length === 0 && <p className="muted">No promises yet.</p>}
-            <div className="stack">
-              {rows?.filter((r) => showSettled || r.state !== 3).map((r) => {
-                const max = Math.max(...r.liability, 1e-9);
-                const name = names[r.eventId]?.title ?? short(r.eventId, 6);
-                const settledLabel = r.state === 3 ? (r.winningOutcome === VOID_OUTCOME ? "Void" : `Won: ${label(r.eventId, r.winningOutcome)}`) : STATE[r.state];
-                return (
-                  <div key={r.eventId} style={{ paddingBottom: 14, borderBottom: "1px solid var(--line-soft)" }}>
-                    <div className="row" style={{ marginBottom: 8 }}>
-                      <b style={{ fontWeight: 500 }}>{name}</b>
-                      <span className={`badge ${r.state === 2 ? "live" : ""}`}>{settledLabel}</span>
-                    </div>
-                    <div className="bars">
-                      {r.liability.map((l, i) =>
-                        l > 0 ? (
-                          <div className="bar" key={i}>
-                            <span className="muted" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{label(r.eventId, i)}</span>
-                            <span className="track">
-                              <span className="fill depth" style={{ width: `${(l / max) * 100}%` }} />
-                              <span className="fill depth hedge" style={{ width: `${(r.hedged[i] / max) * 100}%` }} />
-                            </span>
-                            <span className="num r" style={{ textAlign: "right" }}>{usd(l)}</span>
-                          </div>
-                        ) : null
-                      )}
-                    </div>
-                    <div className="netting" style={{ marginTop: 8 }}>
-                      <span>Insured <b>{usd(r.insured)}</b></span><span className="sep" /><span>Locked <b>{usd(r.state === 3 ? 0 : r.locked)}</b></span><span className="sep" /><span>Worst unhedged <span className="num">{usd(r.worstUnhedged)}</span></span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            {rows?.some((r) => r.state === 3) && (
-              <button className="linkish settled-toggle" onClick={() => setShowSettled((v) => !v)}>
-                {showSettled ? "Hide settled games" : `Show settled games (${rows.filter((r) => r.state === 3).length})`}
-              </button>
-            )}
+      <section className="card desk-hero">
+        <div className="desk-nav">
+          <span className="deal-k">Vault value</span>
+          <span className="desk-nav-v num">{usd(vault?.totalAssets)}</span>
+          <span className="desk-nav-sub">arLP share price <b className="num">{vault ? vault.sharePrice.toFixed(4) : "—"}</b></span>
+        </div>
+        <div className="desk-meter" aria-label={`${pct(utilization)} of the vault is locked`}>
+          <div className="meter"><span style={{ width: `${Math.min(100, utilization * 100)}%` }} /></div>
+          <div className="meter-legend">
+            <span><i className="sw lock" />Locked {usd(vault?.totalLocked)}</span>
+            <span><i className="sw free" />Free {usd(free)}</span>
           </div>
+        </div>
+        <div className="desk-kpis">
+          <div><span className="deal-k">Promises backed</span><span className="kpi num">{usd(insuredOpen)}</span></div>
+          <div><span className="deal-k">Per locked dollar</span><span className="kpi num">{lockedOpen > 0 ? `${(insuredOpen / lockedOpen).toFixed(1)}×` : "—"}</span></div>
+          <div><span className="deal-k">Promises sold</span><span className="kpi num">{vault?.policyCount ?? "—"}</span></div>
+        </div>
+      </section>
 
-          <div className="panel">
-            <h3>Hedges on Gemini</h3>
-            <p className="sub">Every hedge is recorded onchain with its Gemini order ID. Only filled quantity is recorded.</p>
+      <div className="desk-grid">
+        <section>
+          <div className="desk-sec-head">
+            <h2 className="desk-h2">Games on the book</h2>
+            <span className="legend"><span><i className="sw owe" />Owed if it wins</span><span><i className="sw hedge" />Hedged on Gemini</span></span>
+          </div>
+          {!rows && <div className="skeleton" style={{ height: 160, borderRadius: 24 }} />}
+          {rows?.length === 0 && <p className="muted">No promises yet.</p>}
+          <div className="games">
+            {shown.map((r) => {
+              const max = Math.max(...r.liability, 1e-9);
+              const name = names[r.eventId]?.title ?? short(r.eventId, 6);
+              const settledLabel = r.state === 3 ? (r.winningOutcome === VOID_OUTCOME ? "Void" : `Won: ${label(r.eventId, r.winningOutcome)}`) : STATE[r.state];
+              return (
+                <article key={r.eventId} className="card gcard">
+                  <div className="game-head">
+                    <h3>{name}</h3>
+                    <span className={`pill ${r.state === 3 ? "done" : r.state === 2 ? "live" : ""}`}>{settledLabel}</span>
+                  </div>
+                  <div className="game-bars">
+                    {r.liability.map((l, i) =>
+                      l > 0 ? (
+                        <div className="gbar" key={i}>
+                          <span className="gbar-l">{label(r.eventId, i)}</span>
+                          <span className="gbar-t">
+                            <span className="owe" style={{ width: `${(l / max) * 100}%` }} />
+                            <span className="hedge" style={{ width: `${(r.hedged[i] / max) * 100}%` }} />
+                          </span>
+                          <span className="gbar-v num">{usd(l)}</span>
+                        </div>
+                      ) : null
+                    )}
+                  </div>
+                  <div className="game-foot">
+                    <div><span className="deal-k">Insured</span><b className="num">{usd(r.insured)}</b></div>
+                    <div><span className="deal-k">Locked</span><b className="num">{usd(r.state === 3 ? 0 : r.locked)}</b></div>
+                    <div><span className="deal-k">Worst unhedged</span><b className="num">{usd(r.worstUnhedged)}</b></div>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+          {settledCount > 0 && (
+            <button className="chip settled-toggle" onClick={() => setShowSettled((v) => !v)}>
+              {showSettled ? "Hide settled games" : `Show settled games (${settledCount})`}
+            </button>
+          )}
+
+          <div className="desk-sec-head" style={{ marginTop: 56 }}>
+            <h2 className="desk-h2">Hedges on Gemini</h2>
+            <span className="faint">Filled quantity only, each with its order ID</span>
+          </div>
+          <div className="card tbl-card">
             <div className="tbl-wrap"><table className="tbl">
-              <thead><tr><th>Game</th><th>Outcome</th><th className="r">Covered</th><th>Gemini order</th></tr></thead>
+              <thead><tr><th>Game</th><th>Outcome</th><th className="r">Covered</th><th className="r">Gemini order</th></tr></thead>
               <tbody>
                 {hedges.length === 0 && <tr><td colSpan={4} className="muted">No hedges recorded yet.</td></tr>}
                 {hedges.map((h) => (
@@ -156,7 +178,7 @@ export default function DeskPage({ account, onConnect }) {
                     <td>{names[h.eventId]?.title ?? short(h.eventId, 6)}</td>
                     <td>{label(h.eventId, Number(h.outcome))}</td>
                     <td className="r num">{usd(Number(h.payoutCovered) / 1e6)}</td>
-                    <td><a className="mono-s" href={txUrl(h.txHash)} target="_blank" rel="noreferrer">{h.geminiOrderId}</a></td>
+                    <td className="r"><a className="mono-s" href={txUrl(h.txHash)} target="_blank" rel="noreferrer">{h.geminiOrderId}</a></td>
                   </tr>
                 ))}
               </tbody>
@@ -164,39 +186,59 @@ export default function DeskPage({ account, onConnect }) {
           </div>
         </section>
 
-        <aside>
-          <div className="panel">
-            <h3>Provide liquidity</h3>
-            <p className="sub">Earn the premiums. Withdrawals are limited to capital not backing open promises, and pause while hedge proceeds are in transit.</p>
+        <aside className="desk-side">
+          <div className="card lp">
+            <h2 className="desk-h2">Provide liquidity</h2>
+            <p className="desk-p">Earn the premiums. You can withdraw capital that isn’t backing an open promise.</p>
             {account && pos && (
-              <div className="stack" style={{ marginBottom: 14 }}>
-                <div className="row"><span className="muted">Your position</span><span className="num">{usd(pos.assets)}</span></div>
-                <div className="row"><span className="muted">Withdrawable now</span><span className="num">{usd(pos.withdrawable)}</span></div>
-                <div className="row"><span className="muted">Wallet USDC</span><span className="num">{usd(pos.bal)}</span></div>
+              <div className="lp-pos">
+                <div><span className="deal-k">Your position</span><b className="num">{usd(pos.assets)}</b></div>
+                <div><span className="deal-k">Withdrawable</span><b className="num">{usd(pos.withdrawable)}</b></div>
+                <div><span className="deal-k">Wallet</span><b className="num">{usd(pos.bal)}</b></div>
               </div>
             )}
-            <label className="field" htmlFor="dep">Deposit (USDC)</label>
-            <div className="amount"><span className="num muted">$</span><input id="dep" inputMode="decimal" value={amt} onChange={(e) => setAmt(e.target.value.replace(/[^0-9.]/g, ""))} /></div>
-            <div className="row" style={{ marginTop: 12 }}>
-              <button className="btn primary" disabled={!!busy || !(Number(amt) > 0)} onClick={() => act((s) => deposit(account, amt, s), "Deposit")}>{busy ?? (account ? "Deposit" : "Connect wallet")}</button>
-              <button className="btn" disabled={!!busy || !account} onClick={() => act((s) => withdrawMax(account, s), "Withdrawal")}>Withdraw max</button>
+            <label className="deal-k" htmlFor="dep">Deposit</label>
+            <div className="deal-amount lp-amount">
+              <span className="deal-cur">$</span>
+              <input id="dep" size={1} inputMode="decimal" autoComplete="off" value={amt} onChange={(e) => setAmt(e.target.value.replace(/[^0-9.]/g, ""))} />
+              <span className="deal-unit">USDC</span>
             </div>
-            {msg?.ok && <p className="muted" style={{ marginTop: 10 }}>{msg.ok}: <a href={txUrl(msg.h)} target="_blank" rel="noreferrer">tx</a></p>}
-            {msg?.err && <p className="err" role="alert" style={{ marginTop: 10 }}>{msg.err}</p>}
+            <div className="presets">
+              {["10", "50", "100"].map((v) => <button key={v} type="button" className={`chip sm ${amt === v ? "on" : ""}`} onClick={() => setAmt(v)}>${v}</button>)}
+            </div>
+            <div className="lp-actions">
+              <button className="btn primary big" disabled={!!busy || !(Number(amt) > 0)} onClick={() => act((s) => deposit(account, amt, s), "Deposit")}>
+                {busy ? <><Spinner />{busy}</> : account ? <>Deposit<ArrowRight /></> : "Connect wallet"}
+              </button>
+              <button className="btn big" disabled={!!busy || !account} onClick={() => act((s) => withdrawMax(account, s), "Withdrawal")}>Withdraw max</button>
+            </div>
+            {msg?.ok && <p className="lp-msg ok">{msg.ok}. <a href={txUrl(msg.h)} target="_blank" rel="noreferrer">View transaction</a></p>}
+            {msg?.err && <p className="lp-msg err" role="alert">{msg.err}</p>}
           </div>
 
-          <div className="panel">
-            <h3>Risk rules, enforced by the contract</h3>
-            <ul className="checks">
-              <li><span className="tick ok">✓</span><div>Fully collateralized<div className="d">USDC {usd(vault?.balance)} vs locked {usd(vault?.totalLocked)} + owed {usd(vault?.pendingClaims)}</div></div></li>
-              <li><span className="tick ok">✓</span><div>Per-game cap: {vault ? pct(vault.eventCapBps / 1e4, 0) : "—"} of NAV<div className="d">Worst unhedged payout on any one game, checked at every sale</div></div></li>
-              <li><span className="tick ok">✓</span><div>Netting across outcomes<div className="d">Only one team can win, so the vault locks the largest payout, not the sum</div></div></li>
-              <li><span className="tick ok">✓</span><div>Settlement quorum {vault ? `${vault.settlerThreshold}-of-${vault.settlerCount}` : ""}<div className="d">Unanimous settles instantly; otherwise a {vault?.disputeWindow}s dispute window with guardian veto</div></div></li>
-              <li><span className={`tick ${vault?.hedgeReceivable > 0 ? "wait" : "ok"}`}>{vault?.hedgeReceivable > 0 ? "…" : "✓"}</span><div>Hedge proceeds in transit: {usd(vault?.hedgeReceivable)}<div className="d">LP withdrawals pause until swept back from Gemini</div></div></li>
+          <div className="card rules">
+            <h2 className="desk-h2">Rules the contract enforces</h2>
+            <ul className="rules-list">
+              <Rule ok title="Fully collateralized">USDC {usd(vault?.balance)} covers locked {usd(vault?.totalLocked)} plus owed {usd(vault?.pendingClaims)}</Rule>
+              <Rule ok title={`Per-game cap, ${vault ? pct(vault.eventCapBps / 1e4, 0) : "—"} of value`}>Worst unhedged payout on any one game, checked at every sale</Rule>
+              <Rule ok title="Netting across outcomes">Only one team can win, so the vault locks the largest payout</Rule>
+              <Rule ok title={`Settlement quorum ${vault ? `${vault.settlerThreshold} of ${vault.settlerCount}` : ""}`}>Unanimous settles at once; otherwise a {vault?.disputeWindow ?? "—"} s dispute window</Rule>
+              <Rule ok={!(vault?.hedgeReceivable > 0)} title={`Hedge proceeds in transit, ${usd(vault?.hedgeReceivable)}`}>Withdrawals pause until they are back from Gemini</Rule>
             </ul>
           </div>
         </aside>
       </div>
     </div>
+  );
+}
+
+function Rule({ ok, title, children }) {
+  return (
+    <li>
+      <span className={`rule-ic ${ok ? "ok" : "wait"}`} aria-label={ok ? "holds" : "pending"}>
+        {ok ? <svg viewBox="0 0 20 20" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 10.5l3 3 7-7" /></svg> : <span className="spin" />}
+      </span>
+      <div><div className="rule-t">{title}</div><div className="rule-d">{children}</div></div>
+    </li>
   );
 }

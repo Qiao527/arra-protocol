@@ -7,9 +7,16 @@ export const hasWallet = () => typeof window !== "undefined" && !!window.ethereu
 
 async function ensureArc() {
   const id = numberToHex(chain.id);
+  // Already on Arc: don't ask. Some wallets refuse a switch request (4100) when the site has no
+  // permission for the network, even when the user has picked Arc by hand.
+  const current = await window.ethereum.request({ method: "eth_chainId" }).catch(() => null);
+  if (current && BigInt(current) === BigInt(chain.id)) return;
   try {
     await window.ethereum.request({ method: "wallet_switchEthereumChain", params: [{ chainId: id }] });
   } catch (err) {
+    if (err?.code === 4100 || err?.code === 4001) {
+      throw new Error("Your wallet didn't allow switching to Arc Testnet. Pick Arc Testnet in your wallet's network menu, then try again.");
+    }
     if (err?.code !== 4902 && !/Unrecognized|not added/i.test(err?.message ?? "")) throw err;
     await window.ethereum.request({
       method: "wallet_addEthereumChain",

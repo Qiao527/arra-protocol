@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-11-20T10:30:10.344Z",
+  "generatedAt": "2026-11-20T15:31:58.476Z",
   "vault": "0x1D69e0fE014df1007aE66A68a5c9714a7E833d6f",
   "chainId": 5042002,
   "keeper": "https://arra-pricer.onrender.com",
-  "runUrl": "https://github.com/Qiao527/arra-protocol/actions/runs/44719685918",
+  "runUrl": "https://github.com/Qiao527/arra-protocol/actions/runs/44764115333",
   "solvency": {
     "usdcHeld": 56.282049,
     "locked": 20,
@@ -11,8 +11,8 @@
     "ok": true
   },
   "summary": {
-    "PASS": 1,
-    "FAIL": 2,
+    "PASS": 3,
+    "FAIL": 0,
     "SYNTHETIC": 1,
     "UNCHECKED": 0,
     "UNCONFIRMED": 0,
@@ -26,11 +26,36 @@
       "state": "Settled",
       "winningOutcome": 0,
       "evidenceHash": "0xdfb2aeb5cc837e86772225a8c414c9d5c23e3da9057bbfa5f0f0ccbf312197e9",
-      "verdict": "FAIL",
-      "evidence": "missing",
-      "live": null,
+      "verdict": "PASS",
+      "evidence": "zk-proof",
+      "live": "agrees",
       "synthetic": false,
-      "checks": [],
+      "checks": [
+        {
+          "name": "a zkTLS proof is recorded for this event",
+          "ok": true
+        },
+        {
+          "name": "the proof is for this event",
+          "ok": true
+        },
+        {
+          "name": "the proven winner is the onchain winner",
+          "ok": true
+        },
+        {
+          "name": "stored winner hash matches",
+          "ok": true
+        },
+        {
+          "name": "claim is exactly a GET of Gemini's event endpoint matching the winner",
+          "ok": true
+        },
+        {
+          "name": "signed by a trusted Reclaim attestor",
+          "ok": true
+        }
+      ],
       "insuredUsdc": 5,
       "lockedUsdc": 5
     },
@@ -103,11 +128,36 @@
       "state": "Settled",
       "winningOutcome": 1,
       "evidenceHash": "0x494b8a905f9bdd4a61fdb79ca9910418059501a0e09059d508bd0e97c53f4238",
-      "verdict": "FAIL",
-      "evidence": "missing",
-      "live": null,
+      "verdict": "PASS",
+      "evidence": "zk-proof",
+      "live": "agrees",
       "synthetic": false,
-      "checks": [],
+      "checks": [
+        {
+          "name": "a zkTLS proof is recorded for this event",
+          "ok": true
+        },
+        {
+          "name": "the proof is for this event",
+          "ok": true
+        },
+        {
+          "name": "the proven winner is the onchain winner",
+          "ok": true
+        },
+        {
+          "name": "stored winner hash matches",
+          "ok": true
+        },
+        {
+          "name": "claim is exactly a GET of Gemini's event endpoint matching the winner",
+          "ok": true
+        },
+        {
+          "name": "signed by a trusted Reclaim attestor",
+          "ok": true
+        }
+      ],
       "insuredUsdc": 5,
       "lockedUsdc": 5
     },

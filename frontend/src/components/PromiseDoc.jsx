@@ -3,7 +3,7 @@ import QRCode from "qrcode";
 import { usd } from "../lib/format.js";
 
 /**
- * The promise as a paper document. `status`: "draft" | "quoted" | "locked" | "paid" | "void".
+ * The promise as a paper document. `status`: "draft" | "quoted" | "locked" | "paid" | "settled" | "void".
  */
 export default function PromiseDoc({ merchant, team, eventTitle, payout, lines = [], status = "draft", verifyUrl, policyId, fine }) {
   const [qr, setQr] = useState(null);
@@ -12,7 +12,7 @@ export default function PromiseDoc({ merchant, team, eventTitle, payout, lines =
     QRCode.toDataURL(verifyUrl, { margin: 0, width: 224, color: { dark: "#1b1a17", light: "#ffffff" } }).then(setQr);
   }, [verifyUrl]);
 
-  const sealed = status === "locked" || status === "paid";
+  const sealed = status === "locked" || status === "paid" || status === "settled";
   return (
     <article className={`promise ${sealed ? "pressed" : ""}`} aria-label="Promise">
       <div className="row">
@@ -40,7 +40,7 @@ export default function PromiseDoc({ merchant, team, eventTitle, payout, lines =
         <div className="fine">
           {fine ??
             (sealed
-              ? "Scan to check the USDC is locked on Arc."
+              ? status === "settled" ? "Settled from Gemini’s result. Scan to check it on Arc." : "Scan to check the USDC is locked on Arc."
               : "Priced by Gemini. Locked in USDC when you seal it.")}
         </div>
         {qr ? (
@@ -51,7 +51,7 @@ export default function PromiseDoc({ merchant, team, eventTitle, payout, lines =
           <div className={`seal ${sealed ? "stamp" : "pending"}`} aria-hidden="true">
             <div>
               <b>Arra</b>
-              <small>{status === "paid" ? "PAID" : status === "void" ? "REFUNDED" : sealed ? "LOCKED" : "UNSEALED"}</small>
+              <small>{status === "paid" ? "PAID" : status === "void" ? "REFUNDED" : status === "settled" ? "SETTLED" : sealed ? "LOCKED" : "UNSEALED"}</small>
             </div>
           </div>
         )}

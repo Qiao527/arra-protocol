@@ -106,7 +106,7 @@ export default function VerifyPage({ policyId, params, account }) {
   const voided = event.state === 3 && event.winningOutcome === VOID_OUTCOME;
   const won = event.state === 3 && !voided && event.winningOutcome === policy.outcome;
   const lost = event.state === 3 && !voided && !won;
-  const status = voided ? "void" : won ? "paid" : "locked";
+  const status = voided ? "void" : won ? "paid" : lost ? "settled" : "locked";
   const team = label ?? `Outcome ${policy.outcome}`;
   const isHolder = account && account.toLowerCase() === policy.holder.toLowerCase();
 
@@ -163,7 +163,7 @@ export default function VerifyPage({ policyId, params, account }) {
             <Check state={solvent ? "ok" : "no"} title={solvent ? "The vault can pay every open promise at once" : "Vault under-collateralized"}>
               USDC held {usd(vault.balance)} ≥ locked {usd(vault.totalLocked)} + owed {usd(vault.pendingClaims)}
             </Check>
-            <Check state={hedgedAmt > 0 ? "ok" : "wait"} title={hedgedAmt > 0 ? `${usd(hedgedAmt)} of this outcome hedged on Gemini` : "Not hedged yet (hedger runs above a size threshold)"}>
+            <Check state={hedgedAmt > 0 ? "ok" : "wait"} title={hedgedAmt > 0 ? `${usd(hedgedAmt)} of this outcome hedged on Gemini` : event.state === 3 ? "Not hedged (below the hedger’s size threshold)" : "Not hedged yet (hedger runs above a size threshold)"}>
               {hedges.map((h) => (
                 <div key={h.txHash}>
                   Gemini order <span className="mono-s">{h.geminiOrderId}</span>, <a href={txUrl(h.txHash)} target="_blank" rel="noreferrer">recorded onchain</a>

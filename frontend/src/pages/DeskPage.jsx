@@ -235,7 +235,7 @@ export default function DeskPage({ account, onConnect }) {
 function Rule({ ok, title, children }) {
   return (
     <li>
-      <span className={`rule-ic ${ok ? "ok" : "wait"}`} aria-label={ok ? "holds" : "pending"}>
+      <span className={`rule-ic ${ok ? "ok" : "wait"}`} role="img" aria-label={ok ? "holds" : "pending"}>
         {ok ? <svg viewBox="0 0 20 20" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 10.5l3 3 7-7" /></svg> : <span className="spin" />}
       </span>
       <div><div className="rule-t">{title}</div><div className="rule-d">{children}</div></div>

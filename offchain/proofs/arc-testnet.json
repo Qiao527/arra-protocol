@@ -1,22 +1,22 @@
 {
-  "generatedAt": "2026-11-21T00:48:09.502Z",
+  "generatedAt": "2026-11-21T08:16:13.939Z",
   "vault": "0x1D69e0fE014df1007aE66A68a5c9714a7E833d6f",
   "chainId": 5042002,
   "keeper": "https://arra-pricer.onrender.com",
-  "runUrl": "https://github.com/Qiao527/arra-protocol/actions/runs/44846160445",
+  "runUrl": "https://github.com/Qiao527/arra-protocol/actions/runs/44884050416",
   "solvency": {
     "usdcHeld": 56.282049,
-    "locked": 20,
+    "locked": 10,
     "owed": 0,
     "ok": true
   },
   "summary": {
-    "PASS": 3,
+    "PASS": 5,
     "FAIL": 0,
     "SYNTHETIC": 1,
     "UNCHECKED": 0,
     "UNCONFIRMED": 0,
-    "PENDING": 4
+    "PENDING": 2
   },
   "events": [
     {
@@ -197,14 +197,31 @@
       "eventId": "0xcf14e086f00dad15c3bb5e5ccb8f97f2473b7b0af6df1467bf4f15a9eee6f299",
       "title": "Harvard vs Holy Cross",
       "eventTicker": "NCAAM-2611210000-HAR-HC-M",
-      "state": "Open",
+      "state": "Settled",
       "winningOutcome": 0,
-      "evidenceHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
-      "verdict": "PENDING",
-      "evidence": null,
-      "live": null,
+      "evidenceHash": "0x3dbe2b0c279ed60da4910e1d2f34e44083fd3a30c105844b4a2d136182df843a",
+      "verdict": "PASS",
+      "evidence": "ok",
+      "live": "agrees",
       "synthetic": false,
-      "checks": [],
+      "checks": [
+        {
+          "name": "event settled onchain",
+          "ok": true
+        },
+        {
+          "name": "evidence hash",
+          "ok": true
+        },
+        {
+          "name": "evidence is for this event",
+          "ok": true
+        },
+        {
+          "name": "winning outcome",
+          "ok": true
+        }
+      ],
       "insuredUsdc": 5,
       "lockedUsdc": 5
     },
@@ -212,14 +229,31 @@
       "eventId": "0xaa4944d0485b7dbbe25e001852abc3ad8bd92bd24bab9a6358e442ca7348d036",
       "title": "Oakland vs Purdue",
       "eventTicker": "NCAAM-2611210000-OAK-PUR-M",
-      "state": "Open",
-      "winningOutcome": 0,
-      "evidenceHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
-      "verdict": "PENDING",
-      "evidence": null,
-      "live": null,
+      "state": "Settled",
+      "winningOutcome": 1,
+      "evidenceHash": "0x6f314bed805c01602584a365944c9a8fb5610b45283488e1c9a4041aac1131c7",
+      "verdict": "PASS",
+      "evidence": "ok",
+      "live": "agrees",
       "synthetic": false,
-      "checks": [],
+      "checks": [
+        {
+          "name": "event settled onchain",
+          "ok": true
+        },
+        {
+          "name": "evidence hash",
+          "ok": true
+        },
+        {
+          "name": "evidence is for this event",
+          "ok": true
+        },
+        {
+          "name": "winning outcome",
+          "ok": true
+        }
+      ],
       "insuredUsdc": 5,
       "lockedUsdc": 5
     }

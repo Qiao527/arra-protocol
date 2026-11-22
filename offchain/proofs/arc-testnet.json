@@ -1,22 +1,22 @@
 {
-  "generatedAt": "2026-11-22T17:49:15.069Z",
+  "generatedAt": "2026-11-22T23:35:44.099Z",
   "vault": "0x1D69e0fE014df1007aE66A68a5c9714a7E833d6f",
   "chainId": 5042002,
   "keeper": "https://arra-pricer.onrender.com",
-  "runUrl": "https://github.com/Qiao527/arra-protocol/actions/runs/45051538570",
+  "runUrl": "https://github.com/Qiao527/arra-protocol/actions/runs/45084054799",
   "solvency": {
     "usdcHeld": 56.282049,
-    "locked": 10,
+    "locked": 5,
     "owed": 0,
     "ok": true
   },
   "summary": {
-    "PASS": 5,
+    "PASS": 6,
     "FAIL": 0,
     "SYNTHETIC": 1,
     "UNCHECKED": 0,
     "UNCONFIRMED": 0,
-    "PENDING": 2
+    "PENDING": 1
   },
   "events": [
     {
@@ -95,14 +95,31 @@
       "eventId": "0x882231f188422e825a5af977da16e784e14527e1f4753c0a843269ad23d5c039",
       "title": "Arizona vs Kansas City",
       "eventTicker": "NFL-2611221800-ARI-KC-M",
-      "state": "Open",
-      "winningOutcome": 0,
-      "evidenceHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
-      "verdict": "PENDING",
-      "evidence": null,
-      "live": null,
+      "state": "Settled",
+      "winningOutcome": 1,
+      "evidenceHash": "0x76c8b46a57053a4a8a86cca26dd8dd9ae9fdfcdf51c420658addd3e704b625ee",
+      "verdict": "PASS",
+      "evidence": "ok",
+      "live": "agrees",
       "synthetic": false,
-      "checks": [],
+      "checks": [
+        {
+          "name": "event settled onchain",
+          "ok": true
+        },
+        {
+          "name": "evidence hash",
+          "ok": true
+        },
+        {
+          "name": "evidence is for this event",
+          "ok": true
+        },
+        {
+          "name": "winning outcome",
+          "ok": true
+        }
+      ],
       "insuredUsdc": 5,
       "lockedUsdc": 5
     },
